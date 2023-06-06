@@ -1,0 +1,3 @@
+telegram:
+  username: ${TELEGRAM_USERNAME}
+  botToken: ${TELEGRAM_TOKEN}
