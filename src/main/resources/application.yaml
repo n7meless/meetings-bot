@@ -1,3 +1,20 @@
+spring:
+  datasource:
+    username: root
+    password: root
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/meetsdb
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: root
+    password: root
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
 telegram:
   username: ${TELEGRAM_USERNAME}
   botToken: ${TELEGRAM_TOKEN}
