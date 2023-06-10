@@ -1,9 +1,9 @@
-package com.ufanet.meetingsbot.botapi.handlers.message;
+package com.ufanet.meetingsbot.handler.chat;
 
-import com.ufanet.meetingsbot.botapi.handlers.callbackquery.UpdateHandler;
-import com.ufanet.meetingsbot.botapi.handlers.type.ChatType;
-import com.ufanet.meetingsbot.botapi.handlers.type.HandlerType;
-import com.ufanet.meetingsbot.cache.BotStateCache;
+import com.ufanet.meetingsbot.handler.update.UpdateHandler;
+import com.ufanet.meetingsbot.handler.type.ChatType;
+import com.ufanet.meetingsbot.handler.type.HandlerType;
+import com.ufanet.meetingsbot.cache.impl.BotStateCache;
 import com.ufanet.meetingsbot.service.MainMenuService;
 import com.ufanet.meetingsbot.state.BotState;
 import org.springframework.stereotype.Component;
@@ -16,13 +16,13 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class PrivateMessageHandler implements MessageHandler {
+public class PrivateChatHandler implements ChatHandler {
     private final MainMenuService mainMenuService;
     private final BotStateCache botStateCache;
     private final Map<HandlerType, UpdateHandler> queryHandlers = new HashMap<>();
 
-    public PrivateMessageHandler(MainMenuService mainMenuService, BotStateCache botStateCache,
-                                 List<UpdateHandler> updateHandlers) {
+    public PrivateChatHandler(MainMenuService mainMenuService, BotStateCache botStateCache,
+                              List<UpdateHandler> updateHandlers) {
 
         this.mainMenuService = mainMenuService;
         this.botStateCache = botStateCache;

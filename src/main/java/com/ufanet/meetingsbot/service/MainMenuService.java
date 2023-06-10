@@ -1,6 +1,7 @@
 package com.ufanet.meetingsbot.service;
 
-import com.ufanet.meetingsbot.cache.BotStateCache;
+import com.ufanet.meetingsbot.handler.message.MessageHandler;
+import com.ufanet.meetingsbot.cache.impl.BotStateCache;
 import com.ufanet.meetingsbot.constants.MainCommands;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,7 +21,7 @@ import static com.ufanet.meetingsbot.constants.MainButtonNameEnum.*;
 @Service
 @RequiredArgsConstructor
 public class MainMenuService {
-    private final MessageService messageService;
+    private final MessageHandler messageHandler;
 //    private final List<MessageHandler> messageHandlers;
     private final BotStateCache botStateCache;
 

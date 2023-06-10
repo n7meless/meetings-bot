@@ -1,10 +1,12 @@
-package com.ufanet.meetingsbot.cache;
+package com.ufanet.meetingsbot.cache.impl;
 
+import com.ufanet.meetingsbot.cache.Cache;
 import com.ufanet.meetingsbot.state.BotState;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
+
 @Component
 public class BotStateCache implements Cache<BotState> {
     private final Map<Long, BotState> botStates = new HashMap<>();
@@ -16,7 +18,9 @@ public class BotStateCache implements Cache<BotState> {
 
     @Override
     public BotState get(Long userId) {
-        return botStates.get(userId);
+        if (botStates.containsKey(userId))
+            return botStates.get(userId);
+        return null;
     }
 
     @Override

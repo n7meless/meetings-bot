@@ -1,4 +1,4 @@
-package com.ufanet.meetingsbot.botapi.handlers.type;
+package com.ufanet.meetingsbot.handler.type;
 
 public enum BotState {
     CREATE, UPCOMING, UPDATE, PROFILE

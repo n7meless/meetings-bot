@@ -1,4 +1,4 @@
-package com.ufanet.meetingsbot.botapi.handlers.type;
+package com.ufanet.meetingsbot.handler.type;
 
 public enum HandlerType {
     CREATE, PROFILE, UPCOMING, EDIT, GROUP;

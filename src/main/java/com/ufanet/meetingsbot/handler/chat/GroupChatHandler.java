@@ -1,6 +1,6 @@
-package com.ufanet.meetingsbot.botapi.handlers.message;
+package com.ufanet.meetingsbot.handler.chat;
 
-import com.ufanet.meetingsbot.botapi.handlers.type.ChatType;
+import com.ufanet.meetingsbot.handler.type.ChatType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
@@ -8,7 +8,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 
 @Component
 @RequiredArgsConstructor
-public class GroupMessageHandler implements MessageHandler {
+public class GroupChatHandler implements ChatHandler {
 
     @Override
     public BotApiMethod<?> handleUpdate(Update update) {

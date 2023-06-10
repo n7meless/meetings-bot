@@ -1,42 +1,49 @@
-package com.ufanet.meetingsbot.service;
+package com.ufanet.meetingsbot.handler.message;
 
-import com.ufanet.meetingsbot.botapi.TelegramBot;
-import com.ufanet.meetingsbot.cache.BotMessageCache;
+import com.ufanet.meetingsbot.service.TelegramBot;
+import com.ufanet.meetingsbot.cache.impl.BotMessageCache;
+import com.ufanet.meetingsbot.cache.impl.MeetingCacheManager;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.keyboard.InlineKeyboardMaker;
 import com.ufanet.meetingsbot.model.Chat;
 import com.ufanet.meetingsbot.model.User;
 import com.ufanet.meetingsbot.repository.UserRepository;
+import com.ufanet.meetingsbot.service.MeetingDtoService;
 import com.ufanet.meetingsbot.state.MeetingState;
 import com.ufanet.meetingsbot.utils.MessageUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 
 import java.util.List;
 
 @Service
-public class PrivateMessageProcessor {
+public class CreatingMeetingMessageHandler {
     private final MessageUtils messageUtils;
     private final BotMessageCache botMessageCache;
     private final InlineKeyboardMaker inlineKeyboardMaker;
     private final UserRepository userRepository;
     private final TelegramBot telegramBot;
+    private final MeetingCacheManager meetingCacheManager;
+    private final MeetingDtoService meetingDtoService;
     @Autowired
-    public PrivateMessageProcessor(MessageUtils messageUtils, BotMessageCache botMessageCache,
-                                   InlineKeyboardMaker inlineKeyboardMaker, UserRepository userRepository,
-                                   @Lazy TelegramBot telegramBot) {
+    public CreatingMeetingMessageHandler(MessageUtils messageUtils, BotMessageCache botMessageCache,
+                                         InlineKeyboardMaker inlineKeyboardMaker, UserRepository userRepository,
+                                         @Lazy TelegramBot telegramBot, MeetingCacheManager meetingCacheManager, MeetingDtoService meetingDtoService) {
         this.messageUtils = messageUtils;
         this.botMessageCache = botMessageCache;
         this.inlineKeyboardMaker = inlineKeyboardMaker;
         this.userRepository = userRepository;
         this.telegramBot = telegramBot;
+        this.meetingCacheManager = meetingCacheManager;
+        this.meetingDtoService = meetingDtoService;
     }
 
-    public BotApiMethod<?> sendMessage(long userId, MeetingState state, MeetingDto meetingDto) {
+    public void handleMessage(long userId) {
+        MeetingState state = meetingCacheManager.get(userId);
+        MeetingDto meetingDto = meetingCacheManager.getData(userId);
         switch (state) {
             case GROUP_SELECTION -> {
                 EditMessageText message = processGroupMessage(userId, meetingDto);
@@ -58,7 +65,7 @@ public class PrivateMessageProcessor {
                 processAddressMessage(userId, meetingDto);
             }
         }
-        return null;
+        meetingDtoService.updateDto(userId, meetingDto);
     }
 
 

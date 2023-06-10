@@ -1,6 +1,6 @@
 package com.ufanet.meetingsbot.controller;
 
-import com.ufanet.meetingsbot.botapi.TelegramBot;
+import com.ufanet.meetingsbot.service.TelegramBot;
 import com.ufanet.meetingsbot.botapi.TelegramFacade;
 import com.ufanet.meetingsbot.keyboard.InlineKeyboardMaker;
 import com.ufanet.meetingsbot.utils.MessageUtils;

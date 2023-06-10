@@ -1,4 +1,4 @@
-package com.ufanet.meetingsbot.botapi;
+package com.ufanet.meetingsbot.service;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

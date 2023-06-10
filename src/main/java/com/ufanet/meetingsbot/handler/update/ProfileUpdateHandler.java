@@ -1,14 +1,12 @@
-package com.ufanet.meetingsbot.botapi.handlers.callbackquery;
+package com.ufanet.meetingsbot.handler.update;
 
-import com.ufanet.meetingsbot.botapi.handlers.type.HandlerType;
-import lombok.AllArgsConstructor;
+import com.ufanet.meetingsbot.handler.type.HandlerType;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 @Component
-@AllArgsConstructor
-public class EditUpdateHandler implements UpdateHandler {
+public class ProfileUpdateHandler implements UpdateHandler {
 
     @Override
     public BotApiMethod<?> handleUpdate(Update update) {
@@ -17,6 +15,6 @@ public class EditUpdateHandler implements UpdateHandler {
 
     @Override
     public HandlerType getTypeHandler() {
-        return HandlerType.EDIT;
+        return HandlerType.PROFILE;
     }
 }

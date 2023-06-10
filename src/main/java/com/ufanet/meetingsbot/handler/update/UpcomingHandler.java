@@ -1,6 +1,6 @@
-package com.ufanet.meetingsbot.botapi.handlers.callbackquery;
+package com.ufanet.meetingsbot.handler.update;
 
-import com.ufanet.meetingsbot.botapi.handlers.type.HandlerType;
+import com.ufanet.meetingsbot.handler.type.HandlerType;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.objects.Update;

@@ -1,7 +1,7 @@
-package com.ufanet.meetingsbot.botapi;
+package com.ufanet.meetingsbot.service;
 
-import com.ufanet.meetingsbot.botapi.handlers.message.MessageHandler;
-import com.ufanet.meetingsbot.botapi.handlers.type.ChatType;
+import com.ufanet.meetingsbot.handler.chat.ChatHandler;
+import com.ufanet.meetingsbot.handler.type.ChatType;
 import com.ufanet.meetingsbot.config.BotConfig;
 import com.ufanet.meetingsbot.controller.UpdateProcessor;
 import lombok.Getter;
@@ -24,20 +24,26 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private final BotConfig botConfig;
     private final UpdateProcessor updateProcessor;
-    private final Map<ChatType, MessageHandler> messageHandlers = new HashMap<>();
+    private final Map<ChatType, ChatHandler> messageHandlers = new HashMap<>();
 
     @Autowired
     public TelegramBot(BotConfig botConfig, UpdateProcessor updateProcessor,
-                       List<MessageHandler> messageHandlers) {
+                       List<ChatHandler> chatHandlers) {
         this.botConfig = botConfig;
         this.updateProcessor = updateProcessor;
-        messageHandlers.forEach(handler -> this.messageHandlers.put(handler.getMessageType(), handler));
+        chatHandlers.forEach(handler -> this.messageHandlers.put(handler.getMessageType(), handler));
     }
 
     @Override
     public void onUpdateReceived(Update update) {
         if (update == null) return;
         String type = update.getMessage().getChat().getType();
+        ChatType chat = ChatType.typeOf(type);
+        //TODO maybe replace with iteration on hashmap
+        switch (chat){
+            case PRIVATE -> messageHandlers.get(ChatType.PRIVATE).handleUpdate(update);
+            case GROUP -> messageHandlers.get(ChatType.GROUP).handleUpdate(update);
+        }
     }
 
     @Override

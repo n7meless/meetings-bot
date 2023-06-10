@@ -1,5 +1,6 @@
-package com.ufanet.meetingsbot.cache;
+package com.ufanet.meetingsbot.cache.impl;
 
+import com.ufanet.meetingsbot.cache.Cache;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
