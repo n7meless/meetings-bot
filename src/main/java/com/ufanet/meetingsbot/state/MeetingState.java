@@ -9,5 +9,7 @@ public enum MeetingState {
     TIME_SELECTION,
     TIME_DISCUSSION_SELECTION,
     ADDRESS_SELECTION,
-    CANCEL
+    AWAITING,
+    APPROVED,
+    CANCELED
 }

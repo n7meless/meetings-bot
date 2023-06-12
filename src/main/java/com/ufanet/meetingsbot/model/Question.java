@@ -9,9 +9,9 @@ import java.time.LocalDateTime;
 @Builder
 @Getter
 @Setter
-@Entity(name = "question")
 @AllArgsConstructor
 @NoArgsConstructor
+@Entity(name = "question")
 public class Question {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,5 +20,6 @@ public class Question {
     private LocalDateTime createdDt;
     private String title;
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subject_id", referencedColumnName = "id")
     private Subject subject;
 }

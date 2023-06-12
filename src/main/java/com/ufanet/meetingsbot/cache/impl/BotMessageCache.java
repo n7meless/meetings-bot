@@ -16,7 +16,7 @@ public class BotMessageCache implements Cache<Integer> {
 
     @Override
     public Integer get(Long userId) {
-        return messageCache.get(userId);
+        return messageCache.getOrDefault(userId, 0);
     }
 
     @Override

@@ -1,8 +1,8 @@
 package com.ufanet.meetingsbot.keyboard;
 
-import com.ufanet.meetingsbot.constants.DefaultButtons;
-import com.ufanet.meetingsbot.model.Chat;
-import com.ufanet.meetingsbot.model.User;
+import com.ufanet.meetingsbot.constants.ToggleButton;
+import com.ufanet.meetingsbot.model.Group;
+import com.ufanet.meetingsbot.model.Account;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -14,10 +14,10 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class InlineKeyboardMaker {
+public class MeetingInlineKeyboardMaker {
     private final CalendarKeyboardMaker calendarKeyboardMaker;
-    private final InlineKeyboardButton stepNext = defaultInlineMarkup("NEXT", DefaultButtons.NEXT.name());
-    private final InlineKeyboardButton cancel = defaultInlineMarkup("Отменить", DefaultButtons.CANCEL.name());
+    private final InlineKeyboardButton stepNext = defaultInlineMarkup("Далее", ToggleButton.NEXT.name());
+    private final InlineKeyboardButton cancel = defaultInlineMarkup("Отменить", ToggleButton.CANCEL.name());
 
     public InlineKeyboardMarkup getCalendarInlineMarkup() {
         return calendarKeyboardMaker.getCalendarInlineMarkup();
@@ -49,11 +49,11 @@ public class InlineKeyboardMaker {
         return buttons;
     }
 
-    public InlineKeyboardMarkup getParticipantsInlineMarkup(List<User> participants) {
+    public InlineKeyboardMarkup getParticipantsInlineMarkup(List<Account> participants) {
         return null;
     }
 
-    public InlineKeyboardMarkup getGroupsInlineMarkup(List<Chat> chats) {
+    public InlineKeyboardMarkup getGroupsInlineMarkup(List<Group> groups) {
         return null;
     }
 }

@@ -1,5 +1,6 @@
 package com.ufanet.meetingsbot.model;
 
+import com.ufanet.meetingsbot.state.MeetingState;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -9,19 +10,26 @@ import java.util.List;
 @Builder
 @Setter
 @Getter
-@Entity(name = "meetings")
 @AllArgsConstructor
 @NoArgsConstructor
+@Entity(name = "meetings")
 public class Meeting {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long ownerId;
+    @ManyToOne
+    @JoinColumn(name = "owner_id", referencedColumnName = "id")
+    private Account owner;
     @ManyToMany(mappedBy = "meetings")
-    private List<User> users;
+    private List<Account> accounts;
     private String address;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_id", referencedColumnName = "id")
+    private Group group;
     @CreationTimestamp
     private LocalDateTime createdDt;
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "meeting", cascade = CascadeType.ALL)
     private Subject subject;
+    @Enumerated(EnumType.STRING)
+    private MeetingState state;
 }

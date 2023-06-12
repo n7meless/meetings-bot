@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public enum ChatType{
-    PRIVATE("private"), GROUP("group");
+    PRIVATE("private"), GROUP("group"), SUPERGROUP("supergroup");
     private final String type;
     public static ChatType typeOf(String type){
         for (ChatType value : ChatType.values()) {

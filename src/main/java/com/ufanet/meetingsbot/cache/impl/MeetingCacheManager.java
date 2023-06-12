@@ -50,7 +50,7 @@ public class MeetingCacheManager implements DataCache<MeetingDto, MeetingState> 
     public void evict(Long userId) {
         meetingStateCache.remove(userId);
     }
-
+    //TODO if will be CANCEL state or APPROVED state?
     public void setNextState(Long userId) {
         MeetingState prev = meetingStateCache.get(userId);
         MeetingState[] values = MeetingState.values();

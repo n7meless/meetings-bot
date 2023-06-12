@@ -7,9 +7,9 @@ import java.util.List;
 @Setter
 @Getter
 @Builder
-@Entity(name = "subject")
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity(name = "subject")
 public class Subject {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,7 +19,7 @@ public class Subject {
     @OneToMany(mappedBy = "subject", orphanRemoval = true, cascade = CascadeType.ALL)
     private List<Question> questions;
 
-    @OneToOne(mappedBy = "subject")
+    @OneToOne
     @JoinColumn(name = "meeting_id", referencedColumnName = "id")
     private Meeting meeting;
 }

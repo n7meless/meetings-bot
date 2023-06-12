@@ -12,14 +12,30 @@ CREATE TABLE IF NOT EXISTS users
 );
 
 --changeset aidar:2
+CREATE TABLE IF NOT EXISTS chats
+(
+    id          BIGINT PRIMARY KEY,
+    title       VARCHAR(64),
+    biography   VARCHAR(255),
+    first_name  VARCHAR(100),
+    last_name   VARCHAR(100),
+    description VARCHAR(255),
+    started_dt  DATE
+);
+
+--changeset aidar:3
 CREATE TABLE IF NOT EXISTS meetings
 (
     id         BIGINT PRIMARY KEY,
     owner_id   BIGINT NOT NULL,
-    created_dt DATE
+    address    VARCHAR(255),
+    group_id   BIGINT,
+    created_dt DATE,
+    state      VARCHAR(100),
+    FOREIGN KEY (group_id) REFERENCES chats (id)
 );
 
---changeset aidar:3
+--changeset aidar:4
 CREATE TABLE IF NOT EXISTS user_meetings
 (
     user_id    BIGINT NOT NULL,
@@ -28,32 +44,22 @@ CREATE TABLE IF NOT EXISTS user_meetings
     FOREIGN KEY (meeting_id) REFERENCES meetings (id)
 );
 
---changeset aidar:4
+--changeset aidar:5
 CREATE TABLE IF NOT EXISTS subject
 (
     id         BIGINT PRIMARY KEY,
-    title      VARCHAR(100) NOT NULL,
-    created_dt DATE,
-    meeting_id BIGINT       NOT NULL,
+    title      VARCHAR(100),
+    meeting_id BIGINT NOT NULL,
     FOREIGN KEY (meeting_id) REFERENCES meetings (id) ON DELETE CASCADE
 );
-
---changeset aidar:5
+--changeset aidar:6
 CREATE TABLE IF NOT EXISTS question
 (
     id         BIGINT PRIMARY KEY,
-    title      VARCHAR(150) NOT NULL,
+    title      VARCHAR(150),
     created_dt DATE,
-    subject_id BIGINT       NOT NULL,
+    subject_id BIGINT NOT NULL,
     FOREIGN KEY (subject_id) REFERENCES subject (id) ON DELETE CASCADE
-);
---changeset aidar:6
-CREATE TABLE IF NOT EXISTS chats
-(
-    id          BIGINT PRIMARY KEY,
-    title       VARCHAR(64)  NOT NULL,
-    description VARCHAR(255) NOT NULL,
-    started_dt  DATE
 );
 --changeset aidar:7
 CREATE TABLE IF NOT EXISTS user_chat
@@ -62,4 +68,13 @@ CREATE TABLE IF NOT EXISTS user_chat
     chat_id BIGINT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users (id),
     FOREIGN KEY (chat_id) REFERENCES chats (id)
+);
+--changeset aidar:8
+CREATE TABLE IF NOT EXISTS user_settings
+(
+    id        SERIAL PRIMARY KEY,
+    user_id   BIGINT NOT NULL,
+    time_zone TIMESTAMP,
+    lang      VARCHAR(5),
+    FOREIGN KEY (user_id) REFERENCES users (id)
 );

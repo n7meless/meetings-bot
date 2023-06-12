@@ -1,18 +1,18 @@
-package com.ufanet.meetingsbot.handler.update;
+package com.ufanet.meetingsbot.handler.keyboard;
 
-import com.ufanet.meetingsbot.handler.type.HandlerType;
+import com.ufanet.meetingsbot.state.AccountState;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.objects.Update;
 @Component
-public class UpcomingHandler implements UpdateHandler {
+public class UpcomingKeyboardHandler implements KeyboardHandler {
     @Override
     public BotApiMethod<?> handleUpdate(Update update) {
         return null;
     }
 
     @Override
-    public HandlerType getTypeHandler() {
-        return HandlerType.UPCOMING;
+    public AccountState getUserStateHandler() {
+        return AccountState.UPCOMING;
     }
 }
