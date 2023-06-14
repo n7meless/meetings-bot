@@ -49,17 +49,17 @@ public class RedisConfig {
     public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
         return (builder) -> builder
 //                .initialCacheNames(Set.of("user", "users"))
-                .withCacheConfiguration("user",
+                .withCacheConfiguration("account",
                         RedisCacheConfiguration.defaultCacheConfig()
-                                .disableCachingNullValues()
+//                                .disableCachingNullValues()
                                 .entryTtl(Duration.ofSeconds(userTtl)))
                 .withCacheConfiguration("meeting",
                         RedisCacheConfiguration.defaultCacheConfig()
-                                .disableCachingNullValues()
+//                                .disableCachingNullValues()
                                 .entryTtl(Duration.ofSeconds(meetingTtl)))
                 .withCacheConfiguration("group",
                         RedisCacheConfiguration.defaultCacheConfig()
-                                .disableCachingNullValues()
-                                .entryTtl(Duration.ofSeconds(160)));
+//                                .disableCachingNullValues()
+                                .entryTtl(Duration.ofSeconds(400)));
     }
 }

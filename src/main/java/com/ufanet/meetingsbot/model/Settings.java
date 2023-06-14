@@ -1,11 +1,9 @@
 package com.ufanet.meetingsbot.model;
 
-import com.ufanet.meetingsbot.state.AccountState;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.io.Serializable;
-import java.util.TimeZone;
 @Builder
 @Getter
 @Setter
@@ -19,5 +17,5 @@ public class Settings implements Serializable {
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private Account account;
-    private TimeZone timeZone;
+    private String timeZone;
 }

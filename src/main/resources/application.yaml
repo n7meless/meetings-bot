@@ -23,8 +23,10 @@ spring:
       host: localhost
       port: 6379
 telegram:
-  username: ${TELEGRAM_USERNAME}
-  botToken: ${TELEGRAM_TOKEN}
+  bot:
+    username: ${TELEGRAM_USERNAME}
+    token: ${TELEGRAM_TOKEN}
+    id: 6225072224
 redis:
   ttl:
     user: 60

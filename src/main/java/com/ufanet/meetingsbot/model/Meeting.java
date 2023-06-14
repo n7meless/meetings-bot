@@ -6,7 +6,11 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
 @Builder
 @Setter
 @Getter
@@ -21,7 +25,7 @@ public class Meeting {
     @JoinColumn(name = "owner_id", referencedColumnName = "id")
     private Account owner;
     @ManyToMany(mappedBy = "meetings")
-    private List<Account> accounts;
+    private Set<Account> participants;
     private String address;
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id", referencedColumnName = "id")
@@ -32,4 +36,14 @@ public class Meeting {
     private Subject subject;
     @Enumerated(EnumType.STRING)
     private MeetingState state;
+    @OneToMany(mappedBy = "meeting",orphanRemoval = true)
+    private List<MeetingDate> dates;
+
+    public List<MeetingDate> getDates() {
+        return dates == null ? new ArrayList<>() : dates;
+    }
+
+    public Set<Account> getParticipants() {
+        return participants == null? new HashSet<>() : participants;
+    }
 }

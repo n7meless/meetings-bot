@@ -1,14 +1,15 @@
 package com.ufanet.meetingsbot.model;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToMany;
+import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+
 @Builder
 @Setter
 @Getter
@@ -24,6 +25,14 @@ public class Group implements Serializable {
     private String title;
     private String description;
     private LocalDateTime startedDt;
-    @ManyToMany(mappedBy = "groups", cascade = CascadeType.ALL)
-    private List<Account> members;
+    @ManyToMany
+    @JoinTable(name = "user_chat",
+            joinColumns = @JoinColumn(name = "chat_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"))
+    @Fetch(value = FetchMode.JOIN)
+    private Set<Account> members;
+
+    public Set<Account> getMembers() {
+        return members == null? new HashSet<>() : members;
+    }
 }

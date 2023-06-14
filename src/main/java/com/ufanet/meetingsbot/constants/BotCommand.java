@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum DefaultCommand {
+public enum BotCommand {
 
     START("/start"),
     HELP("/help"),
@@ -14,8 +14,8 @@ public enum DefaultCommand {
     private final String command;
 
     public static boolean isCommand(String command) {
-        DefaultCommand[] values = DefaultCommand.values();
-        for (DefaultCommand value : values) {
+        BotCommand[] values = BotCommand.values();
+        for (BotCommand value : values) {
             if (value.getCommand().equals(command)) {
                 return true;
             }

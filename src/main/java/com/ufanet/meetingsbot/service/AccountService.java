@@ -7,25 +7,28 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.telegram.telegrambots.meta.api.objects.User;
 
 import java.util.Optional;
 
 @Service
-@CacheConfig(cacheNames = "user")
+@CacheConfig(cacheNames = "account")
+@EnableCaching
 @RequiredArgsConstructor
 public class AccountService {
     private final AccountRepository accountRepository;
-
-    @Cacheable(key = "#userId")
-    public Optional<Account> getById(long userId) {
+    @Transactional
+    @Cacheable(key = "#userId", value = "account",unless="#result == null")
+    public Optional<Account> getByUserId(long userId) {
         return accountRepository.findById(userId);
     }
 
-    @CachePut(key = "#userId", value = "user")
+    @CachePut(key = "#userId", value = "account")
     public void update(long userId, Account newAccount) {
-        Account account = getById(userId).orElseThrow();
+        Account account = getByUserId(userId).orElseThrow();
         account.setGroups(newAccount.getGroups());
         account.setFirstname(newAccount.getFirstname());
         account.setLastname(newAccount.getLastname());
@@ -48,5 +51,4 @@ public class AccountService {
         account.setSettings(settings);
         save(account);
     }
-
 }

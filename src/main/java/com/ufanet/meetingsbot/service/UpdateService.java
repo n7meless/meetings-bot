@@ -9,12 +9,15 @@ public class UpdateService {
             Message message = update.getMessage();
             Long chatId = message.getChatId();
             String text = message.getText();
-            return new UpdateDto(chatId, text);
+            String chatType = message.getChat().getType();
+            return new UpdateDto(chatId, text, chatType);
         } else {
             CallbackQuery query = update.getCallbackQuery();
-            Long chatId = query.getMessage().getChatId();
+            Message message = query.getMessage();
+            Long chatId = message.getChatId();
             String data = query.getData();
-            return new UpdateDto(chatId, data);
+            String chatType = message.getChat().getType();
+            return new UpdateDto(chatId, data, chatType);
         }
     }
     public User getLeftChatMembers(Update update){

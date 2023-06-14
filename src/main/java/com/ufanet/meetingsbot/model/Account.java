@@ -2,10 +2,14 @@ package com.ufanet.meetingsbot.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+import org.springframework.data.annotation.CreatedDate;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Getter
 @Setter
@@ -21,6 +25,8 @@ public class Account implements Serializable {
     @Column(name = "last_name")
     private String lastname;
     private String username;
+    @Column(name = "created_dt")
+    @CreatedDate
     private LocalDateTime createdDt;
     @OneToOne(mappedBy = "account", cascade = CascadeType.ALL)
     private Settings settings;
@@ -33,5 +39,19 @@ public class Account implements Serializable {
     @JoinTable(name = "user_chat",
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "chat_id", referencedColumnName = "id"))
+    @Fetch(FetchMode.JOIN)
     private List<Group> groups;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Account account = (Account) o;
+        return Objects.equals(id, account.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }

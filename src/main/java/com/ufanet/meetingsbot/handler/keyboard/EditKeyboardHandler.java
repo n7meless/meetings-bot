@@ -3,7 +3,6 @@ package com.ufanet.meetingsbot.handler.keyboard;
 import com.ufanet.meetingsbot.state.AccountState;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 @Component
@@ -11,8 +10,8 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 public class EditKeyboardHandler implements KeyboardHandler {
 
     @Override
-    public BotApiMethod<?> handleUpdate(Update update) {
-        return null;
+    public void handleUpdate(Update update) {
+
     }
 
     @Override

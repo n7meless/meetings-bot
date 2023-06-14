@@ -2,10 +2,10 @@ package com.ufanet.meetingsbot.handler.chat;
 
 import com.ufanet.meetingsbot.handler.type.ChatType;
 import com.ufanet.meetingsbot.model.Group;
-import com.ufanet.meetingsbot.service.ChatService;
+import com.ufanet.meetingsbot.service.GroupService;
+import com.ufanet.meetingsbot.service.message.GroupReplyMessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -18,32 +18,56 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class GroupChatHandler implements ChatHandler {
 
-    private final ChatService chatService;
+    private final GroupService groupService;
+    private final GroupReplyMessageService groupReplyMessageHandler;
 
     @Override
-    public BotApiMethod<?> handleUpdate(Update update) {
+    public void chatUpdate(Update update) {
         if (update.hasMessage()) {
             Message message = update.getMessage();
             Chat chat = message.getChat();
-            Long chatId = chat.getId();
-            Optional<Group> optionalGroup = chatService.getByChatId(chatId);
-            if (optionalGroup.isEmpty()) {
-                chatService.saveTgChat(chat);
-            } else {
+            long chatId = chat.getId();
+
+            //гарантируем что чат только что создан
+            if (chatCreated(message)) {
+                //TODO если в группе людей больше то отправляем сообщение
+                groupReplyMessageHandler.sendWelcomeChatMessage(chatId);
+                User tgUser = message.getFrom();
+                Group group = groupService.saveTgChat(message.getChat());
+                groupService.saveMembers(group, List.of(tgUser));
+            }
+            if (hasMemberUpdate(message)) {
+                Optional<Group> optionalGroup = groupService.getByChatId(chatId);
+                if (optionalGroup.isEmpty()) {
+                    groupService.saveTgChat(chat);
+                }
                 Group group = optionalGroup.get();
                 handleMembers(group, message);
             }
         }
-        return null;
+    }
+
+    private boolean chatCreated(Message message) {
+        if (message.getGroupchatCreated() != null){
+            return message.getGroupchatCreated();
+        }
+        else if (message.getSuperGroupCreated() !=null){
+            return message.getSuperGroupCreated();
+        }
+        return false;
+    }
+
+    private boolean hasMemberUpdate(Message message) {
+        return message.getLeftChatMember() != null || !message.getNewChatMembers().isEmpty();
     }
 
     private void handleMembers(Group group, Message message) {
         List<User> newMembers = message.getNewChatMembers();
         User leftMember = message.getLeftChatMember();
         if (!newMembers.isEmpty()) {
-            chatService.saveMembers(group, newMembers);
+            groupService.saveMembers(group, newMembers);
         } else if (leftMember != null && !leftMember.getIsBot()) {
-            chatService.removeMember(group, leftMember);
+            groupService.removeMember(group, leftMember);
         }
     }
 

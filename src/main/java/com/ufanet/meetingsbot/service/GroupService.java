@@ -2,7 +2,7 @@ package com.ufanet.meetingsbot.service;
 
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Group;
-import com.ufanet.meetingsbot.repository.ChatRepository;
+import com.ufanet.meetingsbot.repository.GroupRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CachePut;
@@ -11,24 +11,24 @@ import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.User;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @CacheConfig(cacheNames = "group")
 @RequiredArgsConstructor
-public class ChatService {
-    private final ChatRepository chatRepository;
+public class GroupService {
+    private final GroupRepository groupRepository;
     private final AccountService accountService;
 
     @Cacheable(key = "#chatId", value = "group")
     public Optional<Group> getByChatId(long chatId) {
-        return chatRepository.findById(chatId);
+        return groupRepository.findById(chatId);
     }
 
-    @CachePut(key = "#tgChat.id", value = "group")
-    public void saveTgChat(Chat tgChat) {
+    public Group saveTgChat(Chat tgChat) {
         Group group = Group.builder().id(tgChat.getId())
                 .biography(tgChat.getBio())
                 .description(tgChat.getDescription())
@@ -37,37 +37,43 @@ public class ChatService {
                 .lastName(tgChat.getLastName())
                 .build();
 
-        save(group);
+        return save(group);
     }
 
-    public void save(Group group) {
-        chatRepository.save(group);
+    @CachePut(key = "#group.id", value = "group")
+    public Group save(Group group) {
+       return groupRepository.save(group);
     }
-
-    ;
 
 
     public void saveMembers(Group group, List<User> tgUsers) {
-        List<Account> members = new ArrayList<>();
+        Set<Account> newMembers = new HashSet<>();
         for (User tgUser : tgUsers) {
-            Long userId = tgUser.getId();
-            Optional<Account> account = accountService.getById(userId);
-            if (!tgUser.getIsBot() && account.isEmpty()) {
-                Account newAccount = Account.builder()
-                        .id(tgUser.getId())
-                        .lastname(tgUser.getLastName())
-                        .firstname(tgUser.getFirstName())
-                        .username(tgUser.getUserName()).build();
-                accountService.save(newAccount);
-                members.add(newAccount);
+            if (!tgUser.getIsBot()) {
+
+                Long userId = tgUser.getId();
+                Optional<Account> account = accountService.getByUserId(userId);
+
+                if (account.isEmpty()) {
+                    Account newAccount = Account.builder()
+                            .id(tgUser.getId())
+                            .lastname(tgUser.getLastName())
+                            .firstname(tgUser.getFirstName())
+                            .username(tgUser.getUserName()).build();
+                    accountService.save(newAccount);
+                    newMembers.add(newAccount);
+                } else {
+                    newMembers.add(account.get());
+                }
             }
         }
-        group.setMembers(members);
+        Set<Account> currentMembers = group.getMembers();
+        currentMembers.addAll(newMembers);
         save(group);
     }
 
     public void removeMember(Group group, User member) {
-        List<Account> accounts = group.getMembers();
+        Set<Account> accounts = group.getMembers();
         Account leftMember = accounts.stream()
                 .filter((account) -> account.getId() == member.getId())
                 .findFirst().get();

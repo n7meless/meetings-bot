@@ -3,6 +3,7 @@ package com.ufanet.meetingsbot.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 @Setter
 @Getter
@@ -15,11 +16,13 @@ public class Subject {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String title;
-
     @OneToMany(mappedBy = "subject", orphanRemoval = true, cascade = CascadeType.ALL)
     private List<Question> questions;
-
     @OneToOne
     @JoinColumn(name = "meeting_id", referencedColumnName = "id")
     private Meeting meeting;
+    private Integer duration;
+    public List<Question> getQuestions() {
+        return questions == null? new ArrayList<>() : questions;
+    }
 }

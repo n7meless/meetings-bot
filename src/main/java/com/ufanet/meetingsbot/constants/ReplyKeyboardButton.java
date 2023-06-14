@@ -10,6 +10,7 @@ public enum ReplyKeyboardButton {
     UPCOMING_MEETINGS("Предстоящие встречи"),
     EDIT_MEETING("Редактировать встречу"),
     MY_PROFILE("Мой профиль");
+
     private final String buttonName;
     public static ReplyKeyboardButton fromValue(String text) {
         for (ReplyKeyboardButton value : ReplyKeyboardButton.values()) {

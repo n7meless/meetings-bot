@@ -74,7 +74,24 @@ CREATE TABLE IF NOT EXISTS user_settings
 (
     id        SERIAL PRIMARY KEY,
     user_id   BIGINT NOT NULL,
-    time_zone TIMESTAMP,
+    time_zone VARCHAR(10),
     lang      VARCHAR(5),
     FOREIGN KEY (user_id) REFERENCES users (id)
+);
+--changeset aidar:9
+CREATE TABLE IF NOT EXISTS meeting_date
+(
+    id        SERIAL PRIMARY KEY,
+    meeting_id   BIGINT NOT NULL,
+    date DATE,
+    FOREIGN KEY (meeting_id) REFERENCES meetings (id)
+);
+--changeset aidar:10
+CREATE TABLE IF NOT EXISTS meeting_time
+(
+    id        SERIAL PRIMARY KEY,
+    meeting_date   BIGINT NOT NULL,
+    time TIME,
+    state VARCHAR(10),
+    FOREIGN KEY (meeting_date) REFERENCES meeting_date (id)
 );

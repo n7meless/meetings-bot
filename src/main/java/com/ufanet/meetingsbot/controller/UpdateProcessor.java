@@ -1,13 +1,11 @@
 package com.ufanet.meetingsbot.controller;
 
-import com.ufanet.meetingsbot.service.TelegramBot;
 import com.ufanet.meetingsbot.keyboard.MeetingInlineKeyboardMaker;
+import com.ufanet.meetingsbot.service.TelegramBot;
 import com.ufanet.meetingsbot.utils.MessageUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 @Component

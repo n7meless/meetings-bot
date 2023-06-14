@@ -1,29 +1,21 @@
-package com.ufanet.meetingsbot.handler.message;
+package com.ufanet.meetingsbot.service.message;
 
-import com.ufanet.meetingsbot.cache.impl.BotMessageCache;
 import com.ufanet.meetingsbot.keyboard.ReplyKeyboardMaker;
-import com.ufanet.meetingsbot.utils.MessageUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.Message;
 
 @Service
-public class CommandReplyMessageHandler extends ReplyMessageHandler{
+@RequiredArgsConstructor
+public class CommandReplyMessageService extends ReplyMessageService {
     private final ReplyKeyboardMaker replyKeyboardMaker;
 
-    @Autowired
-    public CommandReplyMessageHandler(BotMessageCache messageCache,
-                                      MessageUtils messageUtils, ReplyKeyboardMaker replyKeyboardMaker) {
-        super(messageCache, messageUtils);
-        this.replyKeyboardMaker = replyKeyboardMaker;
-    }
-
-    public void sendAboutMessage(long userId){
+    public void sendAboutMessage(long userId) {
         SendMessage aboutMessage = messageUtils.generateSendMessage(userId,
                 "Здесь написано обо мне");
         telegramBot.safeExecute(aboutMessage);
     }
+
     public void sendStartMessage(long userId) {
         SendMessage startMessage = messageUtils.generateSendMessage(userId,
                 "Выберите опцию с помощью клавиатуры снизу",
@@ -38,9 +30,4 @@ public class CommandReplyMessageHandler extends ReplyMessageHandler{
         telegramBot.safeExecute(helpMessage);
     }
 
-
-    @Override
-    protected void handle(long userId, String message) {
-
-    }
 }
