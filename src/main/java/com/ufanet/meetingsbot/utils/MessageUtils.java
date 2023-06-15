@@ -39,42 +39,84 @@ public class MessageUtils {
                 .replyMarkup(null).build();
     }
 
-    public SendMessage generateMeeting(long chatId, Meeting meeting, InlineKeyboardMarkup markup) {
+    public String generateAwaitingMeeting(Meeting meeting) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Вы собираетесь создать встречу с этими участниками:");
+        sb.append("Вы собираетесь создать встречу с этими участниками:\n");
         Set<Account> participants = meeting.getParticipants();
         for (Account participant : participants) {
-            sb.append("\n" + Emojis.SELECTED.getEmoji() + " " + participant.getFirstname() + " (@" + participant.getUsername() + ")");
+            sb.append(Emojis.SELECTED.getEmoji() + " [" + participant.getFirstname() + "](https://t.me/" + participant.getUsername() + ")");
+            sb.append("\n");
         }
         Subject subject = meeting.getSubject();
         List<Question> questions = subject.getQuestions();
+        sb.append("\nТема для обсуждения:\n");
+        sb.append(Emojis.CLIPBOARD.getEmoji() + " " + subject.getTitle());
         sb.append("\n");
-        sb.append("\nТема для обсуждения:");
-        sb.append("\n " + Emojis.CLIPBOARD.getEmoji() + " " + subject.getTitle());
-        sb.append("\n");
-        sb.append("\nОбсуждаемые вопросы встречи:");
+        sb.append("\nОбсуждаемые вопросы встречи:\n");
         for (Question question : questions) {
-            sb.append("\n" + Emojis.QUESTION.getEmoji() + question.getTitle());
+            sb.append(Emojis.QUESTION.getEmoji() + question.getTitle());
+            sb.append("\n");
         }
+        sb.append("\nОбщее ожидаемое время для запланированной встречи:\n");
+        sb.append(Emojis.CLOCK.getEmoji() + " " + subject.getDuration() + " мин.");
         sb.append("\n");
-        sb.append("\nОбщее ожидаемое время для запланированной встречи:");
-        sb.append("\n" + Emojis.CLOCK.getEmoji() + " " + subject.getDuration() + " мин.");
-        sb.append("\n");
-        sb.append("\nВы выбрали эти возможные интервалы для встречи:");
+        sb.append("\nВы выбрали эти возможные интервалы для встречи:\n");
         List<MeetingDate> dates = meeting.getDates();
         for (MeetingDate date : dates) {
             List<MeetingTime> times = date.getTime();
             for (MeetingTime time : times) {
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
                 LocalDateTime dateTime = LocalDateTime.of(date.getDate(), time.getTime());
                 String formatDateTime = dateTime.format(formatter);
-                sb.append("\n" + Emojis.CALENDAR.getEmoji() + " " + formatDateTime);
+                sb.append(Emojis.CALENDAR.getEmoji() + " " + formatDateTime);
+                sb.append("\n");
             }
         }
+        sb.append("\nВстреча пройдет по этому адресу:\n");
+        sb.append(Emojis.OFFICE.getEmoji() + " " + meeting.getAddress());
+        return sb.toString().replace(".", "\\.");
+    }
+
+    public String generateTextMeeting(Meeting meeting) {
+
+        StringBuilder sb = new StringBuilder();
+        Account owner = meeting.getOwner();
+        sb.append("Ваш коллега [" + owner.getFirstname() + "](https://t.me/" + owner.getUsername() + ") приглашает вас на встречу для обсуждения темы: \n");
+        Subject subject = meeting.getSubject();
+        List<Question> questions = subject.getQuestions();
         sb.append("\n");
-        sb.append("\nВстреча пройдет по этому адресу:");
-        sb.append("\n" + Emojis.OFFICE.getEmoji() + " " + meeting.getAddress());
-        return SendMessage.builder().text(sb.toString()).replyMarkup(markup).chatId(chatId).build();
+        sb.append(Emojis.CLIPBOARD.getEmoji() + " " + subject.getTitle());
+        sb.append("\n");
+        sb.append("\nГде будут обсуждаться такие вопросы как:\n");
+        for (Question question : questions) {
+            sb.append(Emojis.QUESTION.getEmoji() + question.getTitle());
+            sb.append("\n");
+        }
+        sb.append("\nВместе с вашими коллегами:\n");
+        Set<Account> participants = meeting.getParticipants();
+        for (Account participant : participants) {
+            sb.append(Emojis.SELECTED.getEmoji() + " [" + participant.getFirstname() + "](@" + participant.getUsername() + ")");
+            sb.append("\n");
+        }
+        sb.append("\nОбщее ожидаемое время для запланированной встречи:\n");
+        sb.append(Emojis.CLOCK.getEmoji() + " " + subject.getDuration() + " мин");
+        sb.append("\n");
+        sb.append("\nВыбранные интервалы времени, которые вам подходят:\n");
+        List<MeetingDate> dates = meeting.getDates();
+        for (MeetingDate date : dates) {
+            List<MeetingTime> times = date.getTime();
+            for (MeetingTime time : times) {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+
+                LocalDateTime dateTime = LocalDateTime.of(date.getDate(), time.getTime());
+                String formatDateTime = dateTime.format(formatter);
+                sb.append(Emojis.CALENDAR.getEmoji() + " " + formatDateTime);
+                sb.append("\n");
+            }
+        }
+        sb.append("\nВстреча пройдет по этому адресу:\n");
+        sb.append(Emojis.OFFICE.getEmoji() + " " + meeting.getAddress());
+        return sb.toString().replace(".", "\\.");
     }
 }

@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 
 @Service
@@ -20,23 +21,26 @@ public abstract class ReplyMessageService {
     protected void disableInlineLastMessage(long userId) {
         Integer messageId = messageCache.get(userId);
         if (messageId == 0) return;
-        try {
-            EditMessageReplyMarkup disableMarkup = EditMessageReplyMarkup.builder()
-                    .chatId(userId).messageId(messageId)
-                    .replyMarkup(null).build();
-            log.info("disable inline markup with message id {}", messageId );
-            telegramBot.safeExecute(disableMarkup);
-        } catch (Exception e){
-            log.error("error when hide reply");
-        }
+        EditMessageReplyMarkup disableMarkup = EditMessageReplyMarkup.builder()
+                .chatId(userId).messageId(messageId)
+                .replyMarkup(null).build();
+
+        log.info("disable inline markup with message id {}", messageId);
+        telegramBot.safeExecute(disableMarkup);
+    }
+    protected void deleteLastMessage(long userId){
+        Integer messageId = messageCache.get(userId);
+        if (messageId == 0) return;
+        DeleteMessage deleteMessage = DeleteMessage.builder().chatId(userId).messageId(messageId).build();
+        log.info("delete message id {}", messageId);
+        telegramBot.safeExecute(deleteMessage);
     }
 
     @Autowired
-    public void setDefaultDependencies(@Lazy TelegramBot telegramBot, BotMessageCache messageCache,
-                                       MessageUtils messageUtils) {
+    private void setDependencies(@Lazy TelegramBot telegramBot, BotMessageCache messageCache,
+                                MessageUtils messageUtils) {
         this.telegramBot = telegramBot;
         this.messageCache = messageCache;
         this.messageUtils = messageUtils;
     }
-
 }

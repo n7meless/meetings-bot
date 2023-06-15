@@ -1,6 +1,6 @@
 package com.ufanet.meetingsbot.handler.keyboard;
 
-import com.ufanet.meetingsbot.state.AccountState;
+import com.ufanet.meetingsbot.constants.state.AccountState;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 @Component

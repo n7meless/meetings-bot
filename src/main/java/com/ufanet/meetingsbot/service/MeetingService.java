@@ -1,9 +1,9 @@
 package com.ufanet.meetingsbot.service;
 
 import com.ufanet.meetingsbot.cache.impl.MeetingCacheManager;
+import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.model.*;
 import com.ufanet.meetingsbot.repository.MeetingRepository;
-import com.ufanet.meetingsbot.state.MeetingState;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -12,9 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static com.ufanet.meetingsbot.constants.ToggleButton.NEXT;
 import static com.ufanet.meetingsbot.constants.ToggleButton.PREV;
@@ -27,30 +25,49 @@ public class MeetingService {
     private final AccountService accountService;
     private final MeetingCacheManager meetingCacheManager;
 
+    public void update(long userId, Meeting meeting, String callback) {
+        MeetingState state = meeting.getState();
+        if (state != null) {
+            switch (state) {
+                case GROUP_SELECTION -> updateGroup(meeting, Long.valueOf(callback));
+                case PARTICIPANTS_SELECTION -> updateParticipants(meeting, Long.valueOf(callback));
+                case SUBJECT_SELECTION -> updateSubject(meeting, callback);
+                case SUBJECT_DURATION_SELECTION -> updateSubjectDuration(meeting, callback);
+                case QUESTION_SELECTION -> updateQuestion(meeting, callback);
+                case DATE_SELECTION -> updateDate(meeting, callback);
+                case TIME_SELECTION -> updateTime(meeting, callback);
+                case ADDRESS_SELECTION -> {
+                    updateAddress(meeting, callback);
+                }
+                case CANCELED -> removeByOwnerId(userId);
+            }
+        } else meeting.setState(MeetingState.GROUP_SELECTION);
+        meetingCacheManager.saveData(userId, meeting);
+    }
+
 
     public void save(Meeting meeting) {
         log.info("saving meeting by user {}", meeting.getOwner().getId());
         meetingRepository.save(meeting);
     }
 
-
     public Meeting getByOwnerId(long ownerId) {
         Meeting meetingCache = meetingCacheManager.getData(ownerId);
         if (meetingCache == null) {
-            Optional<Meeting> meetingOptional = meetingRepository.findByOwnerId(ownerId);
-            if (meetingOptional.isEmpty()) {
-                Optional<Account> accountOptional = accountService.getByUserId(ownerId);
-                return Meeting.builder()
-                        .owner(accountOptional.get())
-                        .group(new Group())
-                        .subject(new Subject()).build();
-            } else {
-                Meeting meeting = meetingOptional.get();
-                meetingCacheManager.saveData(ownerId, meeting);
-                return meeting;
-            }
+            return meetingRepository.findByOwnerId(ownerId)
+                    .orElseGet(() -> createNewMeeting(ownerId));
         }
         return meetingCache;
+    }
+
+    public Meeting createNewMeeting(long ownerId) {
+        Account account = accountService.getByUserId(ownerId).orElseThrow();
+        Meeting meeting = Meeting.builder().owner(account)
+                .subject(new Subject()).group(new Group())
+                .dates(new ArrayList<>())
+                .participants(new HashSet<>()).build();
+        meetingCacheManager.saveData(ownerId, meeting);
+        return meeting;
     }
 
     public void setNextState(long userId) {
@@ -62,52 +79,16 @@ public class MeetingService {
         meeting.setState(nextState);
     }
 
-    public void update(long userId, String callback) {
-        Meeting meeting = getByOwnerId(userId);
-        MeetingState state = meeting.getState();
-        if (state != null) {
-            switch (state) {
-                case GROUP_SELECTION -> {
-                    updateGroup(meeting, Long.valueOf(callback));
-                    setNextState(userId);
-                }
-                case PARTICIPANTS_SELECTION -> updateParticipants(meeting, Long.valueOf(callback));
-                case SUBJECT_SELECTION -> {
-                    updateSubject(meeting, callback);
-                    setNextState(userId);
-                }
-                case SUBJECT_DURATION_SELECTION -> {
-                    updateTimeDiscussion(meeting, callback);
-                    setNextState(userId);
-                }
-                case QUESTION_SELECTION -> updateQuestion(meeting, callback);
-                case DATE_SELECTION -> updateDate(meeting, callback);
-                case TIME_SELECTION -> updateTime(meeting, callback);
-                case ADDRESS_SELECTION -> {
-                    updateAddress(meeting, callback);
-                    setNextState(userId);
-                }
-            }
-        } else {
-            meeting.setState(MeetingState.GROUP_SELECTION);
-        }
-        meetingCacheManager.saveData(userId, meeting);
-    }
-
-    private void updateTimeDiscussion(Meeting meeting, String callback) {
+    public void updateSubjectDuration(Meeting meeting, String callback) {
         Subject subject = meeting.getSubject();
         subject.setDuration(Integer.parseInt(callback));
-    }
-
-    public void updateState(long userId, MeetingState state) {
-        Meeting meeting = getByOwnerId(userId);
-        meeting.setState(state);
     }
 
     public void updateGroup(Meeting meeting, Long groupId) {
         log.info("updating group {} in meeting", groupId);
         Group group = meeting.getGroup();
         group.setId(groupId);
+        meeting.setState(MeetingState.PARTICIPANTS_SELECTION);
     }
 
     public void updateParticipants(Meeting meeting, Long participantId) {
@@ -125,16 +106,24 @@ public class MeetingService {
         meeting.setParticipants(participants);
     }
 
-    public void updateSubject(Meeting meeting, String subject) {
-        log.info("updating subject '{}' in meeting", subject);
-        Subject oldSubject = meeting.getSubject();
-        oldSubject.setTitle(subject);
+    public void setState(Meeting meeting, MeetingState state) {
+        meeting.setState(state);
+//        meetingCacheManager.saveData();
+    }
+
+    public void updateSubject(Meeting meeting, String callback) {
+        log.info("updating subject '{}' in meeting", callback);
+        Subject subject = meeting.getSubject();
+        subject.setTitle(callback);
     }
 
     public void updateQuestion(Meeting meeting, String question) {
         Subject subject = meeting.getSubject();
         List<Question> questions = subject.getQuestions();
-        questions.add(Question.builder().title(question).build());
+        Optional<Question> optional = questions.stream().filter((q) -> q.getTitle().equals(question)).findFirst();
+        if (optional.isEmpty()) {
+            questions.add(Question.builder().title(question).build());
+        } else questions.remove(optional.get());
         subject.setQuestions(questions);
         meeting.setSubject(subject);
     }
@@ -168,13 +157,13 @@ public class MeetingService {
         Optional<MeetingDate> meetingDate = dates.stream()
                 .filter((date) -> date.getDate().isEqual(localDateTime.toLocalDate())).findFirst();
 
-        if (!meetingDate.isEmpty()){
+        if (!meetingDate.isEmpty()) {
             MeetingDate date = meetingDate.get();
             List<MeetingTime> times = date.getTime();
             Optional<MeetingTime> meetingTime = times.stream().filter((time) -> LocalDateTime.of(date.getDate(), time.getTime()).isEqual(localDateTime)).findFirst();
-            if (!meetingTime.isEmpty()){
+            if (!meetingTime.isEmpty()) {
                 times.remove(meetingTime.get());
-            }else {
+            } else {
                 MeetingTime time = MeetingTime.builder().date(date).time(localDateTime.toLocalTime()).build();
                 times.add(time);
                 date.setTime(times);
@@ -184,6 +173,7 @@ public class MeetingService {
 
     public void updateAddress(Meeting meeting, String address) {
         meeting.setAddress(address);
+        meeting.setState(MeetingState.READY);
     }
 
     public void removeByOwnerId(long ownerId) {

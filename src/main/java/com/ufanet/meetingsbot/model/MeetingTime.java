@@ -1,6 +1,6 @@
 package com.ufanet.meetingsbot.model;
 
-import com.ufanet.meetingsbot.state.TimeState;
+import com.ufanet.meetingsbot.constants.state.TimeState;
 import jakarta.persistence.*;
 import lombok.*;
 

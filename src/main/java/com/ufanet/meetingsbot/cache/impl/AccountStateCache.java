@@ -1,7 +1,7 @@
 package com.ufanet.meetingsbot.cache.impl;
 
 import com.ufanet.meetingsbot.cache.Cache;
-import com.ufanet.meetingsbot.state.AccountState;
+import com.ufanet.meetingsbot.constants.state.AccountState;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;

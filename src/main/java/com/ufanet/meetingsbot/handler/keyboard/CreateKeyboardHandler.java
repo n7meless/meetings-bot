@@ -1,12 +1,12 @@
 package com.ufanet.meetingsbot.handler.keyboard;
 
+import com.ufanet.meetingsbot.constants.state.AccountState;
+import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.dto.UpdateDto;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.service.MeetingService;
 import com.ufanet.meetingsbot.service.UpdateService;
 import com.ufanet.meetingsbot.service.message.MeetingReplyMessageService;
-import com.ufanet.meetingsbot.state.AccountState;
-import com.ufanet.meetingsbot.state.MeetingState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -20,41 +20,26 @@ public class CreateKeyboardHandler implements KeyboardHandler {
     @Override
     public void handleUpdate(Update update) {
         UpdateDto updateDto = UpdateService.parseUpdate(update);
-        long chatId = updateDto.chatId();
-        String content = updateDto.content();
-        if (content.isBlank()) return;
-        handleCallback(chatId, content);
-    }
+        long userId = updateDto.chatId();
+        String callback = updateDto.content();
+        Meeting meeting = meetingService.getByOwnerId(userId);
 
-    void handleCallback(long userId, String callback) {
         switch (callback) {
+            case "SEND" -> {
+                messageHandler.sendMeetingMessage(userId, meeting);
+            }
             case "NEXT" -> {
                 meetingService.setNextState(userId);
-                handle(userId, callback);
+                messageHandler.sendMessage(userId, meeting, callback);
             }
             case "CANCEL" -> {
-                meetingService.removeByOwnerId(userId);
                 messageHandler.sendCanceledMessage(userId);
+                meetingService.removeByOwnerId(userId);
             }
             default -> {
-                meetingService.update(userId, callback);
-                handle(userId, callback);
+                meetingService.update(userId, meeting, callback);
+                messageHandler.sendMessage(userId, meeting, callback);
             }
-        }
-    }
-    public void handle(long userId, String callback) {
-        Meeting meeting = meetingService.getByOwnerId(userId);
-        MeetingState state = meeting.getState();
-        switch (state) {
-            case GROUP_SELECTION -> messageHandler.sendGroupMessage(userId, meeting);
-            case PARTICIPANTS_SELECTION -> messageHandler.sendParticipantsMessage(userId, meeting);
-            case SUBJECT_SELECTION -> messageHandler.sendSubjectMessage(userId);
-            case SUBJECT_DURATION_SELECTION -> messageHandler.sendSubjectDurationMessage(userId);
-            case QUESTION_SELECTION -> messageHandler.sendQuestionMessage(userId, meeting);
-            case DATE_SELECTION -> messageHandler.sendDateMessage(userId, meeting, callback);
-            case TIME_SELECTION -> messageHandler.sendTimeMessage(userId, meeting);
-            case ADDRESS_SELECTION -> messageHandler.sendAddressMessage(userId, meeting);
-            case AWAITING -> messageHandler.sendAwaitingMessage(userId, meeting);
         }
     }
 

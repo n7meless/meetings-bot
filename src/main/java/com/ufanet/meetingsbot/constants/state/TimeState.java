@@ -1,4 +1,4 @@
-package com.ufanet.meetingsbot.state;
+package com.ufanet.meetingsbot.constants.state;
 
 public enum TimeState {
     CREATED, APPROVED, REJECT

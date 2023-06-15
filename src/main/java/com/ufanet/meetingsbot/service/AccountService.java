@@ -1,15 +1,16 @@
 package com.ufanet.meetingsbot.service;
 
+import com.ufanet.meetingsbot.cache.impl.AccountStateCache;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Settings;
 import com.ufanet.meetingsbot.repository.AccountRepository;
+import com.ufanet.meetingsbot.constants.state.AccountState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.telegram.telegrambots.meta.api.objects.User;
 
 import java.util.Optional;
@@ -20,8 +21,9 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AccountService {
     private final AccountRepository accountRepository;
-    @Transactional
-    @Cacheable(key = "#userId", value = "account",unless="#result == null")
+    private final AccountStateCache stateCache;
+
+    @Cacheable(key = "#userId", value = "account", unless = "#result == null")
     public Optional<Account> getByUserId(long userId) {
         return accountRepository.findById(userId);
     }
@@ -36,6 +38,7 @@ public class AccountService {
         account.setMeetings(newAccount.getMeetings());
         account.setSettings(newAccount.getSettings());
     }
+
     @CachePut(key = "#account.id", value = "account")
     public void save(Account account) {
         accountRepository.save(account);
@@ -51,4 +54,13 @@ public class AccountService {
         account.setSettings(settings);
         save(account);
     }
+
+    public void setState(long userId, AccountState state) {
+        stateCache.put(userId, state);
+    }
+
+    public AccountState getState(long userId) {
+        return stateCache.get(userId);
+    }
+
 }

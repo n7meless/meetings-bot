@@ -13,7 +13,7 @@ public enum BotCommand {
 
     private final String command;
 
-    public static boolean isCommand(String command) {
+    public static boolean typeOf(String command) {
         BotCommand[] values = BotCommand.values();
         for (BotCommand value : values) {
             if (value.getCommand().equals(command)) {

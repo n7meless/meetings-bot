@@ -4,10 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Getter
 @Setter
@@ -27,6 +24,6 @@ public class MeetingDate {
     private List<MeetingTime> time;
 
     public List<MeetingTime> getTime() {
-        return time==null? new ArrayList<>() : time;
+        return time == null ? new ArrayList<>() : time;
     }
 }

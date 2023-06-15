@@ -1,13 +1,11 @@
 package com.ufanet.meetingsbot.model;
 
-import com.ufanet.meetingsbot.state.MeetingState;
+import com.ufanet.meetingsbot.constants.state.MeetingState;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -38,12 +36,4 @@ public class Meeting {
     private MeetingState state;
     @OneToMany(mappedBy = "meeting",orphanRemoval = true)
     private List<MeetingDate> dates;
-
-    public List<MeetingDate> getDates() {
-        return dates == null ? new ArrayList<>() : dates;
-    }
-
-    public Set<Account> getParticipants() {
-        return participants == null? new HashSet<>() : participants;
-    }
 }
