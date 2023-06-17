@@ -26,6 +26,8 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private final BotConfig botConfig;
     private final Map<ChatType, ChatHandler> chatHandlers = new HashMap<>();
+    private long x = 0;
+
     @Autowired
     public TelegramBot(BotConfig botConfig, List<ChatHandler> chatHandlers, SetMyCommands setMyCommands) {
         this.botConfig = botConfig;
@@ -38,6 +40,8 @@ public class TelegramBot extends TelegramLongPollingBot {
         if (update == null) return;
         UpdateDto updateDto = UpdateService.parseUpdate(update);
         ChatType chat = ChatType.typeOf(updateDto.chatType());
+        x = System.currentTimeMillis();
+        log.info("received message from {}", updateDto.chatId());
         //TODO maybe replace with iteration on hashmap
         switch (chat) {
             case PRIVATE -> chatHandlers.get(ChatType.PRIVATE).chatUpdate(update);
@@ -47,6 +51,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     public Serializable safeExecute(BotApiMethod<?> message) {
         try {
+            log.info("message process time {}", System.currentTimeMillis() - x);
             return execute(message);
         } catch (TelegramApiException e) {
             e.printStackTrace();

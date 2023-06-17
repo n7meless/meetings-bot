@@ -2,9 +2,11 @@ package com.ufanet.meetingsbot.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -17,6 +19,7 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity(name = "users")
+@EntityListeners({AuditingEntityListener.class})
 public class Account implements Serializable {
     @Id
     private Long id;
@@ -28,12 +31,11 @@ public class Account implements Serializable {
     @Column(name = "created_dt")
     @CreatedDate
     private LocalDateTime createdDt;
-    @OneToOne(mappedBy = "account", cascade = CascadeType.ALL)
+    @Fetch(FetchMode.JOIN)
+    @OneToOne(mappedBy = "account", orphanRemoval = true)
     private Settings settings;
-    @ManyToMany
-    @JoinTable(name = "user_meetings",
-            joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
-            inverseJoinColumns = @JoinColumn(name = "meeting_id", referencedColumnName = "id"))
+    @ManyToMany(mappedBy = "participants")
+    @Fetch(FetchMode.JOIN)
     private List<Meeting> meetings;
     @ManyToMany
     @JoinTable(name = "user_chat",
@@ -41,6 +43,14 @@ public class Account implements Serializable {
             inverseJoinColumns = @JoinColumn(name = "chat_id", referencedColumnName = "id"))
     @Fetch(FetchMode.JOIN)
     private List<Group> groups;
+
+    @OneToMany(mappedBy = "account", orphanRemoval = true)
+    @Fetch(FetchMode.JOIN)
+    private List<AccountTime> meetingTimes;
+
+    public void addMeeting(Meeting meeting){
+        this.meetings.add(meeting);
+    }
 
     @Override
     public boolean equals(Object o) {

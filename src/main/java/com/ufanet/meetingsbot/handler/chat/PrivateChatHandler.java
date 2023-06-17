@@ -8,7 +8,7 @@ import com.ufanet.meetingsbot.handler.type.ChatType;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.UpdateService;
-import com.ufanet.meetingsbot.service.message.CommandReplyMessageService;
+import com.ufanet.meetingsbot.service.message.CommandMessageService;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.utils.MessageUtils;
 import lombok.RequiredArgsConstructor;
@@ -32,8 +32,7 @@ import static com.ufanet.meetingsbot.constants.ReplyKeyboardButton.fromValue;
 public class PrivateChatHandler implements ChatHandler {
     private final Map<AccountState, KeyboardHandler> queryHandlers = new HashMap<>();
     private final AccountService accountService;
-    private final MessageUtils messageUtils;
-    private final CommandReplyMessageService commandHandler;
+    private final CommandMessageService commandHandler;
 
     @Override
     public void chatUpdate(Update update) {

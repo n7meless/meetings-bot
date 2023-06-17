@@ -20,9 +20,8 @@ public class ReplyKeyboardMaker {
         row2.add(new KeyboardButton(MY_PROFILE.getButtonName()));
         return ReplyKeyboardMarkup.builder()
                 .keyboard(List.of(row1, row2))
-                .selective(true)
                 .resizeKeyboard(true)
-                .oneTimeKeyboard(true)
+                .oneTimeKeyboard(false)
                 .build();
     }
 }

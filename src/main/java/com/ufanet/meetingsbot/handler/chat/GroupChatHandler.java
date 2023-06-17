@@ -3,7 +3,7 @@ package com.ufanet.meetingsbot.handler.chat;
 import com.ufanet.meetingsbot.handler.type.ChatType;
 import com.ufanet.meetingsbot.model.Group;
 import com.ufanet.meetingsbot.service.GroupService;
-import com.ufanet.meetingsbot.service.message.GroupReplyMessageService;
+import com.ufanet.meetingsbot.service.message.GroupMessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Chat;
@@ -19,7 +19,7 @@ import java.util.Optional;
 public class GroupChatHandler implements ChatHandler {
 
     private final GroupService groupService;
-    private final GroupReplyMessageService groupReplyMessageHandler;
+    private final GroupMessageService groupReplyMessageHandler;
 
     @Override
     public void chatUpdate(Update update) {
@@ -28,10 +28,10 @@ public class GroupChatHandler implements ChatHandler {
             Chat chat = message.getChat();
             long chatId = chat.getId();
 
-            //гарантируем что чат только что создан
+            //TODO если удаляем то не сохранять
             if (chatCreated(message)) {
                 //TODO если в группе людей больше то отправляем сообщение
-                groupReplyMessageHandler.sendWelcomeChatMessage(chatId);
+//                groupReplyMessageHandler.sendWelcomeChatMessage(chatId);
                 User tgUser = message.getFrom();
                 Group group = groupService.saveTgChat(message.getChat());
                 groupService.saveMembers(group, List.of(tgUser));

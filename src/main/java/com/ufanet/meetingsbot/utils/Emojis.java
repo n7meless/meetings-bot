@@ -4,7 +4,6 @@ import com.vdurmont.emoji.EmojiParser;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-@Getter
 @AllArgsConstructor
 public enum Emojis {
     SELECTED(EmojiParser.parseToUnicode(":white_check_mark:")),
@@ -18,6 +17,14 @@ public enum Emojis {
 
 
     private final String emoji;
+
+    public String getEmoji() {
+        return emoji;
+    }
+    public String getEmojiISpace(){
+        return emoji + " ";
+    }
+
     @Override
     public String toString() {
         return emoji;

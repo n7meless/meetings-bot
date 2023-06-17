@@ -21,16 +21,16 @@ public class MeetingInlineKeyboardMaker {
     private final InlineKeyboardButton stepNext = defaultInlineButton("Далее", ToggleButton.NEXT.name());
     private final InlineKeyboardButton cancel = defaultInlineButton("Отменить", ToggleButton.CANCEL.name());
 
-    public InlineKeyboardMarkup getCalendarInlineMarkup(List<MeetingDate> dates, String callback) {
-        List<List<InlineKeyboardButton>> keyboard = calendarKeyboardMaker.getCalendarInlineMarkup(dates, callback);
-        boolean next = dates.size() > 0;
+    public InlineKeyboardMarkup getCalendarInlineMarkup(Meeting meeting, String callback) {
+        List<List<InlineKeyboardButton>> keyboard = calendarKeyboardMaker.getCalendarInlineMarkup(meeting, callback);
+        boolean next = meeting.getDates().size() > 0;
         List<InlineKeyboardButton> defaultRowHelperInlineMarkup = defaultRowHelperInlineMarkup(next, false);
         keyboard.add(defaultRowHelperInlineMarkup);
         return InlineKeyboardMarkup.builder().keyboard(keyboard).build();
     }
 
-    public InlineKeyboardMarkup getTimeInlineMarkup(List<MeetingDate> dates) {
-        List<List<InlineKeyboardButton>> keyboard = calendarKeyboardMaker.getTimeInlineMarkup(dates);
+    public InlineKeyboardMarkup getTimeInlineMarkup(Meeting meeting) {
+        List<List<InlineKeyboardButton>> keyboard = calendarKeyboardMaker.getTimeInlineMarkup(meeting);
         keyboard.add(defaultRowHelperInlineMarkup(true, false));
         return InlineKeyboardMarkup.builder().keyboard(keyboard).build();
     }
@@ -50,7 +50,7 @@ public class MeetingInlineKeyboardMaker {
             row.add(button);
         }
         keyboard.add(row);
-        keyboard.add(defaultRowHelperInlineMarkup(duration !=null , false));
+        keyboard.add(defaultRowHelperInlineMarkup(duration != null, false));
         return InlineKeyboardMarkup.builder().keyboard(keyboard).build();
     }
 
@@ -76,7 +76,7 @@ public class MeetingInlineKeyboardMaker {
         for (Account participant : participants) {
             List<InlineKeyboardButton> button;
             if (selectedMembers.contains(participant)) {
-                button = List.of(defaultInlineButton("✅ " + participant.getFirstname(), String.valueOf(participant.getId())));
+                button = List.of(defaultInlineButton(Emojis.SELECTED.getEmoji() + " " + participant.getFirstname(), String.valueOf(participant.getId())));
             } else {
                 button = List.of(defaultInlineButton(participant.getFirstname(), String.valueOf(participant.getId())));
             }
@@ -137,4 +137,7 @@ public class MeetingInlineKeyboardMaker {
         keyboard.add(List.of(change));
         return keyboard;
     }
+/*    public List<List<InlineKeyboardButton>> getMeetingConfirmKeyboard(Meeting meeting){
+        meeting.getDates().stream().collect(MeetingDate::getDate);
+    }*/
 }

@@ -16,7 +16,7 @@ public class Subject {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String title;
-    @OneToMany(mappedBy = "subject", orphanRemoval = true, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "subject",cascade = CascadeType.ALL,  orphanRemoval = true)
     private List<Question> questions;
     @OneToOne
     @JoinColumn(name = "meeting_id", referencedColumnName = "id")

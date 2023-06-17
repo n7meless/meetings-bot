@@ -1,6 +1,7 @@
 package com.ufanet.meetingsbot.service.message;
 
 import com.ufanet.meetingsbot.cache.impl.BotMessageCache;
+import com.ufanet.meetingsbot.service.LocaleMessageService;
 import com.ufanet.meetingsbot.service.TelegramBot;
 import com.ufanet.meetingsbot.utils.MessageUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -12,10 +13,11 @@ import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageRe
 
 @Service
 @Slf4j
-public abstract class ReplyMessageService {
+public abstract class MessageService {
     protected TelegramBot telegramBot;
     protected BotMessageCache messageCache;
     protected MessageUtils messageUtils;
+    protected LocaleMessageService localeMessageService;
 
 
     protected void disableInlineLastMessage(long userId) {
@@ -38,9 +40,10 @@ public abstract class ReplyMessageService {
 
     @Autowired
     private void setDependencies(@Lazy TelegramBot telegramBot, BotMessageCache messageCache,
-                                MessageUtils messageUtils) {
+                                MessageUtils messageUtils, LocaleMessageService localeMessageService) {
         this.telegramBot = telegramBot;
         this.messageCache = messageCache;
         this.messageUtils = messageUtils;
+        this.localeMessageService = localeMessageService;
     }
 }

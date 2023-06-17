@@ -17,5 +17,7 @@ public class Settings implements Serializable {
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private Account account;
+    @Column(name = "time_zone")
     private String timeZone;
+    private String language;
 }

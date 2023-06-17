@@ -8,7 +8,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import java.util.List;
 
 @Component
-public class GroupReplyMessageService extends ReplyMessageService {
+public class GroupMessageService extends MessageService {
     public void sendWelcomeChatMessage(long chatId){
         SendMessage sendPoll = new SendMessage();
         sendPoll.setChatId(chatId);

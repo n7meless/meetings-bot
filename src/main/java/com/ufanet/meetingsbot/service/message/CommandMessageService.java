@@ -7,7 +7,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
 @Service
 @RequiredArgsConstructor
-public class CommandReplyMessageService extends ReplyMessageService {
+public class CommandMessageService extends MessageService {
     private final ReplyKeyboardMaker replyKeyboardMaker;
 
     public void sendAboutMessage(long userId) {

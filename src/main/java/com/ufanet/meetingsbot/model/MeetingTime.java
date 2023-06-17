@@ -1,11 +1,14 @@
 package com.ufanet.meetingsbot.model;
 
+import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.state.TimeState;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -17,12 +20,14 @@ public class MeetingTime {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private LocalTime time;
+    private LocalDateTime time;
     @Enumerated(EnumType.STRING)
-    private TimeState state;
+    private Status status;
     @ManyToOne
     @JoinColumn(name = "date_id", referencedColumnName = "id")
-    private MeetingDate date;
+    private MeetingDate meetingDate;
+    @OneToMany(mappedBy = "meetingTime",cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<AccountTime> accounts;
 
     @Override
     public boolean equals(Object o) {

@@ -4,5 +4,6 @@ public enum AccountState {
     CREATE,
     UPCOMING,
     EDIT,
-    PROFILE
+    PROFILE,
+    MEETING_CONFIRM
 }

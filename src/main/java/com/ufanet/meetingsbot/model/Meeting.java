@@ -4,10 +4,13 @@ import com.ufanet.meetingsbot.constants.state.MeetingState;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Builder
 @Setter
@@ -22,18 +25,41 @@ public class Meeting {
     @ManyToOne
     @JoinColumn(name = "owner_id", referencedColumnName = "id")
     private Account owner;
-    @ManyToMany(mappedBy = "meetings")
+    @ManyToMany(cascade = {CascadeType.MERGE})
+    @JoinTable(name = "user_meetings",
+            joinColumns = @JoinColumn(name = "meeting_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"))
     private Set<Account> participants;
     private String address;
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne
     @JoinColumn(name = "group_id", referencedColumnName = "id")
     private Group group;
-    @CreationTimestamp
+    @Column(name = "created_dt")
     private LocalDateTime createdDt;
     @OneToOne(mappedBy = "meeting", cascade = CascadeType.ALL)
     private Subject subject;
     @Enumerated(EnumType.STRING)
     private MeetingState state;
-    @OneToMany(mappedBy = "meeting",orphanRemoval = true)
-    private List<MeetingDate> dates;
+    @OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<MeetingDate> dates;
+
+
+    public List<LocalDateTime> convertMeetingDates(){
+        return this.dates.stream()
+                .map(MeetingDate::getMeetingTimes).flatMap(Collection::stream)
+                .map(MeetingTime::getTime)
+                .sorted(LocalDateTime::compareTo).toList();
+    }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Meeting meeting = (Meeting) o;
+        return Objects.equals(id, meeting.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }

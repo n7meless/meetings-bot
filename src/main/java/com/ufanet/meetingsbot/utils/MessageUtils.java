@@ -1,5 +1,6 @@
 package com.ufanet.meetingsbot.utils;
 
+import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.model.*;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -9,9 +10,12 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+
+import static com.ufanet.meetingsbot.utils.Emojis.*;
+import static java.util.stream.Collectors.joining;
 
 @Component
 public class MessageUtils {
@@ -39,84 +43,35 @@ public class MessageUtils {
                 .replyMarkup(null).build();
     }
 
-    public String generateAwaitingMeeting(Meeting meeting) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Вы собираетесь создать встречу с этими участниками:\n");
-        Set<Account> participants = meeting.getParticipants();
-        for (Account participant : participants) {
-            sb.append(Emojis.SELECTED.getEmoji() + " [" + participant.getFirstname() + "](https://t.me/" + participant.getUsername() + ")");
-            sb.append("\n");
-        }
-        Subject subject = meeting.getSubject();
-        List<Question> questions = subject.getQuestions();
-        sb.append("\nТема для обсуждения:\n");
-        sb.append(Emojis.CLIPBOARD.getEmoji() + " " + subject.getTitle());
-        sb.append("\n");
-        sb.append("\nОбсуждаемые вопросы встречи:\n");
-        for (Question question : questions) {
-            sb.append(Emojis.QUESTION.getEmoji() + question.getTitle());
-            sb.append("\n");
-        }
-        sb.append("\nОбщее ожидаемое время для запланированной встречи:\n");
-        sb.append(Emojis.CLOCK.getEmoji() + " " + subject.getDuration() + " мин.");
-        sb.append("\n");
-        sb.append("\nВы выбрали эти возможные интервалы для встречи:\n");
-        List<MeetingDate> dates = meeting.getDates();
-        for (MeetingDate date : dates) {
-            List<MeetingTime> times = date.getTime();
-            for (MeetingTime time : times) {
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
-                LocalDateTime dateTime = LocalDateTime.of(date.getDate(), time.getTime());
-                String formatDateTime = dateTime.format(formatter);
-                sb.append(Emojis.CALENDAR.getEmoji() + " " + formatDateTime);
-                sb.append("\n");
-            }
-        }
-        sb.append("\nВстреча пройдет по этому адресу:\n");
-        sb.append(Emojis.OFFICE.getEmoji() + " " + meeting.getAddress());
-        return sb.toString().replace(".", "\\.");
-    }
+    public MeetingMessage generateMeetingMessage(Meeting meeting) {
+        List<LocalDateTime> dateTimes = meeting.getDates().stream()
+                .map(MeetingDate::getMeetingTimes).flatMap(Collection::stream)
+                .map(MeetingTime::getTime)
+                .sorted(LocalDateTime::compareTo).toList();
+        Account meetingOwner = meeting.getOwner();
 
-    public String generateTextMeeting(Meeting meeting) {
+        String owner = "<a href='https://t.me/" + meetingOwner.getUsername() + "'>" + meetingOwner.getFirstname() + "</a>";
 
-        StringBuilder sb = new StringBuilder();
-        Account owner = meeting.getOwner();
-        sb.append("Ваш коллега [" + owner.getFirstname() + "](https://t.me/" + owner.getUsername() + ") приглашает вас на встречу для обсуждения темы: \n");
-        Subject subject = meeting.getSubject();
-        List<Question> questions = subject.getQuestions();
-        sb.append("\n");
-        sb.append(Emojis.CLIPBOARD.getEmoji() + " " + subject.getTitle());
-        sb.append("\n");
-        sb.append("\nГде будут обсуждаться такие вопросы как:\n");
-        for (Question question : questions) {
-            sb.append(Emojis.QUESTION.getEmoji() + question.getTitle());
-            sb.append("\n");
-        }
-        sb.append("\nВместе с вашими коллегами:\n");
-        Set<Account> participants = meeting.getParticipants();
-        for (Account participant : participants) {
-            sb.append(Emojis.SELECTED.getEmoji() + " [" + participant.getFirstname() + "](@" + participant.getUsername() + ")");
-            sb.append("\n");
-        }
-        sb.append("\nОбщее ожидаемое время для запланированной встречи:\n");
-        sb.append(Emojis.CLOCK.getEmoji() + " " + subject.getDuration() + " мин");
-        sb.append("\n");
-        sb.append("\nВыбранные интервалы времени, которые вам подходят:\n");
-        List<MeetingDate> dates = meeting.getDates();
-        for (MeetingDate date : dates) {
-            List<MeetingTime> times = date.getTime();
-            for (MeetingTime time : times) {
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+        Set<Account> accounts = meeting.getParticipants();
 
-                LocalDateTime dateTime = LocalDateTime.of(date.getDate(), time.getTime());
-                String formatDateTime = dateTime.format(formatter);
-                sb.append(Emojis.CALENDAR.getEmoji() + " " + formatDateTime);
-                sb.append("\n");
-            }
-        }
-        sb.append("\nВстреча пройдет по этому адресу:\n");
-        sb.append(Emojis.OFFICE.getEmoji() + " " + meeting.getAddress());
-        return sb.toString().replace(".", "\\.");
+        accounts.add(meetingOwner);
+        String participants = accounts.stream()
+                .map(account -> "<a href='https://t.me/" + account.getUsername() + "'>" + account.getFirstname() + "</a>")
+                .collect(joining("\n" + SELECTED.getEmojiISpace(), SELECTED.getEmojiISpace(), "\n"));
+        accounts.remove(meetingOwner);
+
+        String subject = CLIPBOARD.getEmojiISpace() + meeting.getSubject().getTitle();
+        String questions = meeting.getSubject().getQuestions().stream().map(Question::getTitle)
+                .collect(joining("\n" + QUESTION.getEmojiISpace(), QUESTION.getEmojiISpace(), "\n"));
+
+        String duration = CLOCK.getEmojiISpace() + meeting.getSubject().getDuration();
+        String times = dateTimes.stream().map(date -> date.format(CustomFormatter.DATE_TIME_WEEK_FORMATTER))
+                .collect(joining("\n" + CALENDAR.getEmojiISpace(), CALENDAR.getEmojiISpace(), "\n"));
+
+        String address = OFFICE.getEmojiISpace() + meeting.getAddress();
+
+        return new MeetingMessage(owner, participants, subject,
+                questions, duration, times, address);
     }
 }

@@ -1,6 +1,8 @@
 package com.ufanet.meetingsbot.service.message;
 
+import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
+import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.keyboard.MeetingInlineKeyboardMaker;
 import com.ufanet.meetingsbot.model.*;
 import com.ufanet.meetingsbot.repository.AccountRepository;
@@ -12,13 +14,12 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
-public class MeetingReplyMessageService extends ReplyMessageService {
+public class MeetingMessageService extends MessageService {
     private final MeetingInlineKeyboardMaker meetingInlineKeyboardMaker;
     private final AccountRepository accountRepository;
 
@@ -42,7 +43,7 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         Account account = accountRepository.findById(userId).orElseGet(Account::new);
         List<Group> groups = account.getGroups();
 
-        SendMessage message = messageUtils.generateSendMessage(userId, "Выберите группу",
+        SendMessage message = messageUtils.generateSendMessage(userId, localeMessageService.getMessage("reply.meeting.group"),
                 meetingInlineKeyboardMaker.getGroupsInlineMarkup(meeting, groups));
         disableInlineLastMessage(userId);
         Message response = (Message) telegramBot.safeExecute(message);
@@ -53,7 +54,7 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         Integer messageId = messageCache.get(userId);
         Set<Account> members = accountRepository.findAccountByGroupsIdAndIdNot(meeting.getGroup().getId(), userId);
         Set<Account> participants = meeting.getParticipants();
-        EditMessageText message = messageUtils.generateEditMessage(userId, "Выберите участников",
+        EditMessageText message = messageUtils.generateEditMessage(userId, localeMessageService.getMessage("reply.meeting.participants"),
                 messageId, meetingInlineKeyboardMaker.getParticipantsInlineMarkup(members, participants));
         telegramBot.safeExecute(message);
     }
@@ -75,9 +76,9 @@ public class MeetingReplyMessageService extends ReplyMessageService {
             deleteLastMessage(userId);
             Message message = (Message) telegramBot.safeExecute(sendMessage);
             messageCache.put(userId, message.getMessageId());
-        }else {
+        } else {
             text = text + "\nНапишите тему встречи";
-            EditMessageText sendMessage = messageUtils.generateEditMessage(userId, text,
+            EditMessageText sendMessage = messageUtils.generateEditMessage(userId, localeMessageService.getMessage("reply.meeting.subject"),
                     messageId, keyboardMarkup);
             telegramBot.safeExecute(sendMessage);
         }
@@ -101,17 +102,15 @@ public class MeetingReplyMessageService extends ReplyMessageService {
     public void sendDateMessage(long userId, Meeting meeting, String callback) {
         Integer messageId = messageCache.get(userId);
 
-        List<MeetingDate> dates = meeting.getDates();
-        EditMessageText message = messageUtils.generateEditMessage(userId, "Выберите дату",
-                messageId, meetingInlineKeyboardMaker.getCalendarInlineMarkup(dates, callback));
+        EditMessageText message = messageUtils.generateEditMessage(userId, localeMessageService.getMessage("reply.meeting.date"),
+                messageId, meetingInlineKeyboardMaker.getCalendarInlineMarkup(meeting, callback));
         telegramBot.safeExecute(message);
     }
 
     public void sendTimeMessage(long userId, Meeting meeting) {
         Integer messageId = messageCache.get(userId);
-
-        EditMessageText message = messageUtils.generateEditMessage(userId, "Выберите время",
-                messageId, meetingInlineKeyboardMaker.getTimeInlineMarkup(new ArrayList<>(meeting.getDates())));
+        EditMessageText message = messageUtils.generateEditMessage(userId, localeMessageService.getMessage("reply.meeting.time"),
+                messageId, meetingInlineKeyboardMaker.getTimeInlineMarkup(meeting));
         telegramBot.safeExecute(message);
     }
 
@@ -119,25 +118,9 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         Integer messageId = messageCache.get(userId);
 
         List<InlineKeyboardButton> buttons = meetingInlineKeyboardMaker.defaultRowHelperInlineMarkup(true, true);
-        EditMessageText message = messageUtils.generateEditMessage(userId, "Напишите адрес где будет проводиться встреча",
+        EditMessageText message = messageUtils.generateEditMessage(userId, localeMessageService.getMessage("reply.meeting.address"),
                 messageId, InlineKeyboardMarkup.builder().keyboardRow(buttons).build());
         telegramBot.safeExecute(message);
-    }
-
-    public void sendAwaitingMessage(long userId, Meeting meeting) {
-        InlineKeyboardButton sendButton = InlineKeyboardButton.builder().callbackData("SEND")
-                .text("Отправить запрос участникам").build();
-
-        List<List<InlineKeyboardButton>> keyboard = meetingInlineKeyboardMaker.getEditingInlineButtons();
-        keyboard.add(0, List.of(sendButton));
-
-        InlineKeyboardMarkup keyboardMarkup = InlineKeyboardMarkup.builder()
-                .keyboard(keyboard).build();
-        String text = messageUtils.generateAwaitingMeeting(meeting);
-        SendMessage sendMessage = SendMessage.builder().chatId(userId).parseMode("MarkdownV2").replyMarkup(keyboardMarkup).disableWebPagePreview(true).text(text).build();
-        deleteLastMessage(userId);
-        Message message = (Message) telegramBot.safeExecute(sendMessage);
-        messageCache.put(userId, message.getMessageId());
     }
 
     public void sendSubjectDurationMessage(long userId, Meeting meeting) {
@@ -145,9 +128,9 @@ public class MeetingReplyMessageService extends ReplyMessageService {
 
         String message = "Выбрите предполагаемую продолжительность темы в минутах";
 
-            EditMessageText sendMessage = messageUtils.generateEditMessage(userId,
-                    message, messageId, meetingInlineKeyboardMaker.getSubjectDurationInlineMarkup(meeting));
-            telegramBot.safeExecute(sendMessage);
+        EditMessageText sendMessage = messageUtils.generateEditMessage(userId,
+                message, messageId, meetingInlineKeyboardMaker.getSubjectDurationInlineMarkup(meeting));
+        telegramBot.safeExecute(sendMessage);
     }
 
     public void sendCanceledMessage(long userId) {
@@ -163,11 +146,52 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         telegramBot.safeExecute(message);
     }
 
-    public void sendMeetingMessage(long userId, Meeting meeting) {
+    public void sendSuccessMessageParticipants(long userId) {
+        SendMessage sendMessage = messageUtils.generateSendMessage(userId,
+                localeMessageService.getMessage("reply.meeting.sent.participants"));
+        disableInlineLastMessage(userId);
+        Message message = (Message) telegramBot.safeExecute(sendMessage);
+        messageCache.put(userId, message.getMessageId());
+    }
+
+    public void sendAwaitingMessage(long userId, Meeting meeting) {
+        InlineKeyboardButton sendButton = InlineKeyboardButton.builder().callbackData(ToggleButton.SEND.name())
+                .text("Отправить запрос участникам").build();
+
+        List<List<InlineKeyboardButton>> keyboard = meetingInlineKeyboardMaker.getEditingInlineButtons();
+        keyboard.add(0, List.of(sendButton));
+
+        InlineKeyboardMarkup keyboardMarkup = InlineKeyboardMarkup.builder()
+                .keyboard(keyboard).build();
+
+        MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meeting);
+
+        String textMeeting =
+                localeMessageService.getMessage("reply.meeting.awaiting",
+                        meetingMessage.participants(), meetingMessage.subject(), meetingMessage.questions(),
+                        meetingMessage.duration(), meetingMessage.times(), meetingMessage.address());
+
+        SendMessage sendMessage = SendMessage.builder().chatId(userId).parseMode("HTML")
+                .replyMarkup(keyboardMarkup).disableWebPagePreview(true)
+                .text(textMeeting).build();
+
+        deleteLastMessage(userId);
+
+        Message response = (Message) telegramBot.safeExecute(sendMessage);
+        messageCache.put(userId, response.getMessageId());
+    }
+
+    public void sendMeetingToParticipants(Meeting meeting) {
         Set<Account> participants = meeting.getParticipants();
-        String textMeeting = messageUtils.generateTextMeeting(meeting);
+        MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meeting);
+        String textMeeting = localeMessageService.getMessage("reply.meeting.awaiting.participants",
+                meetingMessage.owner(), meetingMessage.subject(), meetingMessage.questions(),
+                meetingMessage.participants(), meetingMessage.duration(), meetingMessage.times(),
+                meetingMessage.address());
+
         for (Account participant : participants) {
-            SendMessage sendMessage = SendMessage.builder().text(textMeeting).parseMode("MarkdownV2").disableWebPagePreview(true).chatId(participant.getId()).build();
+            SendMessage sendMessage = SendMessage.builder().text(textMeeting).parseMode("HTML")
+                    .disableWebPagePreview(true).protectContent(true).chatId(participant.getId()).build();
             telegramBot.safeExecute(sendMessage);
         }
     }

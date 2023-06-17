@@ -10,9 +10,8 @@ public enum MeetingState {
     TIME_SELECTION,
     ADDRESS_SELECTION,
     READY,
-    SENT,
     AWAITING,
-    APPROVED,
+    CONFIRMED,
     CANCELED;
 
     public static MeetingState typeOf(String state){

@@ -1,13 +1,16 @@
 package com.ufanet.meetingsbot.service;
 
 import com.ufanet.meetingsbot.cache.impl.MeetingCacheManager;
+import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.model.*;
 import com.ufanet.meetingsbot.repository.MeetingRepository;
+import com.ufanet.meetingsbot.utils.CustomFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,42 +39,67 @@ public class MeetingService {
                 case QUESTION_SELECTION -> updateQuestion(meeting, callback);
                 case DATE_SELECTION -> updateDate(meeting, callback);
                 case TIME_SELECTION -> updateTime(meeting, callback);
-                case ADDRESS_SELECTION -> {
-                    updateAddress(meeting, callback);
-                }
+                case ADDRESS_SELECTION -> updateAddress(meeting, callback);
+                //TODO удалить все про встречу
                 case CANCELED -> removeByOwnerId(userId);
             }
         } else meeting.setState(MeetingState.GROUP_SELECTION);
         meetingCacheManager.saveData(userId, meeting);
     }
 
-
+    @Transactional
     public void save(Meeting meeting) {
         log.info("saving meeting by user {}", meeting.getOwner().getId());
+        Set<Account> participants = meeting.getParticipants();
+        Set<MeetingDate> dates = meeting.getDates();
+
+        for (MeetingDate date : dates) {
+            Set<MeetingTime> times = date.getMeetingTimes();
+            for (MeetingTime time : times) {
+                Set<AccountTime> accountTimes = new HashSet<>();
+                for (Account account : participants) {
+                    AccountTime accountTime = AccountTime.builder().account(account)
+                            .meetingTime(time).meetingStatus(Status.AWAITING).build();
+                    accountTimes.add(accountTime);
+                    account.addMeeting(meeting);
+                }
+                time.setAccounts(accountTimes);
+                time.setStatus(Status.AWAITING);
+            }
+        }
+        meeting.setParticipants(participants);
         meetingRepository.save(meeting);
     }
-
+    public Meeting getByOwnerIdAndStateNotContaining(long ownerId, List<MeetingState> states) {
+        Meeting meetingCache = meetingCacheManager.getData(ownerId);
+        if (meetingCache == null) {
+            return meetingRepository.findByOwnerIdAndStateNotIn(ownerId, states)
+                    .orElseGet(() -> createMeeting(ownerId));
+        }
+        return meetingCache;
+    }
     public Meeting getByOwnerId(long ownerId) {
         Meeting meetingCache = meetingCacheManager.getData(ownerId);
         if (meetingCache == null) {
             return meetingRepository.findByOwnerId(ownerId)
-                    .orElseGet(() -> createNewMeeting(ownerId));
+                    .orElseGet(() -> createMeeting(ownerId));
         }
         return meetingCache;
     }
 
-    public Meeting createNewMeeting(long ownerId) {
+    public Meeting createMeeting(long ownerId) {
         Account account = accountService.getByUserId(ownerId).orElseThrow();
         Meeting meeting = Meeting.builder().owner(account)
-                .subject(new Subject()).group(new Group())
-                .dates(new ArrayList<>())
+                .createdDt(LocalDateTime.now())
+                .subject(new Subject())
+                .group(new Group())
+                .dates(new TreeSet<>(Comparator.comparing(MeetingDate::getDate)))
                 .participants(new HashSet<>()).build();
         meetingCacheManager.saveData(ownerId, meeting);
         return meeting;
     }
 
-    public void setNextState(long userId) {
-        Meeting meeting = getByOwnerId(userId);
+    public void setNextState(Meeting meeting) {
         MeetingState currState = meeting.getState();
         MeetingState[] values = MeetingState.values();
         int current = currState.ordinal();
@@ -115,14 +143,18 @@ public class MeetingService {
         log.info("updating subject '{}' in meeting", callback);
         Subject subject = meeting.getSubject();
         subject.setTitle(callback);
+        subject.setMeeting(meeting);
     }
 
-    public void updateQuestion(Meeting meeting, String question) {
+    public void updateQuestion(Meeting meeting, String questionCallback) {
         Subject subject = meeting.getSubject();
         List<Question> questions = subject.getQuestions();
-        Optional<Question> optional = questions.stream().filter((q) -> q.getTitle().equals(question)).findFirst();
+        Optional<Question> optional = questions.stream()
+                .filter((q) -> q.getTitle().equals(questionCallback)).findFirst();
+
         if (optional.isEmpty()) {
-            questions.add(Question.builder().title(question).build());
+            Question question = Question.builder().title(questionCallback).subject(subject).build();
+            questions.add(question);
         } else questions.remove(optional.get());
         subject.setQuestions(questions);
         meeting.setSubject(subject);
@@ -130,44 +162,40 @@ public class MeetingService {
 
     @SneakyThrows
     public void updateDate(Meeting meeting, String callback) {
-        DateTimeFormatter ofPattern = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        List<MeetingDate> dates = meeting.getDates();
+        Set<MeetingDate> meetingDates = meeting.getDates();
 
         if (!callback.startsWith(NEXT.name()) && !callback.startsWith(PREV.name())) {
-            LocalDate date = LocalDate.parse(callback, ofPattern);
 
-            Optional<MeetingDate> dateOptional = dates.stream()
-                    .filter((meetingDate) -> meetingDate.getDate().equals(date)).findFirst();
+            LocalDate localDate = LocalDate.parse(callback, CustomFormatter.DATE_FORMATTER);
+
+            Optional<MeetingDate> dateOptional = meetingDates.stream()
+                    .filter(t -> t.getDate().isEqual(localDate)).findFirst();
 
             if (dateOptional.isEmpty()) {
-                dates.add(MeetingDate.builder().date(date).build());
+                MeetingDate meetingDate = MeetingDate.builder().meeting(meeting).date(localDate).build();
+                meetingDates.add(meetingDate);
             } else {
-                dates.remove(dateOptional.get());
+                meetingDates.remove(dateOptional.get());
             }
-            meeting.setDates(dates);
+            meeting.setDates(meetingDates);
         }
     }
 
     public void updateTime(Meeting meeting, String callback) {
+        Set<MeetingDate> meetingDates = meeting.getDates();
 
-        DateTimeFormatter ofPattern = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
-        List<MeetingDate> dates = meeting.getDates();
+        LocalDateTime localDateTime = LocalDateTime.parse(callback, CustomFormatter.DATE_TIME_FORMATTER);
 
-        LocalDateTime localDateTime = LocalDateTime.parse(callback, ofPattern);
-        Optional<MeetingDate> meetingDate = dates.stream()
-                .filter((date) -> date.getDate().isEqual(localDateTime.toLocalDate())).findFirst();
-
-        if (!meetingDate.isEmpty()) {
-            MeetingDate date = meetingDate.get();
-            List<MeetingTime> times = date.getTime();
-            Optional<MeetingTime> meetingTime = times.stream().filter((time) -> LocalDateTime.of(date.getDate(), time.getTime()).isEqual(localDateTime)).findFirst();
-            if (!meetingTime.isEmpty()) {
-                times.remove(meetingTime.get());
-            } else {
-                MeetingTime time = MeetingTime.builder().date(date).time(localDateTime.toLocalTime()).build();
-                times.add(time);
-                date.setTime(times);
-            }
+        LocalDate localDate = localDateTime.toLocalDate();
+        MeetingDate date = meetingDates.stream().filter(meetingDate -> meetingDate.getDate().isEqual(localDate)).findFirst().orElseThrow();
+        Set<MeetingTime> times = date.getMeetingTimes();
+        Optional<MeetingTime> meetingTime = times.stream().filter(t -> t.getTime().isEqual(localDateTime)).findFirst();
+        if (meetingTime.isEmpty()) {
+            MeetingTime time = MeetingTime.builder().meetingDate(date).time(localDateTime).build();
+            times.add(time);
+            date.setMeetingTimes(times);
+        } else {
+            times.remove(meetingTime.get());
         }
     }
 
