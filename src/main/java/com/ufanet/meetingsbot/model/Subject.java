@@ -2,6 +2,8 @@ package com.ufanet.meetingsbot.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +18,7 @@ public class Subject {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String title;
+    @Fetch(FetchMode.JOIN)
     @OneToMany(mappedBy = "subject",cascade = CascadeType.ALL,  orphanRemoval = true)
     private List<Question> questions;
     @OneToOne

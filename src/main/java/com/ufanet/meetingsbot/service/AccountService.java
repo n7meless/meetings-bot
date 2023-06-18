@@ -1,11 +1,12 @@
 package com.ufanet.meetingsbot.service;
 
 import com.ufanet.meetingsbot.cache.impl.AccountStateCache;
+import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.model.Account;
+import com.ufanet.meetingsbot.model.BotState;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.model.Settings;
 import com.ufanet.meetingsbot.repository.AccountRepository;
-import com.ufanet.meetingsbot.constants.state.AccountState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CachePut;
@@ -26,12 +27,13 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final AccountStateCache stateCache;
 
-//    @Cacheable(key = "#userId", value = "account", unless = "#result == null")
+    @Cacheable(key = "#userId", value = "account", unless = "#result == null")
     public Optional<Account> getByUserId(long userId) {
         return accountRepository.findById(userId);
     }
+
     @Transactional
-    public List<Meeting> getMeetingsByUserId(long userId){
+    public List<Meeting> getMeetingsByUserId(long userId) {
         Account account = getByUserId(userId).orElseThrow();
         return account.getMeetings();
     }
@@ -60,11 +62,27 @@ public class AccountService {
                 .build();
         Settings settings = Settings.builder().account(account)
                 .language(user.getLanguageCode()).build();
+        BotState botState = BotState.builder()
+                .account(account)
+                .build();
 
+        account.setBotState(botState);
         account.setSettings(settings);
         save(account);
         return account;
     }
+
+    @CachePut(key = "#account.id", value = "account")
+    public void updateTgUser(Account account, User user) {
+        account.setLastname(user.getLastName());
+        account.setFirstname(user.getFirstName());
+        account.setUsername(user.getUserName());
+        Settings settings = account.getSettings();
+        settings.setLanguage(user.getLanguageCode());
+        account.setSettings(settings);
+        save(account);
+    }
+
     public void setState(long userId, AccountState state) {
         stateCache.put(userId, state);
     }

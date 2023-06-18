@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
@@ -27,11 +28,13 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final BotConfig botConfig;
     private final Map<ChatType, ChatHandler> chatHandlers = new HashMap<>();
     private long x = 0;
+    private final AccountService accountService;
 
     @Autowired
-    public TelegramBot(BotConfig botConfig, List<ChatHandler> chatHandlers, SetMyCommands setMyCommands) {
+    public TelegramBot(BotConfig botConfig, List<ChatHandler> chatHandlers, SetMyCommands setMyCommands, AccountService accountService) {
         this.botConfig = botConfig;
-        safeExecute(setMyCommands);
+        this.accountService = accountService;
+        System.out.println(safeExecute(setMyCommands));
         chatHandlers.forEach(handler -> this.chatHandlers.put(handler.getMessageType(), handler));
     }
 
@@ -57,6 +60,14 @@ public class TelegramBot extends TelegramLongPollingBot {
             e.printStackTrace();
             log.error("При отправке на сервер телеграмма произошла ошибка!");
             return null;
+        }
+    }
+    public void safeExecuteSendMessage(SendMessage message){
+        try {
+            log.info("");
+            execute(message);
+        }catch (TelegramApiException e){
+
         }
     }
 

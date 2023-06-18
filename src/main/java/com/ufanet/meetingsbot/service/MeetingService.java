@@ -4,6 +4,7 @@ import com.ufanet.meetingsbot.cache.impl.MeetingCacheManager;
 import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.model.*;
+import com.ufanet.meetingsbot.repository.AccountTimeRepository;
 import com.ufanet.meetingsbot.repository.MeetingRepository;
 import com.ufanet.meetingsbot.utils.CustomFormatter;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static com.ufanet.meetingsbot.constants.ToggleButton.NEXT;
@@ -27,6 +27,7 @@ public class MeetingService {
     private final MeetingRepository meetingRepository;
     private final AccountService accountService;
     private final MeetingCacheManager meetingCacheManager;
+    private final AccountTimeRepository accountTimeRepository;
 
     public void update(long userId, Meeting meeting, String callback) {
         MeetingState state = meeting.getState();
@@ -47,12 +48,16 @@ public class MeetingService {
         meetingCacheManager.saveData(userId, meeting);
     }
 
+    public void anotherSave(Meeting meeting) {
+        meetingRepository.save(meeting);
+    }
+
     @Transactional
     public void save(Meeting meeting) {
         log.info("saving meeting by user {}", meeting.getOwner().getId());
         Set<Account> participants = meeting.getParticipants();
         Set<MeetingDate> dates = meeting.getDates();
-
+        meeting.setState(MeetingState.AWAITING);
         for (MeetingDate date : dates) {
             Set<MeetingTime> times = date.getMeetingTimes();
             for (MeetingTime time : times) {
@@ -61,23 +66,24 @@ public class MeetingService {
                     AccountTime accountTime = AccountTime.builder().account(account)
                             .meetingTime(time).meetingStatus(Status.AWAITING).build();
                     accountTimes.add(accountTime);
-                    account.addMeeting(meeting);
                 }
-                time.setAccounts(accountTimes);
+                time.setAccountTimes(accountTimes);
                 time.setStatus(Status.AWAITING);
             }
         }
         meeting.setParticipants(participants);
         meetingRepository.save(meeting);
     }
-    public Meeting getByOwnerIdAndStateNotContaining(long ownerId, List<MeetingState> states) {
+
+    public Meeting getByOwnerIdAndStateNotReady(long ownerId) {
         Meeting meetingCache = meetingCacheManager.getData(ownerId);
         if (meetingCache == null) {
-            return meetingRepository.findByOwnerIdAndStateNotIn(ownerId, states)
+            return meetingRepository.findByOwnerIdAndStateNotReady(ownerId)
                     .orElseGet(() -> createMeeting(ownerId));
         }
         return meetingCache;
     }
+
     public Meeting getByOwnerId(long ownerId) {
         Meeting meetingCache = meetingCacheManager.getData(ownerId);
         if (meetingCache == null) {
@@ -134,9 +140,26 @@ public class MeetingService {
         meeting.setParticipants(participants);
     }
 
-    public void setState(Meeting meeting, MeetingState state) {
-        meeting.setState(state);
-//        meetingCacheManager.saveData();
+    @Transactional
+    public void updateMeetingAccountTime(long userId, Meeting meeting) {
+
+//        AccountTime time = meetingTime.getAccountTimes()
+//                .stream().filter(accountTime -> accountTime.getAccount().getId() == userId)
+//                .findFirst().orElseThrow();
+//
+//        MeetingDate meetingDate = meetingTime.getMeetingDate();
+//
+//        Status status = time.getMeetingStatus();
+//
+//        switch (status) {
+//            case CONFIRMED, AWAITING -> time.setMeetingStatus(Status.CANCELED);
+//            case CANCELED -> time.setMeetingStatus(Status.CONFIRMED);
+//        }
+//
+//        meetingTime.addAccountTime(time);
+//        meetingDate.addMeetingTime(meetingTime);
+//        meeting.addMeetingDate(meetingDate);
+//        anotherSave(meeting);
     }
 
     public void updateSubject(Meeting meeting, String callback) {
@@ -207,5 +230,9 @@ public class MeetingService {
     public void removeByOwnerId(long ownerId) {
         //TODO возможность удаления из базы
         meetingCacheManager.clearData(ownerId);
+    }
+
+    public Optional<Meeting> getByMeetingId(long meetingId) {
+        return meetingRepository.findById(meetingId);
     }
 }

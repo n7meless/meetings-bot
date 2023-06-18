@@ -2,6 +2,8 @@ package com.ufanet.meetingsbot.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -22,11 +24,15 @@ public class MeetingDate {
     @ManyToOne
     @JoinColumn(name = "meeting_id", referencedColumnName = "id")
     private Meeting meeting;
+    @Fetch(FetchMode.JOIN)
     @OneToMany(mappedBy = "meetingDate", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<MeetingTime> meetingTimes;
 
     public Set<MeetingTime> getMeetingTimes() {
         return meetingTimes == null ? new HashSet<>() : meetingTimes;
+    }
+    public void addMeetingTime(MeetingTime meetingTime){
+        this.meetingTimes.add(meetingTime);
     }
 
     @Override

@@ -12,7 +12,8 @@ public enum MeetingState {
     READY,
     AWAITING,
     CONFIRMED,
-    CANCELED;
+    CANCELED,
+    EDIT;
 
     public static MeetingState typeOf(String state){
         for (MeetingState meetingState : MeetingState.values()) {

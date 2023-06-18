@@ -4,6 +4,8 @@ import com.ufanet.meetingsbot.constants.state.MeetingState;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -22,10 +24,11 @@ public class Meeting {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", referencedColumnName = "id")
     private Account owner;
-    @ManyToMany(cascade = {CascadeType.MERGE})
+    @ManyToMany
+    @Fetch(FetchMode.JOIN)
     @JoinTable(name = "user_meetings",
             joinColumns = @JoinColumn(name = "meeting_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"))
@@ -41,7 +44,12 @@ public class Meeting {
     @Enumerated(EnumType.STRING)
     private MeetingState state;
     @OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Fetch(FetchMode.JOIN)
     private Set<MeetingDate> dates;
+
+    public void addMeetingDate(MeetingDate meetingDate){
+        this.dates.add(meetingDate);
+    }
 
 
     public List<LocalDateTime> convertMeetingDates(){

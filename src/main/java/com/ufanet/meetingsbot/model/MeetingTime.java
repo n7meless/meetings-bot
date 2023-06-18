@@ -1,12 +1,12 @@
 package com.ufanet.meetingsbot.model;
 
 import com.ufanet.meetingsbot.constants.Status;
-import com.ufanet.meetingsbot.constants.state.TimeState;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -26,8 +26,13 @@ public class MeetingTime {
     @ManyToOne
     @JoinColumn(name = "date_id", referencedColumnName = "id")
     private MeetingDate meetingDate;
-    @OneToMany(mappedBy = "meetingTime",cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<AccountTime> accounts;
+    @OneToMany(mappedBy = "meetingTime",cascade = CascadeType.ALL)
+    @Fetch(FetchMode.JOIN)
+    private Set<AccountTime> accountTimes;
+
+    public void addAccountTime(AccountTime accountTime){
+        this.accountTimes.add(accountTime);
+    }
 
     @Override
     public boolean equals(Object o) {

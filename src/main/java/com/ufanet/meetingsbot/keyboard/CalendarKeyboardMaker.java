@@ -76,6 +76,7 @@ public class CalendarKeyboardMaker {
 
                 startWorkDay++;
             }
+            //TODO check on date
             if (startWorkDay == endWorkDay) continue;
 
             rowsInLine.add(List.of(dateHeader));

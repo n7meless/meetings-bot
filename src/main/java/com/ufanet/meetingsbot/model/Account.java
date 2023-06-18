@@ -32,20 +32,20 @@ public class Account implements Serializable {
     @CreatedDate
     private LocalDateTime createdDt;
     @Fetch(FetchMode.JOIN)
-    @OneToOne(mappedBy = "account", orphanRemoval = true)
+    @OneToOne(mappedBy = "account", orphanRemoval = true, cascade = CascadeType.ALL)
     private Settings settings;
-    @ManyToMany(mappedBy = "participants")
     @Fetch(FetchMode.JOIN)
+    @OneToOne(mappedBy = "account", orphanRemoval = true, cascade = CascadeType.ALL)
+    private BotState botState;
+    @ManyToMany(mappedBy = "participants")
     private List<Meeting> meetings;
     @ManyToMany
     @JoinTable(name = "user_chat",
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "chat_id", referencedColumnName = "id"))
-    @Fetch(FetchMode.JOIN)
     private List<Group> groups;
 
-    @OneToMany(mappedBy = "account", orphanRemoval = true)
-    @Fetch(FetchMode.JOIN)
+    @OneToMany(mappedBy = "account")
     private List<AccountTime> meetingTimes;
 
     public void addMeeting(Meeting meeting){

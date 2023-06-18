@@ -38,20 +38,16 @@ public class GroupChatHandler implements ChatHandler {
             }
             if (hasMemberUpdate(message)) {
                 Optional<Group> optionalGroup = groupService.getByChatId(chatId);
-                if (optionalGroup.isEmpty()) {
-                    groupService.saveTgChat(chat);
-                }
-                Group group = optionalGroup.get();
+                Group group = optionalGroup.orElseGet(() -> groupService.saveTgChat(chat));
                 handleMembers(group, message);
             }
         }
     }
 
     private boolean chatCreated(Message message) {
-        if (message.getGroupchatCreated() != null){
+        if (message.getGroupchatCreated() != null) {
             return message.getGroupchatCreated();
-        }
-        else if (message.getSuperGroupCreated() !=null){
+        } else if (message.getSuperGroupCreated() != null) {
             return message.getSuperGroupCreated();
         }
         return false;

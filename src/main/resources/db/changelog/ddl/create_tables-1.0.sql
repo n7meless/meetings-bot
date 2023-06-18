@@ -37,8 +37,8 @@ CREATE TABLE IF NOT EXISTS user_meetings
     id         BIGSERIAL PRIMARY KEY,
     user_id    BIGINT NOT NULL,
     meeting_id BIGINT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users (id),
-    FOREIGN KEY (meeting_id) REFERENCES meetings (id)
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (meeting_id) REFERENCES meetings (id) ON DELETE CASCADE
 );
 
 --changeset aidar:5
@@ -63,8 +63,8 @@ CREATE TABLE IF NOT EXISTS user_chat
 (
     user_id BIGINT NOT NULL,
     chat_id BIGINT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users (id),
-    FOREIGN KEY (chat_id) REFERENCES chats (id)
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (chat_id) REFERENCES chats (id) ON DELETE CASCADE
 );
 --changeset aidar:8
 CREATE TABLE IF NOT EXISTS user_settings
@@ -89,10 +89,8 @@ CREATE TABLE IF NOT EXISTS meeting_time
     id      BIGSERIAL PRIMARY KEY,
     time    TIMESTAMP NOT NULL,
     date_id BIGINT    NOT NULL,
-    user_id BIGINT    NOT NULL,
     status  VARCHAR(10),
-    FOREIGN KEY (date_id) REFERENCES meeting_date (id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    FOREIGN KEY (date_id) REFERENCES meeting_date (id) ON DELETE CASCADE
 );
 --changeset aidar:11
 CREATE TABLE IF NOT EXISTS user_times
@@ -101,6 +99,16 @@ CREATE TABLE IF NOT EXISTS user_times
     user_id         BIGINT NOT NULL,
     meeting_time_id BIGINT NOT NULL,
     status          VARCHAR(10),
-    FOREIGN KEY (user_id) REFERENCES users (id),
-    FOREIGN KEY (meeting_time_id) REFERENCES meeting_time (id)
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (meeting_time_id) REFERENCES meeting_time (id) ON DELETE CASCADE
+);
+--changeset aidar:12
+CREATE TABLE IF NOT EXISTS bot_state
+(
+    id       BIGSERIAL PRIMARY KEY,
+    user_id  BIGINT NOT NULL,
+    msg_type VARCHAR(20),
+    msg_id   INT,
+    state    VARCHAR(100),
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );

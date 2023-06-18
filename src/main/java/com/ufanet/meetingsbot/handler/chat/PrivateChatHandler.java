@@ -2,6 +2,7 @@ package com.ufanet.meetingsbot.handler.chat;
 
 import com.ufanet.meetingsbot.constants.BotCommand;
 import com.ufanet.meetingsbot.constants.ReplyKeyboardButton;
+import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.dto.UpdateDto;
 import com.ufanet.meetingsbot.handler.keyboard.KeyboardHandler;
 import com.ufanet.meetingsbot.handler.type.ChatType;
@@ -9,8 +10,6 @@ import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.UpdateService;
 import com.ufanet.meetingsbot.service.message.CommandMessageService;
-import com.ufanet.meetingsbot.constants.state.AccountState;
-import com.ufanet.meetingsbot.utils.MessageUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,11 +45,15 @@ public class PrivateChatHandler implements ChatHandler {
         log.info("handle update from private chat with user {}", userId);
 
         ReplyKeyboardButton button = fromValue(content);
+
         if (button != null) {
             handleReplyButton(userId, button);
             handleCallback(userId, update);
         } else if (BotCommand.typeOf(content)) {
             handleCommand(userId, message);
+        } else if (content.startsWith(AccountState.MEETING_CONFIRM.name())) {
+            accountService.setState(userId, AccountState.EDIT);
+            queryHandlers.get(AccountState.EDIT).handleUpdate(update);
         } else {
             handleCallback(userId, update);
         }
@@ -62,10 +65,9 @@ public class PrivateChatHandler implements ChatHandler {
         User user = message.getFrom();
         switch (text) {
             case "/start" -> {
-                Optional<Account> account = accountService.getByUserId(chatId);
-                if (account.isEmpty()){
-                    accountService.saveTgUser(user);
-                }
+                Optional<Account> optionalAccount = accountService.getByUserId(chatId);
+                optionalAccount.ifPresentOrElse((account) -> accountService.updateTgUser(account, user),
+                        () -> accountService.saveTgUser(user));
                 commandHandler.sendStartMessage(userId);
             }
             case "/help" -> commandHandler.sendHelpMessage(userId);

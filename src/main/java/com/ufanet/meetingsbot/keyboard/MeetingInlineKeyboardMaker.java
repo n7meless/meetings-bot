@@ -1,7 +1,10 @@
 package com.ufanet.meetingsbot.keyboard;
 
 import com.ufanet.meetingsbot.constants.ToggleButton;
+import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.model.*;
+import com.ufanet.meetingsbot.repository.AccountTimeRepository;
+import com.ufanet.meetingsbot.repository.MeetingDateRepository;
 import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -18,6 +21,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class MeetingInlineKeyboardMaker {
     private final CalendarKeyboardMaker calendarKeyboardMaker;
+    private final AccountTimeRepository accountTimeRepository;
+    private final MeetingDateRepository meetingDateRepository;
     private final InlineKeyboardButton stepNext = defaultInlineButton("Далее", ToggleButton.NEXT.name());
     private final InlineKeyboardButton cancel = defaultInlineButton("Отменить", ToggleButton.CANCEL.name());
 
@@ -137,7 +142,21 @@ public class MeetingInlineKeyboardMaker {
         keyboard.add(List.of(change));
         return keyboard;
     }
-/*    public List<List<InlineKeyboardButton>> getMeetingConfirmKeyboard(Meeting meeting){
-        meeting.getDates().stream().collect(MeetingDate::getDate);
-    }*/
+
+    public InlineKeyboardMarkup getMeetingConfirmKeyboard(Meeting meeting) {
+        Long meetingId = meeting.getId();
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        InlineKeyboardButton change = InlineKeyboardButton.builder()
+                .text(Emojis.CHANGE.getEmojiSpace() + "Изменить указанные интервалы")
+                .callbackData(MeetingState.EDIT.name() + meetingId).build();
+        InlineKeyboardButton confirm = InlineKeyboardButton.builder()
+                .text(Emojis.SELECTED.getEmojiSpace() + "Подтверждаю")
+                .callbackData(MeetingState.CONFIRMED.name() + meetingId).build();
+        InlineKeyboardButton cancel = InlineKeyboardButton.builder()
+                .text(Emojis.RED_CIRCLE.getEmojiSpace() + "Не смогу прийти")
+                .callbackData(MeetingState.CANCELED.name() + meetingId).build();
+        keyboard.add(List.of(change));
+        keyboard.add(List.of(cancel, confirm));
+        return InlineKeyboardMarkup.builder().keyboard(keyboard).build();
+    }
 }

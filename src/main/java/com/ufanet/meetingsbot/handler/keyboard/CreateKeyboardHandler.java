@@ -26,12 +26,12 @@ public class CreateKeyboardHandler implements KeyboardHandler {
         UpdateDto updateDto = UpdateService.parseUpdate(update);
         long userId = updateDto.chatId();
         String callback = updateDto.content();
-        Meeting meeting = meetingService.getByOwnerIdAndStateNotContaining(userId, List.of(AWAITING, CONFIRMED, CANCELED));
+        Meeting meeting = meetingService.getByOwnerIdAndStateNotReady(userId);
+
         switch (callback) {
             case "SEND" -> {
-                messageHandler.sendMeetingToParticipants(meeting);
-                meetingService.setNextState(meeting);
                 meetingService.save(meeting);
+                messageHandler.sendMeetingToParticipants(meeting);
                 messageHandler.sendSuccessMessageParticipants(userId);
             }
             case "NEXT" -> {

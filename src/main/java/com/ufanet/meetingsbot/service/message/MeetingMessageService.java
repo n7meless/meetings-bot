@@ -6,22 +6,25 @@ import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.keyboard.MeetingInlineKeyboardMaker;
 import com.ufanet.meetingsbot.model.*;
 import com.ufanet.meetingsbot.repository.AccountRepository;
+import com.ufanet.meetingsbot.repository.GroupRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
-import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class MeetingMessageService extends MessageService {
     private final MeetingInlineKeyboardMaker meetingInlineKeyboardMaker;
     private final AccountRepository accountRepository;
+    private final GroupRepository groupRepository;
 
     public void sendMessage(long userId, Meeting meeting, String callback) {
         MeetingState state = meeting.getState();
@@ -40,27 +43,32 @@ public class MeetingMessageService extends MessageService {
     }
 
     public void sendGroupMessage(long userId, Meeting meeting) {
-        Account account = accountRepository.findById(userId).orElseGet(Account::new);
-        List<Group> groups = account.getGroups();
+        List<Group> groups = groupRepository.findGroupsByMemberId(userId);
 
-        SendMessage message = messageUtils.generateSendMessage(userId, localeMessageService.getMessage("reply.meeting.group"),
-                meetingInlineKeyboardMaker.getGroupsInlineMarkup(meeting, groups));
-        disableInlineLastMessage(userId);
-        Message response = (Message) telegramBot.safeExecute(message);
-        messageCache.put(userId, response.getMessageId());
+        SendMessage message = SendMessage.builder().chatId(userId)
+                .text(localeMessageService.getMessage("reply.meeting.group"))
+                .replyMarkup(meetingInlineKeyboardMaker.getGroupsInlineMarkup(meeting, groups))
+                .build();
+
+        executeSendMessage(message);
     }
 
     public void sendParticipantsMessage(long userId, Meeting meeting) {
-        Integer messageId = messageCache.get(userId);
+        //TODO caching group
         Set<Account> members = accountRepository.findAccountByGroupsIdAndIdNot(meeting.getGroup().getId(), userId);
+        ;
         Set<Account> participants = meeting.getParticipants();
-        EditMessageText message = messageUtils.generateEditMessage(userId, localeMessageService.getMessage("reply.meeting.participants"),
-                messageId, meetingInlineKeyboardMaker.getParticipantsInlineMarkup(members, participants));
-        telegramBot.safeExecute(message);
+        EditMessageText message = EditMessageText.builder()
+                .chatId(userId)
+                .text(localeMessageService.getMessage("reply.meeting.participants"))
+                .replyMarkup(meetingInlineKeyboardMaker.getParticipantsInlineMarkup(members, participants))
+                .build();
+
+
+        executeEditMessage(message);
     }
 
     public void sendSubjectMessage(long userId, Meeting meeting) {
-        Integer messageId = messageCache.get(userId);
         Subject subject = meeting.getSubject();
         InlineKeyboardMarkup keyboardMarkup;
         String title = subject.getTitle();
@@ -73,14 +81,16 @@ public class MeetingMessageService extends MessageService {
             text = "Текущая тема: " + title;
             SendMessage sendMessage = messageUtils.generateSendMessage(userId, text,
                     keyboardMarkup);
-            deleteLastMessage(userId);
-            Message message = (Message) telegramBot.safeExecute(sendMessage);
-            messageCache.put(userId, message.getMessageId());
+            executeSendMessage(sendMessage);
         } else {
             text = text + "\nНапишите тему встречи";
-            EditMessageText sendMessage = messageUtils.generateEditMessage(userId, localeMessageService.getMessage("reply.meeting.subject"),
-                    messageId, keyboardMarkup);
-            telegramBot.safeExecute(sendMessage);
+            EditMessageText sendMessage =
+                    EditMessageText.builder().chatId(userId)
+                            .text(localeMessageService.getMessage("reply.meeting.subject"))
+                            .replyMarkup(keyboardMarkup)
+                            .build();
+
+            executeEditMessage(sendMessage);
         }
     }
 
@@ -94,64 +104,72 @@ public class MeetingMessageService extends MessageService {
         SendMessage sendMessage =
                 messageUtils.generateSendMessage(userId, text,
                         meetingInlineKeyboardMaker.getQuestionsInlineMarkup(meeting));
-        deleteLastMessage(userId);
-        Message response = (Message) telegramBot.safeExecute(sendMessage);
-        messageCache.put(userId, response.getMessageId());
+        executeSendMessage(sendMessage);
     }
 
     public void sendDateMessage(long userId, Meeting meeting, String callback) {
-        Integer messageId = messageCache.get(userId);
 
-        EditMessageText message = messageUtils.generateEditMessage(userId, localeMessageService.getMessage("reply.meeting.date"),
-                messageId, meetingInlineKeyboardMaker.getCalendarInlineMarkup(meeting, callback));
-        telegramBot.safeExecute(message);
+        EditMessageText message = EditMessageText.builder()
+                .text(localeMessageService.getMessage("reply.meeting.date"))
+                .chatId(userId)
+                .replyMarkup(meetingInlineKeyboardMaker.getCalendarInlineMarkup(meeting, callback))
+                .build();
+
+        executeEditMessage(message);
+
     }
 
     public void sendTimeMessage(long userId, Meeting meeting) {
-        Integer messageId = messageCache.get(userId);
-        EditMessageText message = messageUtils.generateEditMessage(userId, localeMessageService.getMessage("reply.meeting.time"),
-                messageId, meetingInlineKeyboardMaker.getTimeInlineMarkup(meeting));
-        telegramBot.safeExecute(message);
+        EditMessageText message = EditMessageText.builder()
+                .chatId(userId)
+                .text(localeMessageService.getMessage("reply.meeting.time"))
+
+                .replyMarkup(meetingInlineKeyboardMaker.getTimeInlineMarkup(meeting)).build();
+
+
+        executeEditMessage(message);
     }
 
     public void sendAddressMessage(long userId, Meeting meeting) {
-        Integer messageId = messageCache.get(userId);
 
         List<InlineKeyboardButton> buttons = meetingInlineKeyboardMaker.defaultRowHelperInlineMarkup(true, true);
-        EditMessageText message = messageUtils.generateEditMessage(userId, localeMessageService.getMessage("reply.meeting.address"),
-                messageId, InlineKeyboardMarkup.builder().keyboardRow(buttons).build());
-        telegramBot.safeExecute(message);
+        EditMessageText message =
+                EditMessageText.builder().chatId(userId).text(localeMessageService.getMessage("reply.meeting.address"))
+                        .replyMarkup(InlineKeyboardMarkup.builder().keyboardRow(buttons).build())
+                        .build();
+
+        executeEditMessage(message);
     }
 
     public void sendSubjectDurationMessage(long userId, Meeting meeting) {
-        Integer messageId = messageCache.get(userId);
 
-        String message = "Выбрите предполагаемую продолжительность темы в минутах";
+        EditMessageText sendMessage =
+                EditMessageText.builder()
+                        .text(localeMessageService.getMessage("reply.meeting.duration"))
+                        .chatId(userId)
+                        .replyMarkup(meetingInlineKeyboardMaker.getSubjectDurationInlineMarkup(meeting)).build();
 
-        EditMessageText sendMessage = messageUtils.generateEditMessage(userId,
-                message, messageId, meetingInlineKeyboardMaker.getSubjectDurationInlineMarkup(meeting));
-        telegramBot.safeExecute(sendMessage);
+
+        executeEditMessage(sendMessage);
     }
 
     public void sendCanceledMessage(long userId) {
-        Integer messageId = messageCache.get(userId);
-        EditMessageText message = messageUtils.generateEditMessage(userId, "Встреча была отменена!",
-                messageId, null);
-        telegramBot.safeExecute(message);
-        disableInlineLastMessage(userId);
+        EditMessageText message = EditMessageText.builder().chatId(userId)
+                .text("Встреча была отменена!").build();
+
+
+        executeEditMessage(message);
     }
 
     public void sendEditErrorMessage(long userId) {
         SendMessage message = messageUtils.generateSendMessage(userId, "У вас нет ни одной созданной встречи", null);
-        telegramBot.safeExecute(message);
+        executeSendMessage(message);
     }
 
     public void sendSuccessMessageParticipants(long userId) {
         SendMessage sendMessage = messageUtils.generateSendMessage(userId,
                 localeMessageService.getMessage("reply.meeting.sent.participants"));
-        disableInlineLastMessage(userId);
-        Message message = (Message) telegramBot.safeExecute(sendMessage);
-        messageCache.put(userId, message.getMessageId());
+        executeSendMessage(sendMessage);
     }
 
     public void sendAwaitingMessage(long userId, Meeting meeting) {
@@ -175,24 +193,48 @@ public class MeetingMessageService extends MessageService {
                 .replyMarkup(keyboardMarkup).disableWebPagePreview(true)
                 .text(textMeeting).build();
 
-        deleteLastMessage(userId);
-
-        Message response = (Message) telegramBot.safeExecute(sendMessage);
-        messageCache.put(userId, response.getMessageId());
+        executeSendMessage(sendMessage);
     }
 
     public void sendMeetingToParticipants(Meeting meeting) {
         Set<Account> participants = meeting.getParticipants();
+        MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meeting);
+
+        String textMeeting = localeMessageService.getMessage("reply.meeting.awaiting.participants",
+                meetingMessage.owner(), meetingMessage.subject(), meetingMessage.questions(),
+                meetingMessage.participants(), meetingMessage.duration(), meetingMessage.times(),
+                meetingMessage.address());
+
+        Set<AccountTime> accountTimes = meeting.getDates().stream()
+                .map(MeetingDate::getMeetingTimes).flatMap(Collection::stream)
+                .map(MeetingTime::getAccountTimes).flatMap(Collection::stream)
+                .collect(Collectors.toSet());
+
+        for (Account participant : participants) {
+            InlineKeyboardMarkup keyboard =
+                    meetingInlineKeyboardMaker.getMeetingConfirmKeyboard(meeting);
+
+            SendMessage sendMessage = SendMessage.builder().text(textMeeting).parseMode("HTML")
+                    .disableWebPagePreview(true).replyMarkup(keyboard).protectContent(true)
+                    .chatId(participant.getId()).build();
+            executeSendMessage(sendMessage);
+        }
+    }
+
+    public void sendMeetingToParticipant(long userId, Meeting meeting) {
+
         MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meeting);
         String textMeeting = localeMessageService.getMessage("reply.meeting.awaiting.participants",
                 meetingMessage.owner(), meetingMessage.subject(), meetingMessage.questions(),
                 meetingMessage.participants(), meetingMessage.duration(), meetingMessage.times(),
                 meetingMessage.address());
 
-        for (Account participant : participants) {
-            SendMessage sendMessage = SendMessage.builder().text(textMeeting).parseMode("HTML")
-                    .disableWebPagePreview(true).protectContent(true).chatId(participant.getId()).build();
-            telegramBot.safeExecute(sendMessage);
-        }
+
+        InlineKeyboardMarkup keyboard = meetingInlineKeyboardMaker.getMeetingConfirmKeyboard(meeting);
+        EditMessageText sendMessage = EditMessageText.builder().text(textMeeting).parseMode("HTML")
+                .disableWebPagePreview(true).replyMarkup(keyboard)
+                .chatId(userId).build();
+
+        executeEditMessage(sendMessage);
     }
 }

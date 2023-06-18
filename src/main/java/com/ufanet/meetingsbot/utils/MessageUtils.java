@@ -58,18 +58,18 @@ public class MessageUtils {
         accounts.add(meetingOwner);
         String participants = accounts.stream()
                 .map(account -> "<a href='https://t.me/" + account.getUsername() + "'>" + account.getFirstname() + "</a>")
-                .collect(joining("\n" + SELECTED.getEmojiISpace(), SELECTED.getEmojiISpace(), "\n"));
+                .collect(joining("\n" + SELECTED.getEmojiSpace(), SELECTED.getEmojiSpace(), "\n"));
         accounts.remove(meetingOwner);
 
-        String subject = CLIPBOARD.getEmojiISpace() + meeting.getSubject().getTitle();
+        String subject = CLIPBOARD.getEmojiSpace() + meeting.getSubject().getTitle();
         String questions = meeting.getSubject().getQuestions().stream().map(Question::getTitle)
-                .collect(joining("\n" + QUESTION.getEmojiISpace(), QUESTION.getEmojiISpace(), "\n"));
+                .collect(joining("\n" + QUESTION.getEmojiSpace(), QUESTION.getEmojiSpace(), "\n"));
 
-        String duration = CLOCK.getEmojiISpace() + meeting.getSubject().getDuration();
+        String duration = CLOCK.getEmojiSpace() + meeting.getSubject().getDuration();
         String times = dateTimes.stream().map(date -> date.format(CustomFormatter.DATE_TIME_WEEK_FORMATTER))
-                .collect(joining("\n" + CALENDAR.getEmojiISpace(), CALENDAR.getEmojiISpace(), "\n"));
+                .collect(joining("\n" + CALENDAR.getEmojiSpace(), CALENDAR.getEmojiSpace(), "\n"));
 
-        String address = OFFICE.getEmojiISpace() + meeting.getAddress();
+        String address = OFFICE.getEmojiSpace() + meeting.getAddress();
 
         return new MeetingMessage(owner, participants, subject,
                 questions, duration, times, address);

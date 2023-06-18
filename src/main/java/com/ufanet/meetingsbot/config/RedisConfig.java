@@ -1,18 +1,23 @@
 package com.ufanet.meetingsbot.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.PatternTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
 
+@Slf4j
 @Configuration
 public class RedisConfig {
     @Value("${spring.data.redis.host}")
@@ -52,14 +57,28 @@ public class RedisConfig {
                 .withCacheConfiguration("account",
                         RedisCacheConfiguration.defaultCacheConfig()
 //                                .disableCachingNullValues()
-                                .entryTtl(Duration.ofSeconds(userTtl)))
+                                .entryTtl(Duration.ofSeconds(5)))
                 .withCacheConfiguration("meeting",
                         RedisCacheConfiguration.defaultCacheConfig()
 //                                .disableCachingNullValues()
-                                .entryTtl(Duration.ofSeconds(meetingTtl)))
+                                .entryTtl(Duration.ofSeconds(5)))
                 .withCacheConfiguration("group",
                         RedisCacheConfiguration.defaultCacheConfig()
 //                                .disableCachingNullValues()
                                 .entryTtl(Duration.ofSeconds(400)));
+    }
+
+    @Bean
+    public RedisMessageListenerContainer redisMessageListenerContainer(
+            RedisConnectionFactory connectionFactory,
+            TaskTimeOutListener taskTimeoutListener) {
+        RedisMessageListenerContainer listenerContainer = new RedisMessageListenerContainer();
+        listenerContainer.setConnectionFactory(connectionFactory);
+        listenerContainer.addMessageListener(taskTimeoutListener,
+                new PatternTopic("__key*__:*"));
+
+        listenerContainer.setErrorHandler(
+                e -> log.error("Error in redisMessageListenerContainer", e));
+        return listenerContainer;
     }
 }
