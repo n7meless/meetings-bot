@@ -27,6 +27,8 @@ public class BotState implements Serializable {
     @Enumerated(EnumType.STRING)
     private AccountState state;
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", referencedColumnName = "id")
+//    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @MapsId
+    @JoinColumn(name = "user_id")
     private Account account;
 }

@@ -16,7 +16,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     @Override
     @EntityGraph(value = "client_entity-graph", type = EntityGraph.EntityGraphType.FETCH)
     Optional<Meeting> findById(Long aLong);
-
+    @EntityGraph(value = "client_entity-graph", type = EntityGraph.EntityGraphType.FETCH)
     Optional<Meeting> findByOwnerId(Long id);
 
     //    @Query(value = "SELECT md, mt, ut, m FROM meetings m " +

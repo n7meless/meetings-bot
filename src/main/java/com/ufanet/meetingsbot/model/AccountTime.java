@@ -4,7 +4,6 @@ import com.ufanet.meetingsbot.constants.Status;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.io.Serial;
 import java.io.Serializable;
 
 @Builder
@@ -20,7 +19,7 @@ public class AccountTime implements Serializable {
     private Long id;
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
-    private Status meetingStatus;
+    private Status status;
     @ManyToOne(cascade = {CascadeType.MERGE}, fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private Account account;

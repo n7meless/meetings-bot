@@ -15,13 +15,11 @@ import org.telegram.telegrambots.meta.api.objects.User;
 import java.util.*;
 
 @Service
-@CacheConfig(cacheNames = "group")
 @RequiredArgsConstructor
 public class GroupService {
     private final GroupRepository groupRepository;
     private final AccountService accountService;
 
-//    @Cacheable(key = "#chatId", value = "group")
     public Optional<Group> getByChatId(long chatId) {
         return groupRepository.findById(chatId);
     }
@@ -35,11 +33,9 @@ public class GroupService {
         return save(group);
     }
 
-//    @CachePut(key = "#group.id", value = "group")
     public Group save(Group group) {
        return groupRepository.save(group);
     }
-    @Cacheable(key = "#userId", value = "groups")
     public List<Group> getGroupsByMemberId(long userId){
         return groupRepository.findGroupsByMemberId(userId);
     }

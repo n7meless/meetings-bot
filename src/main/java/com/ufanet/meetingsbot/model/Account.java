@@ -22,7 +22,12 @@ import java.util.Objects;
 @AllArgsConstructor
 @Entity(name = "users")
 @EntityListeners({AuditingEntityListener.class})
-@NamedEntityGraph(name = "account_settings_botState", attributeNodes = {
+@NamedEntityGraph(name = "account_with_settings", attributeNodes = {
+        @NamedAttributeNode(value = "settings"),
+        @NamedAttributeNode(value = "botState"),
+})
+@NamedEntityGraph(name = "accounts_with_settings_and_botstate",attributeNodes = {
+        @NamedAttributeNode(value = "groups"),
         @NamedAttributeNode(value = "settings"),
         @NamedAttributeNode(value = "botState")
 })
@@ -38,11 +43,11 @@ public class Account implements Serializable {
     @Column(name = "created_dt")
     @CreatedDate
     private LocalDateTime createdDt;
+    @OneToOne(fetch = FetchType.LAZY, mappedBy = "account", orphanRemoval = true, cascade = CascadeType.ALL)
     @Fetch(FetchMode.JOIN)
-    @OneToOne(mappedBy = "account", orphanRemoval = true, cascade = CascadeType.ALL)
     private Settings settings;
     @Fetch(FetchMode.JOIN)
-    @OneToOne(mappedBy = "account", orphanRemoval = true, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, mappedBy = "account", orphanRemoval = true, cascade = CascadeType.ALL)
     private BotState botState;
     @ManyToMany(mappedBy = "participants")
     private List<Meeting> meetings;

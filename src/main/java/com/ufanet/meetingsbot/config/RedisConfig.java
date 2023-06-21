@@ -69,7 +69,7 @@ public class RedisConfig {
                 .withCacheConfiguration("bot_state",
                         RedisCacheConfiguration.defaultCacheConfig()
 //                                .disableCachingNullValues()
-                                .entryTtl(Duration.ofSeconds(10)));
+                                .entryTtl(Duration.ofSeconds(60)));
     }
 
 }

@@ -21,6 +21,7 @@ import static java.util.stream.Collectors.joining;
 public class MessageUtils {
     public SendMessage generateSendMessage(long chatId, String text) {
         return SendMessage.builder()
+                .disableWebPagePreview(true)
                 .text(text).chatId(chatId)
                 .build();
     }
@@ -31,10 +32,18 @@ public class MessageUtils {
                 .replyMarkup(markup).build();
     }
 
-    public EditMessageText generateEditMessage(long chatId, String text,
-                                               Integer messageId, InlineKeyboardMarkup markup) {
-        return EditMessageText.builder().chatId(chatId)
-                .messageId(messageId).text(text)
+    public SendMessage generateSendMessageHtml(long chatId, String text, ReplyKeyboard markup) {
+        return SendMessage.builder().parseMode("HTML")
+                .disableWebPagePreview(true)
+                .text(text).chatId(chatId)
+                .replyMarkup(markup).build();
+    }
+
+    public EditMessageText generateEditMessageHtml(long chatId, String text,
+                                                   InlineKeyboardMarkup markup) {
+        return EditMessageText.builder().chatId(chatId).text(text)
+                .disableWebPagePreview(true)
+                .parseMode("HTML")
                 .replyMarkup(markup).build();
     }
 
@@ -56,7 +65,7 @@ public class MessageUtils {
 
         if (meetingOwner.getUsername() == null) {
             owner = "<a href='tg://user?id=" + meetingOwner.getId() + "'>" + meetingOwner.getFirstname() + "</a>";
-        } else{
+        } else {
             owner = "<a href='https://t.me/" + meetingOwner.getUsername() + "'>" + meetingOwner.getFirstname() + "</a>";
         }
         Set<Account> accounts = meeting.getParticipants();
@@ -64,11 +73,13 @@ public class MessageUtils {
         accounts.add(meetingOwner);
         StringBuilder sb = new StringBuilder();
         for (Account account : accounts) {
-            if (account.getUsername() == null){
-                sb.append("<a href='tg://user?id=").append(account.getId()).append("'>")
+            if (account.getUsername() == null) {
+                sb.append(SELECTED.getEmojiSpace()).append("<a href='tg://user?id=")
+                        .append(account.getId()).append("'>")
                         .append(account.getFirstname()).append("</a>");
-            }else {
-                sb.append("<a href='https://t.me/").append(account.getUsername()).append("'>")
+            } else {
+                sb.append(SELECTED.getEmojiSpace()).append("<a href='https://t.me/")
+                        .append(account.getUsername()).append("'>")
                         .append(account.getFirstname()).append("</a>");
             }
             sb.append("\n");
@@ -86,11 +97,12 @@ public class MessageUtils {
         String questions = meeting.getSubject().getQuestions().stream().map(Question::getTitle)
                 .collect(joining("\n" + QUESTION.getEmojiSpace(), QUESTION.getEmojiSpace(), "\n"));
 
-        String duration = CLOCK.getEmojiSpace() + meeting.getSubject().getDuration();
+        Integer subjectDuration = meeting.getSubject().getDuration();
+        String duration = subjectDuration == null ? "(не указано)" : CLOCK.getEmojiSpace() + subjectDuration;
         String times = dateTimes.stream().map(date -> date.format(CustomFormatter.DATE_TIME_WEEK_FORMATTER))
                 .collect(joining("\n" + CALENDAR.getEmojiSpace(), CALENDAR.getEmojiSpace(), "\n"));
 
-        String address = OFFICE.getEmojiSpace() + meeting.getAddress();
+        String address = meeting.getAddress() == null ? "(не указано)" : OFFICE.getEmojiSpace() + meeting.getAddress();
 
         return new MeetingMessage(owner, participants, subject,
                 questions, duration, times, address);

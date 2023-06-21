@@ -4,8 +4,6 @@ import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.constants.UpcomingState;
 import com.ufanet.meetingsbot.model.*;
-import com.ufanet.meetingsbot.repository.AccountTimeRepository;
-import com.ufanet.meetingsbot.repository.MeetingDateRepository;
 import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -24,15 +22,13 @@ import static com.ufanet.meetingsbot.utils.CustomFormatter.DATE_WEEK_FORMATTER;
 @RequiredArgsConstructor
 public class MeetingInlineKeyboardMaker {
     private final CalendarKeyboardMaker calendarKeyboardMaker;
-    private final AccountTimeRepository accountTimeRepository;
-    private final MeetingDateRepository meetingDateRepository;
     private final InlineKeyboardButton stepNext = defaultInlineButton("Далее", ToggleButton.NEXT.name());
     private final InlineKeyboardButton cancel = defaultInlineButton("Отменить", ToggleButton.CANCEL.name());
 
     public InlineKeyboardMarkup getCalendarInlineMarkup(Meeting meeting, String callback) {
         List<List<InlineKeyboardButton>> keyboard = calendarKeyboardMaker.getCalendarInlineMarkup(meeting, callback);
         boolean next = meeting.getDates().size() > 0;
-        List<InlineKeyboardButton> defaultRowHelperInlineMarkup = defaultRowHelperInlineMarkup(next, false);
+        List<InlineKeyboardButton> defaultRowHelperInlineMarkup = defaultRowHelperInlineButtons(next, false);
         keyboard.add(defaultRowHelperInlineMarkup);
         return InlineKeyboardMarkup.builder().keyboard(keyboard).build();
     }
@@ -40,7 +36,7 @@ public class MeetingInlineKeyboardMaker {
     public InlineKeyboardMarkup getTimeInlineMarkup(Meeting meeting) {
         List<List<InlineKeyboardButton>> keyboard = calendarKeyboardMaker.getTimeInlineMarkup(meeting);
         boolean hasTime = meeting.getDates().stream().anyMatch(t -> t.getMeetingTimes().size() > 0);
-        keyboard.add(defaultRowHelperInlineMarkup(hasTime, false));
+        keyboard.add(defaultRowHelperInlineButtons(hasTime, false));
         return InlineKeyboardMarkup.builder().keyboard(keyboard).build();
     }
 
@@ -59,7 +55,7 @@ public class MeetingInlineKeyboardMaker {
             row.add(button);
         }
         keyboard.add(row);
-        keyboard.add(defaultRowHelperInlineMarkup(duration != null, false));
+        keyboard.add(defaultRowHelperInlineButtons(duration != null, false));
         return InlineKeyboardMarkup.builder().keyboard(keyboard).build();
     }
 
@@ -68,7 +64,7 @@ public class MeetingInlineKeyboardMaker {
                 .callbackData(callback).build();
     }
 
-    public List<InlineKeyboardButton> defaultRowHelperInlineMarkup(boolean next, boolean ready) {
+    public List<InlineKeyboardButton> defaultRowHelperInlineButtons(boolean next, boolean ready) {
         List<InlineKeyboardButton> buttons = new ArrayList<>();
         if (next) {
             buttons.add(cancel);
@@ -93,7 +89,7 @@ public class MeetingInlineKeyboardMaker {
             keyboard.add(button);
         }
         boolean next = selectedMembers.size() > 0;
-        keyboard.add(defaultRowHelperInlineMarkup(next, false));
+        keyboard.add(defaultRowHelperInlineButtons(next, false));
         return InlineKeyboardMarkup.builder().keyboard(keyboard).build();
     }
 
@@ -112,7 +108,7 @@ public class MeetingInlineKeyboardMaker {
             keyboard.add(button);
 
         }
-        keyboard.add(defaultRowHelperInlineMarkup(hasGroup, false));
+        keyboard.add(defaultRowHelperInlineButtons(hasGroup, false));
         return InlineKeyboardMarkup.builder().keyboard(keyboard).build();
     }
 
@@ -121,11 +117,12 @@ public class MeetingInlineKeyboardMaker {
         Subject subject = meeting.getSubject();
         Set<Question> questions = subject.getQuestions();
         for (Question question : questions) {
-            InlineKeyboardButton questionButton = InlineKeyboardButton.builder().text(Emojis.SELECTED.getEmoji() + question.getTitle()).callbackData(question.getTitle()).build();
+            InlineKeyboardButton questionButton = InlineKeyboardButton.builder().text(Emojis.SELECTED.getEmojiSpace()
+                    + question.getTitle()).callbackData(question.getTitle()).build();
             keyboard.add(List.of(questionButton));
         }
         boolean next = questions.size() > 0;
-        keyboard.add(defaultRowHelperInlineMarkup(next, false));
+        keyboard.add(defaultRowHelperInlineButtons(next, false));
         return InlineKeyboardMarkup.builder()
                 .keyboard(keyboard)
                 .build();
@@ -187,7 +184,7 @@ public class MeetingInlineKeyboardMaker {
                         .text(Emojis.SELECTED.getEmojiSpace() + localDateTime.toLocalTime().toString())
                         .callbackData(UpcomingState.UPCOMING_EDIT_MEETING_TIME.name() + " " + meetingId + " " + accountTime.getId()).build();
 
-                if (accountTime.getMeetingStatus().equals(Status.CANCELED)) {
+                if (accountTime.getStatus().equals(Status.CANCELED)) {
                     time.setText(localDateTime.toLocalTime().toString());
                 }
                 buttons.add(time);

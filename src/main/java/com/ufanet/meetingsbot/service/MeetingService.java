@@ -29,33 +29,12 @@ public class MeetingService {
     private final MeetingCacheManager meetingCacheManager;
     private final MeetingTimeRepository meetingTimeRepository;
 
-    public void update(long userId, Meeting meeting, String callback) {
-        MeetingState state = meeting.getState();
-        if (state != null) {
-            switch (state) {
-                case GROUP_SELECT -> updateGroup(meeting, Long.valueOf(callback));
-                case PARTICIPANT_SELECT -> updateParticipants(meeting, Long.valueOf(callback));
-                case SUBJECT_SELECT -> updateSubject(meeting, callback);
-                case SUBJECT_DURATION_SELECT -> updateSubjectDuration(meeting, callback);
-                case QUESTION_SELECT -> updateQuestion(meeting, callback);
-                case DATE_SELECT -> updateDate(meeting, callback);
-                case TIME_SELECT -> updateTime(meeting, callback);
-                case ADDRESS_SELECT -> updateAddress(meeting, callback);
-                //TODO удалить все про встречу
-                case CANCELED -> removeByOwnerId(userId);
-            }
-        } else meeting.setState(MeetingState.GROUP_SELECT);
-        meetingCacheManager.saveData(userId, meeting);
-        meeting.setUpdatedDt(LocalDateTime.now());
-
-    }
-
     public List<Meeting> getMeetingsByOwnerIdOrParticipantsId(long userId) {
         return meetingRepository.findMeetingsByParticipantsIdOrOwnerIdEquals(userId, userId);
     }
 
-    public void anotherSave(Meeting meeting) {
-        meetingRepository.save(meeting);
+    public Meeting save(Meeting meeting) {
+        return meetingRepository.save(meeting);
     }
 
     @Transactional
@@ -72,7 +51,7 @@ public class MeetingService {
                 Set<AccountTime> accountTimes = new HashSet<>();
                 for (Account account : participants) {
                     AccountTime accountTime = AccountTime.builder().account(account)
-                            .meetingTime(time).meetingStatus(Status.AWAITING).build();
+                            .meetingTime(time).status(Status.AWAITING).build();
                     accountTimes.add(accountTime);
 //                    account.updateBotState(AccountState.EDIT);
                 }
@@ -114,6 +93,7 @@ public class MeetingService {
         meeting.setSubject(new Subject());
         meeting.setDates(new TreeSet<>(Comparator.comparing(MeetingDate::getDate)));
         meeting.setParticipants(new HashSet<>());
+        meeting.setState(MeetingState.GROUP_SELECT);
 
         meetingCacheManager.saveData(ownerId, meeting);
         return meeting;
@@ -158,18 +138,20 @@ public class MeetingService {
         meeting.setParticipants(participants);
     }
 
-    public void updateMeetingAccountTimes(long userId, List<AccountTime> accountTimes, boolean canceled) {
+    public void confirmMeetingAccountTimes(List<AccountTime> accountTimes) {
         for (AccountTime accountTime : accountTimes) {
-            if (canceled) {
-                accountTime.setMeetingStatus(Status.CANCELED);
-            } else {
-                Status status = accountTime.getMeetingStatus();
-                if (status.equals(Status.AWAITING)) {
-                    accountTime.setMeetingStatus(Status.CONFIRMED);
-                }
+            Status status = accountTime.getStatus();
+            if (status.equals(Status.AWAITING)) {
+                accountTime.setStatus(Status.CONFIRMED);
             }
         }
         accountService.saveAccountTimes(accountTimes);
+    }
+
+    public void cancelMeeting(Meeting meeting) {
+        meeting.removeDateIf(md -> md.getMeeting().getId() == meeting.getId());
+        meeting.setState(MeetingState.CANCELED);
+        save(meeting);
     }
 
     public void updateMeetingAccountTime(long userId, Meeting meeting, long timeId, List<AccountTime> accountTimes) {
@@ -177,11 +159,11 @@ public class MeetingService {
         AccountTime accountTime = accountTimes.stream().filter(at -> at.getId() == timeId)
                 .findFirst().orElseThrow();
 
-        Status status = accountTime.getMeetingStatus();
+        Status status = accountTime.getStatus();
 
         switch (status) {
-            case CONFIRMED, AWAITING -> accountTime.setMeetingStatus(Status.CANCELED);
-            case CANCELED -> accountTime.setMeetingStatus(Status.CONFIRMED);
+            case CONFIRMED, AWAITING -> accountTime.setStatus(Status.CANCELED);
+            case CANCELED -> accountTime.setStatus(Status.CONFIRMED);
         }
         MeetingTime meetingTime = accountTime.getMeetingTime();
         MeetingDate meetingDate = meetingTime.getMeetingDate();
@@ -264,26 +246,23 @@ public class MeetingService {
         meeting.setState(MeetingState.READY);
     }
 
+    @Transactional
     public void removeByOwnerId(long ownerId) {
-        Meeting meeting = meetingCacheManager.getData(ownerId);
-        if (meeting != null) {
-            meetingRepository.delete(meeting);
-        } else {
-            meetingRepository.deleteByOwnerId(ownerId);
-        }
+        meetingRepository.deleteByOwnerId(ownerId);
         meetingCacheManager.clearData(ownerId);
     }
-
-    public Meeting getByMeetingIdOrUserId(long userId, long meetingId) {
+    @Transactional
+    public Meeting getByMeetingId(long userId, long meetingId) {
         Meeting cache = meetingCacheManager.getData(userId);
         if (cache == null) {
             Meeting meeting = meetingRepository.findById(meetingId).orElseThrow();
             meetingCacheManager.saveData(userId, meeting);
             return meeting;
+        } else {
+            return save(cache);
         }
-        return cache;
     }
-
+    @Transactional
     public List<MeetingTime> getByMeetingIdAndConfirmedState(long meetingId) {
         return meetingTimeRepository.findByMeetingIdAndConfirmed(meetingId);
     }
@@ -294,9 +273,9 @@ public class MeetingService {
         meetingDate.setMeetingTimes(Set.of(meetingTime));
         meeting.setDates(Set.of(meetingDate));
         meeting.setState(MeetingState.CONFIRMED);
-        anotherSave(meeting);
+        save(meeting);
     }
-
+    @Transactional
     public List<Meeting> getMeetingsByUserIdAndState(long userId, MeetingState state) {
         return meetingRepository.findByParticipantsIdOrOwnerIdAndStateEquals(userId, userId, state);
     }

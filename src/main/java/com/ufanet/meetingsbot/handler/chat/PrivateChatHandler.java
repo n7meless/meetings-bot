@@ -9,7 +9,7 @@ import com.ufanet.meetingsbot.handler.type.ChatType;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.UpdateService;
-import com.ufanet.meetingsbot.service.message.CommandMessageService;
+import com.ufanet.meetingsbot.service.message.CommandReplyMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,12 +31,13 @@ import static com.ufanet.meetingsbot.constants.ReplyKeyboardButton.fromValue;
 public class PrivateChatHandler implements ChatHandler {
     private final Map<AccountState, KeyboardHandler> queryHandlers = new HashMap<>();
     private final AccountService accountService;
-    private final CommandMessageService commandHandler;
+    private final CommandReplyMessageService commandHandler;
+    private final UpdateService updateService;
 
     @Override
     public void chatUpdate(Update update) {
         Message message = update.getMessage();
-        UpdateDto updateDto = UpdateService.parseUpdate(update);
+        UpdateDto updateDto = updateService.parseUpdate(update);
         long userId = updateDto.chatId();
         String content = updateDto.content();
 

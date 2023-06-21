@@ -1,6 +1,5 @@
 package com.ufanet.meetingsbot.service.message;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ufanet.meetingsbot.constants.MessageType;
 import com.ufanet.meetingsbot.model.BotState;
 import com.ufanet.meetingsbot.service.BotService;
@@ -18,21 +17,20 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
-@Service
 @Slf4j
-public abstract class MessageService {
+@Service
+public abstract class ReplyMessageService {
     protected TelegramBot telegramBot;
     protected BotService botService;
     protected MessageUtils messageUtils;
     protected LocaleMessageService localeMessageService;
-    private final ObjectMapper mapper = new ObjectMapper();
 
     void executeSendMessage(SendMessage message) {
         long chatId = Long.parseLong(message.getChatId());
         BotState botState = botService.getByUserId(chatId);
 
-        disableInlineLastMessage(chatId, botState.getMessageId());
-
+        disableInlineMessage(chatId, botState.getMessageId());
+        log.info("send message to {}", chatId);
         Message response = telegramBot.safeExecute(message);
 
         if (response != null) {
@@ -49,30 +47,27 @@ public abstract class MessageService {
         try {
             telegramBot.execute(message);
         } catch (TelegramApiRequestException e) {
-            SendMessage sendMessage = SendMessage.builder().chatId(chatId).text(message.getText())
-                    .replyMarkup(message.getReplyMarkup()).build();
+            log.error("message {} is not modified", message.getMessageId());
+            SendMessage sendMessage =
+                    messageUtils.generateSendMessageHtml(chatId, message.getText(), message.getReplyMarkup());
+
             executeSendMessage(sendMessage);
         } catch (TelegramApiException e) {
-            System.out.println("При обработке сообщения произошла ошибка");
+            log.error("an occurred error when sending edit message with id {}", message.getMessageId());
         }
     }
 
-    protected void disableInlineLastMessage(Long userId, Integer messageId) {
+    protected void disableInlineMessage(Long userId, Integer messageId) {
         if (messageId == null) return;
-        EditMessageReplyMarkup disableMarkup = EditMessageReplyMarkup.builder()
-                .chatId(userId).messageId(messageId)
-                .replyMarkup(null).build();
-
-        log.info("disable inline markup with message id {}", messageId);
-        telegramBot.safeExecute(disableMarkup);
-    }
-
-    protected void deleteLastMessage(long userId) {
-//        Integer messageId = messageCache.get(userId);
-//        if (messageId == 0) return;
-//        DeleteMessage deleteMessage = DeleteMessage.builder().chatId(userId).messageId(messageId).build();
-//        log.info("delete message id {}", messageId);
-//        telegramBot.safeExecute(deleteMessage);
+        try {
+            EditMessageReplyMarkup disableMarkup = EditMessageReplyMarkup.builder()
+                    .chatId(userId).messageId(messageId)
+                    .replyMarkup(null).build();
+            log.info("disable inline markup with message id {}", messageId);
+            telegramBot.execute(disableMarkup);
+        } catch (TelegramApiException e) {
+            log.error("can not disable inline markup with message id {}", messageId);
+        }
     }
 
     @Autowired

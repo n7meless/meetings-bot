@@ -23,7 +23,7 @@ public class CustomScheduler {
     private final MeetingService meetingService;
 
     @Async
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 30000)
     public void saveMeetingFromCache() {
         Map<Long, Meeting> meetingDataCache = new HashMap<>(meetingCacheManager.getMeetingDataCache());
         for (Map.Entry<Long, Meeting> entry : meetingDataCache.entrySet()) {
@@ -34,9 +34,9 @@ public class CustomScheduler {
             long seconds = ChronoUnit.SECONDS.between(updatedDt, expirationDt);
             log.info("difference times user {} meeting {} between last updates {} seconds", userId, meeting.getId(), seconds);
             if (seconds > 30) {
-                meetingService.anotherSave(meeting);
+                meetingService.save(meeting);
                 meetingCacheManager.clearData(userId);
-                log.info("cache was evicted user {} meeting {} ", userId, meeting.getId());
+                log.info("meeting {} cache was evicted by user {} ",meeting.getId(), userId);
             }
         }
     }

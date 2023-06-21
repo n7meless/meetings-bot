@@ -25,23 +25,21 @@ import static com.ufanet.meetingsbot.utils.CustomFormatter.DATE_WEEK_FORMATTER;
 public class CalendarKeyboardMaker {
     private final String[] dayOfWeek = {"Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"};
 
-
     private final int startWorkDay = 9;
     private final int endWorkDay = 18;
 
     public List<List<InlineKeyboardButton>> getCalendarInlineMarkup(Meeting meeting, String callback) {
         List<List<InlineKeyboardButton>> rowsInLine = new ArrayList<>();
 
-        LocalDate date;
+        LocalDate date = LocalDate.now();
         //TODO поменять подход проверки
-        if (callback.length() > 5) {
+//        if (callback.length() > 5) {
             if (callback.startsWith(NEXT.name()) || callback.startsWith(PREV.name())) {
                 date = LocalDate.parse(callback.substring(4), DATE_FORMATTER);
             } else {
                 date = LocalDate.parse(callback, DATE_FORMATTER);
             }
-        } else date = LocalDate.now();
-
+//        }
         setMonthHeaderCalendar(rowsInLine, date);
         setDaysOfWeeksHeaderCalendar(rowsInLine);
         setDaysOfMonthCalendar(rowsInLine, meeting, date);
@@ -49,7 +47,6 @@ public class CalendarKeyboardMaker {
         return rowsInLine;
     }
 
-    //TODO подумать над оптимизацией (передавать Set<> и проверять на наличие даты)
     public List<List<InlineKeyboardButton>> getTimeInlineMarkup(Meeting meeting) {
         List<List<InlineKeyboardButton>> rowsInLine = new ArrayList<>();
 

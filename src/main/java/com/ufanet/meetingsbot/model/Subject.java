@@ -14,8 +14,6 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity(name = "subject")
-@NamedEntityGraph(name = "subject-with-questions",
-        attributeNodes = {@NamedAttributeNode("questions")})
 public class Subject implements Serializable {
 
     @Id

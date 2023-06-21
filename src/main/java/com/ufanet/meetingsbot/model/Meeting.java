@@ -2,7 +2,10 @@ package com.ufanet.meetingsbot.model;
 
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -19,8 +22,8 @@ import java.util.function.Predicate;
 @NamedEntityGraph(name = "client_entity-graph", attributeNodes = {
         @NamedAttributeNode(value = "dates", subgraph = "dates.meetingTime"),
         @NamedAttributeNode(value = "subject", subgraph = "subject.questions"),
-        @NamedAttributeNode("owner"),
-        @NamedAttributeNode("participants")},
+        @NamedAttributeNode(value = "owner"),
+        @NamedAttributeNode(value = "participants")},
         subgraphs = {
                 @NamedSubgraph(name = "dates.meetingTime",
                         attributeNodes = @NamedAttributeNode(value = "meetingTimes",
@@ -28,13 +31,12 @@ import java.util.function.Predicate;
                 @NamedSubgraph(name = "subject.questions",
                         attributeNodes = @NamedAttributeNode(value = "questions")),
                 @NamedSubgraph(name = "meetingTimes.accountTimes",
-                        attributeNodes = @NamedAttributeNode(value = "accountTimes"))}
-)
+                        attributeNodes = @NamedAttributeNode(value = "accountTimes"))})
 public class Meeting {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "owner_id", referencedColumnName = "id")
     private Account owner;
     @ManyToMany(fetch = FetchType.LAZY)
@@ -62,7 +64,7 @@ public class Meeting {
     }
 
 
-    public List<AccountTime> getAccountTimeByUserId(long userId) {
+    public List<AccountTime> getAccountTimesByUserId(long userId) {
         return this.dates.stream().map(MeetingDate::getMeetingTimes)
                 .flatMap(Collection::stream)
                 .map(MeetingTime::getAccountTimes).flatMap(Collection::stream)
@@ -74,7 +76,7 @@ public class Meeting {
         subject.setMeeting(this);
     }
 
-    public void removeDateIf(Predicate<? super MeetingDate> predicate){
+    public void removeDateIf(Predicate<? super MeetingDate> predicate) {
         this.dates.removeIf(predicate);
     }
 

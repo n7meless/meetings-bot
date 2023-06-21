@@ -5,10 +5,7 @@ import com.ufanet.meetingsbot.model.*;
 import com.ufanet.meetingsbot.repository.AccountRepository;
 import com.ufanet.meetingsbot.repository.AccountTimeRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.annotation.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.telegram.telegrambots.meta.api.objects.User;
@@ -18,7 +15,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Service
-//@CacheConfig(cacheNames = {"account", "account_times"})
+@CacheConfig(cacheNames = {"account", "account_times", "group_members"})
 @EnableCaching
 @RequiredArgsConstructor
 public class AccountService {
@@ -45,7 +42,7 @@ public class AccountService {
     public void saveAccountTime(AccountTime accountTime) {
         accountTimeRepository.save(accountTime);
     }
-
+    @Transactional
     public void saveAccountTimes(List<AccountTime> accountTimes) {
         accountTimeRepository.saveAll(accountTimes);
     }
@@ -61,7 +58,7 @@ public class AccountService {
         account.setSettings(newAccount.getSettings());
     }
 
-    @CacheEvict(key = "#account.id", value = "account")
+//    @CacheEvict(key = "#account.id", value = "account")
     public void save(Account account) {
         accountRepository.save(account);
     }
