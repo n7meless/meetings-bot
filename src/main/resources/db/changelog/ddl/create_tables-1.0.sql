@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS users
 (
     id         BIGSERIAL PRIMARY KEY,
-    username   VARCHAR(64) NOT NULL UNIQUE,
+    username   VARCHAR(64) UNIQUE,
     first_name VARCHAR(64),
     last_name  VARCHAR(64),
     created_dt TIMESTAMP DEFAULT now()
@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS meetings
     address    VARCHAR(255),
     group_id   BIGINT,
     created_dt TIMESTAMP DEFAULT now(),
+    updated_dt TIMESTAMP,
     state      VARCHAR(100),
     FOREIGN KEY (group_id) REFERENCES chats (id)
 );
@@ -89,7 +90,6 @@ CREATE TABLE IF NOT EXISTS meeting_time
     id      BIGSERIAL PRIMARY KEY,
     time    TIMESTAMP NOT NULL,
     date_id BIGINT    NOT NULL,
-    status  VARCHAR(10),
     FOREIGN KEY (date_id) REFERENCES meeting_date (id) ON DELETE CASCADE
 );
 --changeset aidar:11

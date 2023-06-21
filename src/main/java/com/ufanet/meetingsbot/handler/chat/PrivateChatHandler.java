@@ -1,6 +1,6 @@
 package com.ufanet.meetingsbot.handler.chat;
 
-import com.ufanet.meetingsbot.constants.BotCommand;
+import com.ufanet.meetingsbot.constants.BotCommands;
 import com.ufanet.meetingsbot.constants.ReplyKeyboardButton;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.dto.UpdateDto;
@@ -49,11 +49,11 @@ public class PrivateChatHandler implements ChatHandler {
         if (button != null) {
             handleReplyButton(userId, button);
             handleCallback(userId, update);
-        } else if (BotCommand.typeOf(content)) {
+        } else if (BotCommands.typeOf(content)) {
             handleCommand(userId, message);
-        } else if (content.startsWith(AccountState.MEETING_CONFIRM.name())) {
-            accountService.setState(userId, AccountState.EDIT);
-            queryHandlers.get(AccountState.EDIT).handleUpdate(update);
+        } else if (content.startsWith("UPCOMING")) {
+            accountService.setState(userId, AccountState.UPCOMING);
+            queryHandlers.get(AccountState.UPCOMING).handleUpdate(update);
         } else {
             handleCallback(userId, update);
         }

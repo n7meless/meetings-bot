@@ -3,6 +3,7 @@ package com.ufanet.meetingsbot.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serial;
 import java.io.Serializable;
 @Builder
 @Getter
@@ -11,6 +12,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @Entity(name = "user_settings")
 public class Settings implements Serializable {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

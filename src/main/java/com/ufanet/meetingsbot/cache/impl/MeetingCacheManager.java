@@ -14,8 +14,8 @@ public class MeetingCacheManager implements DataCache<Meeting> {
     private final Map<Long, Meeting> meetingDataCache = new HashMap<>();
 
     @Override
-    public void saveData(Long userId, Meeting meetingDto) {
-        meetingDataCache.put(userId, meetingDto);
+    public void saveData(Long userId, Meeting meeting) {
+        meetingDataCache.put(userId, meeting);
     }
 
     @Override
@@ -31,5 +31,9 @@ public class MeetingCacheManager implements DataCache<Meeting> {
         if (meetingDataCache.containsKey(userId)) {
             meetingDataCache.remove(userId);
         }
+    }
+
+    public Map<Long, Meeting> getMeetingDataCache() {
+        return meetingDataCache;
     }
 }

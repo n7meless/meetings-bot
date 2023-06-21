@@ -8,6 +8,7 @@ import org.hibernate.annotations.FetchMode;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -21,6 +22,7 @@ import java.util.Set;
 @Entity(name = "chats")
 @EntityListeners({AuditingEntityListener.class})
 public class Group implements Serializable {
+
     @Id
     private Long id;
     private String title;

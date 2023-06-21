@@ -1,6 +1,6 @@
 package com.ufanet.meetingsbot.service.message;
 
-import com.ufanet.meetingsbot.cache.impl.BotMessageCache;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ufanet.meetingsbot.constants.MessageType;
 import com.ufanet.meetingsbot.model.BotState;
 import com.ufanet.meetingsbot.service.BotService;
@@ -15,35 +15,46 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
 @Service
 @Slf4j
 public abstract class MessageService {
     protected TelegramBot telegramBot;
     protected BotService botService;
-    protected BotMessageCache botMessageCache;
     protected MessageUtils messageUtils;
     protected LocaleMessageService localeMessageService;
+    private final ObjectMapper mapper = new ObjectMapper();
 
     void executeSendMessage(SendMessage message) {
         long chatId = Long.parseLong(message.getChatId());
         BotState botState = botService.getByUserId(chatId);
-        Integer messageId = botState.getMessageId();
 
         disableInlineLastMessage(chatId, botState.getMessageId());
 
-        Message response = (Message) telegramBot.safeExecute(message);
+        Message response = telegramBot.safeExecute(message);
 
+        if (response != null) {
+            botState.setMessageId(response.getMessageId());
+        }
         botState.setMessageType(MessageType.SEND_MESSAGE);
-        botState.setMessageId(response.getMessageId());
         botService.save(botState);
     }
 
     void executeEditMessage(EditMessageText message) {
         long chatId = Long.parseLong(message.getChatId());
-        int messageId = botService.getLastMessageId(chatId);
+        int messageId = botService.getByUserId(chatId).getMessageId();
         message.setMessageId(messageId);
-        telegramBot.safeExecute(message);
+        try {
+            telegramBot.execute(message);
+        } catch (TelegramApiRequestException e) {
+            SendMessage sendMessage = SendMessage.builder().chatId(chatId).text(message.getText())
+                    .replyMarkup(message.getReplyMarkup()).build();
+            executeSendMessage(sendMessage);
+        } catch (TelegramApiException e) {
+            System.out.println("При обработке сообщения произошла ошибка");
+        }
     }
 
     protected void disableInlineLastMessage(Long userId, Integer messageId) {
@@ -66,11 +77,9 @@ public abstract class MessageService {
 
     @Autowired
     private void setDependencies(@Lazy TelegramBot telegramBot, BotService botService,
-                                 BotMessageCache messageCache,
                                  MessageUtils messageUtils, LocaleMessageService localeMessageService) {
         this.botService = botService;
         this.telegramBot = telegramBot;
-        this.botMessageCache = messageCache;
         this.messageUtils = messageUtils;
         this.localeMessageService = localeMessageService;
     }

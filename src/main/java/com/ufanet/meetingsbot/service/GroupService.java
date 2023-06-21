@@ -39,6 +39,10 @@ public class GroupService {
     public Group save(Group group) {
        return groupRepository.save(group);
     }
+    @Cacheable(key = "#userId", value = "groups")
+    public List<Group> getGroupsByMemberId(long userId){
+        return groupRepository.findGroupsByMemberId(userId);
+    }
 
     //TODO доделать добавление если пользователь есть
     public void saveMembers(Group group, List<User> tgUsers) {

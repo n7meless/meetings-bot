@@ -1,13 +1,15 @@
 package com.ufanet.meetingsbot.model;
 
+import com.ufanet.meetingsbot.constants.state.AccountState;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.data.jpa.repository.EntityGraph;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,7 +22,12 @@ import java.util.Objects;
 @AllArgsConstructor
 @Entity(name = "users")
 @EntityListeners({AuditingEntityListener.class})
+@NamedEntityGraph(name = "account_settings_botState", attributeNodes = {
+        @NamedAttributeNode(value = "settings"),
+        @NamedAttributeNode(value = "botState")
+})
 public class Account implements Serializable {
+
     @Id
     private Long id;
     @Column(name = "first_name")
@@ -51,7 +58,9 @@ public class Account implements Serializable {
     public void addMeeting(Meeting meeting){
         this.meetings.add(meeting);
     }
-
+    public void updateBotState(AccountState state){
+        this.getBotState().setState(state);
+    }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -1,6 +1,7 @@
 package com.ufanet.meetingsbot.service;
 
 import com.ufanet.meetingsbot.config.BotConfig;
+import com.ufanet.meetingsbot.dto.MessageResponse;
 import com.ufanet.meetingsbot.dto.UpdateDto;
 import com.ufanet.meetingsbot.handler.chat.ChatHandler;
 import com.ufanet.meetingsbot.handler.type.ChatType;
@@ -34,7 +35,6 @@ public class TelegramBot extends TelegramLongPollingBot {
     public TelegramBot(BotConfig botConfig, List<ChatHandler> chatHandlers, SetMyCommands setMyCommands, AccountService accountService) {
         this.botConfig = botConfig;
         this.accountService = accountService;
-        System.out.println(safeExecute(setMyCommands));
         chatHandlers.forEach(handler -> this.chatHandlers.put(handler.getMessageType(), handler));
     }
 
@@ -52,22 +52,14 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    public Serializable safeExecute(BotApiMethod<?> message) {
+    public <T extends Serializable, Method extends BotApiMethod<T>> T safeExecute(BotApiMethod<?> message) {
         try {
             log.info("message process time {}", System.currentTimeMillis() - x);
-            return execute(message);
+            return (T) execute(message);
         } catch (TelegramApiException e) {
             e.printStackTrace();
             log.error("При отправке на сервер телеграмма произошла ошибка!");
             return null;
-        }
-    }
-    public void safeExecuteSendMessage(SendMessage message){
-        try {
-            log.info("");
-            execute(message);
-        }catch (TelegramApiException e){
-
         }
     }
 

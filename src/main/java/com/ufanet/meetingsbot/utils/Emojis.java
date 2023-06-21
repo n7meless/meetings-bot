@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 public enum Emojis {
     SELECTED(EmojiParser.parseToUnicode(":white_check_mark:")),
     CHANGE(EmojiParser.parseToUnicode(":memo:")),
-    RED_CIRCLE(EmojiParser.parseToUnicode(":x:")),
+    CANCEL(EmojiParser.parseToUnicode(":x:")),
     PIN(EmojiParser.parseToUnicode(":pushpin:")),
     ALARM_CLOCK(EmojiParser.parseToUnicode(":alarm_clock:")),
     CLOCK(EmojiParser.parseToUnicode(":clock1:")),

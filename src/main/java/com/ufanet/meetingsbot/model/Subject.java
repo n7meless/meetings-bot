@@ -2,30 +2,34 @@ package com.ufanet.meetingsbot.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.Serial;
+import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Set;
+
 @Setter
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity(name = "subject")
-public class Subject {
+@NamedEntityGraph(name = "subject-with-questions",
+        attributeNodes = {@NamedAttributeNode("questions")})
+public class Subject implements Serializable {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String title;
-    @Fetch(FetchMode.JOIN)
-    @OneToMany(mappedBy = "subject",cascade = CascadeType.ALL,  orphanRemoval = true)
-    private List<Question> questions;
-    @OneToOne
+    @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Question> questions;
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "meeting_id", referencedColumnName = "id")
     private Meeting meeting;
     private Integer duration;
-    public List<Question> getQuestions() {
-        return questions == null? new ArrayList<>() : questions;
+
+    public Set<Question> getQuestions() {
+        return questions == null ? new HashSet<>() : questions;
     }
 }

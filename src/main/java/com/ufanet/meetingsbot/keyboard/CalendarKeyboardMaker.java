@@ -24,8 +24,10 @@ import static com.ufanet.meetingsbot.utils.CustomFormatter.DATE_WEEK_FORMATTER;
 @Component
 public class CalendarKeyboardMaker {
     private final String[] dayOfWeek = {"Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"};
-    private final String[] months = {"Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
-            "Июль", "Август", "Сентябрь", "Октрябрь", "Ноябрь", "Декабрь"};
+
+
+    private final int startWorkDay = 9;
+    private final int endWorkDay = 18;
 
     public List<List<InlineKeyboardButton>> getCalendarInlineMarkup(Meeting meeting, String callback) {
         List<List<InlineKeyboardButton>> rowsInLine = new ArrayList<>();
@@ -50,8 +52,9 @@ public class CalendarKeyboardMaker {
     //TODO подумать над оптимизацией (передавать Set<> и проверять на наличие даты)
     public List<List<InlineKeyboardButton>> getTimeInlineMarkup(Meeting meeting) {
         List<List<InlineKeyboardButton>> rowsInLine = new ArrayList<>();
-        Set<MeetingDate> meetingDates = meeting.getDates();
 
+        List<MeetingDate> meetingDates = meeting.getDates().stream()
+                .sorted().toList();
         LocalDateTime currentDate = LocalDateTime.now();
 
         for (MeetingDate meetingDate : meetingDates) {
@@ -63,12 +66,12 @@ public class CalendarKeyboardMaker {
                             .callbackData(" ")
                             .build();
 
+            List<LocalDateTime> dateTimes = meetingDate.getMeetingTimes().stream()
+                    .map(MeetingTime::getTime).toList();
 
-            Set<LocalDateTime> dateTimes = meetingDate.getMeetingTimes().stream()
-                    .map(MeetingTime::getTime).collect(Collectors.toSet());
 
-            int startWorkDay = 9; // начало рабочего дня
-            int endWorkDay = 18; // конец рабочего дня
+            int startWorkDay = this.startWorkDay; // начало рабочего дня
+            int endWorkDay = this.endWorkDay; // конец рабочего дня
 
             //считаем который час нам подходит
             while (currentDate.isAfter(LocalDateTime.of(localDate, LocalTime.of(startWorkDay, 0)))
@@ -76,8 +79,6 @@ public class CalendarKeyboardMaker {
 
                 startWorkDay++;
             }
-            //TODO check on date
-            if (startWorkDay == endWorkDay) continue;
 
             rowsInLine.add(List.of(dateHeader));
             //сколько рабочих часов для встречи осталось
@@ -116,19 +117,23 @@ public class CalendarKeyboardMaker {
     private void setDaysOfMonthCalendar(List<List<InlineKeyboardButton>> rowsInLine,
                                         Meeting meeting, LocalDate chosenDate) {
         LocalDate currentDate = LocalDate.now();
+
         if (currentDate.getMonthValue() != chosenDate.getMonthValue()) {
             currentDate = LocalDate.of(chosenDate.getYear(), chosenDate.getMonth(), 1);
+        } else if (LocalTime.now().isAfter(LocalTime.of(this.endWorkDay, 0))) {
+            currentDate = currentDate.plusDays(1);
         }
+
         int dayOfMonth = currentDate.getDayOfMonth();
         int dayOfWeek = currentDate.getDayOfWeek().getValue();
         int actualDaysOfMonth = currentDate.lengthOfMonth();
 
-        int difference = dayOfMonth - dayOfWeek + 1;
-
         Set<LocalDate> dateSet = meeting.getDates().stream()
                 .map(MeetingDate::getDate).collect(Collectors.toSet());
 
-        while (difference < actualDaysOfMonth) {
+        int difference = dayOfMonth - dayOfWeek + 1;
+
+        while (difference <= actualDaysOfMonth) {
             List<InlineKeyboardButton> buttons = new ArrayList<>();
             for (int j = 0; j < 7; j++, dayOfWeek++, difference++) {
 
@@ -179,7 +184,7 @@ public class CalendarKeyboardMaker {
         }
 
         InlineKeyboardButton monthName = InlineKeyboardButton.builder()
-                .text(chosenDate.getMonth().getDisplayName(TextStyle.FULL_STANDALONE, Locale.forLanguageTag("ru")).toUpperCase())
+                .text(chosenDate.getMonth().getDisplayName(TextStyle.FULL_STANDALONE, Locale.forLanguageTag("ru")))
                 .callbackData(" ").build();
         buttons.add(monthName);
 

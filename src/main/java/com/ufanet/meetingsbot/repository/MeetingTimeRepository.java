@@ -10,10 +10,12 @@ import java.util.List;
 @Repository
 public interface MeetingTimeRepository extends JpaRepository<MeetingTime, Long> {
     @Query(value = """
-            select *
+            select mt.id, mt.time, mt.date_id
             from meeting_time as mt
                      join meeting_date md on md.meeting_id = ?1 and mt.date_id = md.id
             where 'CONFIRMED' = all (select ut.status from user_times ut where mt.id = ut.meeting_time_id)
+            order by mt.time
             """, nativeQuery = true)
     List<MeetingTime> findByMeetingIdAndConfirmed(Long meetingId);
+
 }

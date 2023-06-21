@@ -6,7 +6,10 @@ import lombok.*;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.Set;
 
@@ -16,13 +19,12 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity(name = "meeting_time")
-public class MeetingTime {
+public class MeetingTime implements Serializable, Comparable<MeetingTime> {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private LocalDateTime time;
-    @Enumerated(EnumType.STRING)
-    private Status status;
     @ManyToOne
     @JoinColumn(name = "date_id", referencedColumnName = "id")
     private MeetingDate meetingDate;
@@ -39,11 +41,16 @@ public class MeetingTime {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MeetingTime that = (MeetingTime) o;
-        return Objects.equals(time, that.time);
+        return this.getTime().isEqual(that.getTime());
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(time);
+    }
+
+    @Override
+    public int compareTo(MeetingTime meetingTime) {
+        return this.getTime().compareTo(meetingTime.getTime());
     }
 }

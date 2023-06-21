@@ -6,6 +6,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ReplyKeyboardButton {
+
     CREATE_MEETING("Создать встречу"),
     UPCOMING_MEETINGS("Предстоящие встречи"),
     EDIT_MEETING("Редактировать встречу"),

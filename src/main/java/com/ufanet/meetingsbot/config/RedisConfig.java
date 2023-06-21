@@ -57,28 +57,19 @@ public class RedisConfig {
                 .withCacheConfiguration("account",
                         RedisCacheConfiguration.defaultCacheConfig()
 //                                .disableCachingNullValues()
-                                .entryTtl(Duration.ofSeconds(5)))
+                                .entryTtl(Duration.ofSeconds(userTtl)))
                 .withCacheConfiguration("meeting",
                         RedisCacheConfiguration.defaultCacheConfig()
 //                                .disableCachingNullValues()
-                                .entryTtl(Duration.ofSeconds(5)))
-                .withCacheConfiguration("group",
+                                .entryTtl(Duration.ofSeconds(meetingTtl)))
+                .withCacheConfiguration("group_members",
                         RedisCacheConfiguration.defaultCacheConfig()
 //                                .disableCachingNullValues()
-                                .entryTtl(Duration.ofSeconds(400)));
+                                .entryTtl(Duration.ofSeconds(10)))
+                .withCacheConfiguration("bot_state",
+                        RedisCacheConfiguration.defaultCacheConfig()
+//                                .disableCachingNullValues()
+                                .entryTtl(Duration.ofSeconds(10)));
     }
 
-    @Bean
-    public RedisMessageListenerContainer redisMessageListenerContainer(
-            RedisConnectionFactory connectionFactory,
-            TaskTimeOutListener taskTimeoutListener) {
-        RedisMessageListenerContainer listenerContainer = new RedisMessageListenerContainer();
-        listenerContainer.setConnectionFactory(connectionFactory);
-        listenerContainer.addMessageListener(taskTimeoutListener,
-                new PatternTopic("__key*__:*"));
-
-        listenerContainer.setErrorHandler(
-                e -> log.error("Error in redisMessageListenerContainer", e));
-        return listenerContainer;
-    }
 }

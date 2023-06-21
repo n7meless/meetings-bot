@@ -1,14 +1,11 @@
 package com.ufanet.meetingsbot.service;
 
-import com.ufanet.meetingsbot.cache.impl.AccountStateCache;
 import com.ufanet.meetingsbot.constants.state.AccountState;
-import com.ufanet.meetingsbot.model.Account;
-import com.ufanet.meetingsbot.model.BotState;
-import com.ufanet.meetingsbot.model.Meeting;
-import com.ufanet.meetingsbot.model.Settings;
+import com.ufanet.meetingsbot.model.*;
 import com.ufanet.meetingsbot.repository.AccountRepository;
+import com.ufanet.meetingsbot.repository.AccountTimeRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.EnableCaching;
@@ -18,14 +15,16 @@ import org.telegram.telegrambots.meta.api.objects.User;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
-@CacheConfig(cacheNames = "account")
+//@CacheConfig(cacheNames = {"account", "account_times"})
 @EnableCaching
 @RequiredArgsConstructor
 public class AccountService {
     private final AccountRepository accountRepository;
-    private final AccountStateCache stateCache;
+    private final AccountTimeRepository accountTimeRepository;
+    private final BotService botService;
 
     @Cacheable(key = "#userId", value = "account", unless = "#result == null")
     public Optional<Account> getByUserId(long userId) {
@@ -36,6 +35,19 @@ public class AccountService {
     public List<Meeting> getMeetingsByUserId(long userId) {
         Account account = getByUserId(userId).orElseThrow();
         return account.getMeetings();
+    }
+
+    //    @Cacheable(cacheNames = "account_times", key = "#userId",unless = "#result == null")
+    public List<AccountTime> getAccountTimesByUserIdAndMeetingId(long userId, long meetingId) {
+        return accountTimeRepository.findByAccountIdAndMeetingId(userId, meetingId);
+    }
+    @Transactional
+    public void saveAccountTime(AccountTime accountTime) {
+        accountTimeRepository.save(accountTime);
+    }
+
+    public void saveAccountTimes(List<AccountTime> accountTimes) {
+        accountTimeRepository.saveAll(accountTimes);
     }
 
     @CachePut(key = "#userId", value = "account")
@@ -49,9 +61,14 @@ public class AccountService {
         account.setSettings(newAccount.getSettings());
     }
 
-    @CachePut(key = "#account.id", value = "account")
+    @CacheEvict(key = "#account.id", value = "account")
     public void save(Account account) {
         accountRepository.save(account);
+    }
+
+    @Cacheable(key = "#groupId", value = "group_members")
+    public Set<Account> getAccountByGroupsIdAndIdNot(long groupId, long userId) {
+        return accountRepository.findAccountByGroupsIdAndIdNot(groupId, userId);
     }
 
     public Account saveTgUser(User user) {
@@ -83,12 +100,18 @@ public class AccountService {
         save(account);
     }
 
-    public void setState(long userId, AccountState state) {
-        stateCache.put(userId, state);
+    public void setState(long userId, AccountState accountState) {
+        BotState botState = botService.getByUserId(userId);
+        AccountState state = botState.getState();
+        if (state == null || !state.equals(accountState)) {
+            botState.setState(accountState);
+            botService.save(botState);
+        }
     }
 
     public AccountState getState(long userId) {
-        return stateCache.get(userId);
+        BotState botState = botService.getByUserId(userId);
+        return botState.getState();
     }
 
 }

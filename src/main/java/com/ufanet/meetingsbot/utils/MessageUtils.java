@@ -46,20 +46,41 @@ public class MessageUtils {
 
     public MeetingMessage generateMeetingMessage(Meeting meeting) {
         List<LocalDateTime> dateTimes = meeting.getDates().stream()
-                .map(MeetingDate::getMeetingTimes).flatMap(Collection::stream)
+                .map(MeetingDate::getMeetingTimes)
+                .flatMap(Collection::stream)
                 .map(MeetingTime::getTime)
-                .sorted(LocalDateTime::compareTo).toList();
+                .sorted().toList();
+
         Account meetingOwner = meeting.getOwner();
+        String owner;
 
-        String owner = "<a href='https://t.me/" + meetingOwner.getUsername() + "'>" + meetingOwner.getFirstname() + "</a>";
-
+        if (meetingOwner.getUsername() == null) {
+            owner = "<a href='tg://user?id=" + meetingOwner.getId() + "'>" + meetingOwner.getFirstname() + "</a>";
+        } else{
+            owner = "<a href='https://t.me/" + meetingOwner.getUsername() + "'>" + meetingOwner.getFirstname() + "</a>";
+        }
         Set<Account> accounts = meeting.getParticipants();
 
         accounts.add(meetingOwner);
-        String participants = accounts.stream()
-                .map(account -> "<a href='https://t.me/" + account.getUsername() + "'>" + account.getFirstname() + "</a>")
-                .collect(joining("\n" + SELECTED.getEmojiSpace(), SELECTED.getEmojiSpace(), "\n"));
+        StringBuilder sb = new StringBuilder();
+        for (Account account : accounts) {
+            if (account.getUsername() == null){
+                sb.append("<a href='tg://user?id=").append(account.getId()).append("'>")
+                        .append(account.getFirstname()).append("</a>");
+            }else {
+                sb.append("<a href='https://t.me/").append(account.getUsername()).append("'>")
+                        .append(account.getFirstname()).append("</a>");
+            }
+            sb.append("\n");
+        }
+        String participants = sb.toString();
         accounts.remove(meetingOwner);
+
+//        accounts.add(meetingOwner);
+//        String participants = accounts.stream()
+//                .map(account -> "<a href='tg://user?id=" + account.getId() + "'>" + account.getFirstname() + "</a>")
+//                .collect(joining("\n" + SELECTED.getEmojiSpace(), SELECTED.getEmojiSpace(), "\n"));
+//        accounts.remove(meetingOwner);
 
         String subject = CLIPBOARD.getEmojiSpace() + meeting.getSubject().getTitle();
         String questions = meeting.getSubject().getQuestions().stream().map(Question::getTitle)
