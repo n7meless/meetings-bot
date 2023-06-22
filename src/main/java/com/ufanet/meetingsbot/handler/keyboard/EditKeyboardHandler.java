@@ -63,7 +63,7 @@ public class EditKeyboardHandler implements KeyboardHandler {
 
 
     @Override
-    public AccountState getUserStateHandler() {
-        return AccountState.EDIT;
+    public AccountState getAccountStateHandler() {
+        return AccountState.EDIT_MEETING;
     }
 }

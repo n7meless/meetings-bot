@@ -29,7 +29,7 @@ public class GroupChatHandler implements ChatHandler {
             long chatId = chat.getId();
 
             //TODO если удаляем то не сохранять
-            if (chatCreated(message)) {
+            if (isChatCreated(message)) {
                 //TODO если в группе людей больше то отправляем сообщение
 //                groupReplyMessageHandler.sendWelcomeChatMessage(chatId);
                 User tgUser = message.getFrom();
@@ -44,7 +44,7 @@ public class GroupChatHandler implements ChatHandler {
         }
     }
 
-    private boolean chatCreated(Message message) {
+    private boolean isChatCreated(Message message) {
         if (message.getGroupchatCreated() != null) {
             return message.getGroupchatCreated();
         } else if (message.getSuperGroupCreated() != null) {

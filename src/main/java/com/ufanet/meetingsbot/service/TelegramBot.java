@@ -5,7 +5,6 @@ import com.ufanet.meetingsbot.dto.UpdateDto;
 import com.ufanet.meetingsbot.handler.chat.ChatHandler;
 import com.ufanet.meetingsbot.handler.type.ChatType;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -46,6 +45,8 @@ public class TelegramBot extends TelegramLongPollingBot {
         UpdateDto updateDto = updateService.parseUpdate(update);
         ChatType chat = ChatType.typeOf(updateDto.chatType());
 
+        if (chat == null) return;
+
         log.info("received message from {}", updateDto.chatId());
 
         switch (chat) {
@@ -54,12 +55,12 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    public <T extends Serializable, Method extends BotApiMethod<T>> T safeExecute(BotApiMethod<?> message) {
+    public Serializable safeExecute(BotApiMethod<?> message) {
         try {
-            return (T) execute(message);
+            return execute(message);
         } catch (TelegramApiException e) {
             e.printStackTrace();
-            log.error("При отправке на сервер телеграмма произошла ошибка!");
+            log.error("an occurred error when sending message");
             return null;
         }
     }

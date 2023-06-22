@@ -29,6 +29,5 @@ telegram:
 redis:
   ttl:
     user: 60
-    meeting: 1800
 application:
   locale: ru-RU

@@ -5,6 +5,7 @@ import com.ufanet.meetingsbot.model.*;
 import com.ufanet.meetingsbot.repository.AccountRepository;
 import com.ufanet.meetingsbot.repository.AccountTimeRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,8 +15,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+@Slf4j
 @Service
-@CacheConfig(cacheNames = {"account", "account_times", "group_members"})
+@CacheConfig(cacheNames = {"account", "group_members"})
 @EnableCaching
 @RequiredArgsConstructor
 public class AccountService {
@@ -25,6 +27,7 @@ public class AccountService {
 
     @Cacheable(key = "#userId", value = "account", unless = "#result == null")
     public Optional<Account> getByUserId(long userId) {
+        log.info("retrieving user {} from database", userId);
         return accountRepository.findById(userId);
     }
 
@@ -38,28 +41,20 @@ public class AccountService {
     public List<AccountTime> getAccountTimesByUserIdAndMeetingId(long userId, long meetingId) {
         return accountTimeRepository.findByAccountIdAndMeetingId(userId, meetingId);
     }
+
     @Transactional
     public void saveAccountTime(AccountTime accountTime) {
         accountTimeRepository.save(accountTime);
     }
+
     @Transactional
     public void saveAccountTimes(List<AccountTime> accountTimes) {
         accountTimeRepository.saveAll(accountTimes);
     }
 
-    @CachePut(key = "#userId", value = "account")
-    public void update(long userId, Account newAccount) {
-        Account account = getByUserId(userId).orElseThrow();
-        account.setGroups(newAccount.getGroups());
-        account.setFirstname(newAccount.getFirstname());
-        account.setLastname(newAccount.getLastname());
-        account.setUsername(newAccount.getUsername());
-        account.setMeetings(newAccount.getMeetings());
-        account.setSettings(newAccount.getSettings());
-    }
-
-//    @CacheEvict(key = "#account.id", value = "account")
+    @CacheEvict(key = "#account.id", value = "account")
     public void save(Account account) {
+        log.info("saving user {} to database", account.getId());
         accountRepository.save(account);
     }
 
@@ -86,14 +81,10 @@ public class AccountService {
         return account;
     }
 
-    @CachePut(key = "#account.id", value = "account")
     public void updateTgUser(Account account, User user) {
         account.setLastname(user.getLastName());
         account.setFirstname(user.getFirstName());
         account.setUsername(user.getUserName());
-        Settings settings = account.getSettings();
-        settings.setLanguage(user.getLanguageCode());
-        account.setSettings(settings);
         save(account);
     }
 

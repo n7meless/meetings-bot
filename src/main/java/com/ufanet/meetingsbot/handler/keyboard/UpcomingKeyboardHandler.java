@@ -1,8 +1,9 @@
 package com.ufanet.meetingsbot.handler.keyboard;
 
 import com.ufanet.meetingsbot.constants.Status;
-import com.ufanet.meetingsbot.constants.UpcomingState;
 import com.ufanet.meetingsbot.constants.state.AccountState;
+import com.ufanet.meetingsbot.constants.state.MeetingState;
+import com.ufanet.meetingsbot.constants.state.UpcomingState;
 import com.ufanet.meetingsbot.dto.UpdateDto;
 import com.ufanet.meetingsbot.model.AccountTime;
 import com.ufanet.meetingsbot.model.Meeting;
@@ -17,9 +18,10 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
-import static com.ufanet.meetingsbot.constants.ReplyKeyboardButton.UPCOMING_MEETINGS;
-import static com.ufanet.meetingsbot.constants.UpcomingState.typeOf;
+import static com.ufanet.meetingsbot.constants.state.AccountState.UPCOMING_MEETINGS;
+import static com.ufanet.meetingsbot.constants.state.UpcomingState.typeOf;
 
 @Component
 @RequiredArgsConstructor
@@ -35,7 +37,12 @@ public class UpcomingKeyboardHandler implements KeyboardHandler {
         long userId = updateDto.chatId();
 
         if (content.startsWith(UPCOMING_MEETINGS.getButtonName())) {
-            messageService.sendUpcomingMeetings(userId);
+            List<Meeting> meetings = meetingService.getMeetingsByUserIdAndState(userId, MeetingState.CONFIRMED);
+            if (meetings.isEmpty()) {
+                messageService.sendMeetingsNotExist(userId);
+            } else {
+                messageService.sendSelectedUpcomingMeeting(userId, meetings);
+            }
         }
         if (update.hasCallbackQuery() && content.startsWith("UPCOMING")) {
             handleCallback(userId, content);
@@ -53,17 +60,19 @@ public class UpcomingKeyboardHandler implements KeyboardHandler {
 
         switch (state) {
             case UPCOMING_MEETINGS -> {
-                messageService.sendUpcomingMeetingsByMeetingId(userId, meetingId);
+                messageService.sendSelectedUpcomingMeeting(userId, meetingId);
             }
             case UPCOMING_EDIT_MEETING_TIME -> {
                 if (splitContent.length > 2) {
                     long accTimeId = Long.parseLong(splitContent[2]);
-                    meetingService.updateMeetingAccountTime(userId, meeting, accTimeId, accountTimes);
+                    meetingService.updateMeetingAccountTime(meeting, accTimeId, accountTimes);
+                    meetingService.saveOnCache(userId, meeting);
                 }
                 messageService.editMeetingToParticipant(userId, meeting, accountTimes);
             }
             case UPCOMING_CANCEL_MEETING_TIME -> {
                 meetingService.cancelMeeting(meeting);
+                meetingService.saveOnCache(userId, meeting);
                 messageService.sendCanceledAccountTimeMessage(meeting);
             }
             case UPCOMING_CONFIRM_MEETING_TIME -> {
@@ -75,12 +84,14 @@ public class UpcomingKeyboardHandler implements KeyboardHandler {
                         .allMatch(at -> at.getStatus().equals(Status.CONFIRMED) ||
                                 at.getStatus().equals(Status.CANCELED));
 
-                List<MeetingTime> confirmed = meetingService.getByMeetingIdAndConfirmedState(meetingId);
-                if (allVoted && !confirmed.isEmpty()) {
-                    meetingService.processConfirmedMeeting(meeting, confirmed);
+                Optional<MeetingTime> confirmed = meetingService.getByMeetingIdAndConfirmedState(meetingId);
+                if (allVoted && confirmed.isPresent()) {
+                    meetingService.processConfirmedMeeting(userId, meeting, confirmed);
+                    meetingService.clearCache(userId);
                     messageService.sendReadyMeeting(meeting);
                 } else if (allVoted) {
                     meetingService.cancelMeeting(meeting);
+                    meetingService.clearCache(userId);
                     messageService.sendCanceledMeetingByMatching(meeting);
                 } else {
                     messageService.sendSuccessMeetingConfirm(userId);
@@ -90,7 +101,7 @@ public class UpcomingKeyboardHandler implements KeyboardHandler {
     }
 
     @Override
-    public AccountState getUserStateHandler() {
-        return AccountState.UPCOMING;
+    public AccountState getAccountStateHandler() {
+        return UPCOMING_MEETINGS;
     }
 }

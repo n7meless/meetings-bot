@@ -1,7 +1,6 @@
 package com.ufanet.meetingsbot.service.message;
 
-import com.ufanet.meetingsbot.constants.UpcomingState;
-import com.ufanet.meetingsbot.constants.state.MeetingState;
+import com.ufanet.meetingsbot.constants.state.UpcomingState;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.keyboard.MeetingInlineKeyboardMaker;
 import com.ufanet.meetingsbot.model.*;
@@ -26,19 +25,11 @@ import java.util.*;
 public class UpcomingReplyMessageService extends ReplyMessageService {
     private final MeetingService meetingService;
     private final AccountService accountService;
-    private final MeetingInlineKeyboardMaker meetingInlineKeyboardMaker;
+    private final MeetingInlineKeyboardMaker meetingKeyboard;
     private final MessageUtils messageUtils;
-    private final LocaleMessageService localeMessageService;
+    private final LocaleMessageService localeMessage;
 
-    public void sendUpcomingMeetings(long userId) {
-        List<Meeting> meetings = meetingService.getMeetingsByUserIdAndState(userId, MeetingState.CONFIRMED);
-
-//        MeetingMessage message = messageUtils.generateMeetingMessage(meeting);
-
-//        String textMessage = localeMessageService.getMessage("reply.meeting.upcoming.all", message.subject(),
-//                message.questions(), message.participants(), message.duration(),
-//                message.address(), meeting.getState().name());
-
+    public void sendSelectedUpcomingMeeting(long userId, List<Meeting> meetings) {
         InlineKeyboardMarkup markup = InlineKeyboardMarkup.builder().build();
 
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
@@ -48,25 +39,26 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
                     .map(MeetingDate::getMeetingTimes).flatMap(Collection::stream)
                     .map(MeetingTime::getTime).findFirst().get();
 
-            InlineKeyboardButton k1 = InlineKeyboardButton.builder()
-                    .text(Emojis.CALENDAR.getEmojiSpace() + dt.format(CustomFormatter.DATE_TIME_WEEK_FORMATTER))
-                    .callbackData(UpcomingState.UPCOMING_MEETINGS.name() + " " + meeting.getId()).build();
-            keyboard.add(List.of(k1));
+            InlineKeyboardButton button =
+                    meetingKeyboard.defaultInlineButton(Emojis.CALENDAR.getEmojiSpace() + dt.format(CustomFormatter.DATE_TIME_WEEK_FORMATTER),
+                            UpcomingState.UPCOMING_MEETINGS.name() + " " + meeting.getId());
+
+            keyboard.add(List.of(button));
         }
         markup.setKeyboard(keyboard);
 
         SendMessage sendMessage = messageUtils.generateSendMessageHtml(userId,
-                "Выберите предстоящие встречи", markup);
+                localeMessage.getMessage("reply.meeting.upcoming.all"), markup);
 
         executeSendMessage(sendMessage);
     }
 
-    public void sendUpcomingMeetingsByMeetingId(long userId, long meetingId) {
+    public void sendSelectedUpcomingMeeting(long userId, long meetingId) {
         Optional<Meeting> optionalMeeting =
                 meetingService.getById(meetingId);
         Meeting meeting = optionalMeeting.get();
         MeetingMessage message = messageUtils.generateMeetingMessage(meeting);
-        String textMessage = localeMessageService.getMessage("reply.meeting.upcoming.all", message.subject(),
+        String textMessage = localeMessage.getMessage("reply.meeting.upcoming.send", message.subject(),
                 message.questions(), message.duration(), message.participants(),
                 message.address(), meeting.getState().name());
 
@@ -77,12 +69,12 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
 
     public void sendCanceledMeetingByMatching(Meeting meeting) {
         Account owner = meeting.getOwner();
-        String ownerLink = "<a href='https://t.me/" + owner.getUsername() + "'>" + owner.getFirstname() + "</a>";
+        String ownerLink = messageUtils.generateAccountLink(owner, "");
         Set<Account> participants = meeting.getParticipants();
         participants.add(owner);
         for (Account participant : participants) {
             SendMessage sendMessage = messageUtils.generateSendMessageHtml(participant.getId(),
-                    localeMessageService.getMessage("reply.meeting.canceled.match", ownerLink),
+                    localeMessage.getMessage("reply.meeting.canceled.match", ownerLink),
                     null);
 
             executeSendMessage(sendMessage);
@@ -97,12 +89,14 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
                 .map(MeetingTime::getTime).findFirst();
         if (readyTime.isEmpty()) return;
         LocalDateTime localDateTime = readyTime.get();
-        //TODO localemessage
-        String text = "Время запланировано на " + localDateTime.format(CustomFormatter.DATE_TIME_WEEK_FORMATTER);
-
+        String date = localDateTime.format(CustomFormatter.DATE_TIME_WEEK_FORMATTER);
+        String ownerLink = messageUtils.generateAccountLink(meeting.getOwner(), "");
         for (Account participant : participants) {
             SendMessage sendMessage =
-                    messageUtils.generateSendMessageHtml(participant.getId(), text, null);
+                    messageUtils.generateSendMessageHtml(participant.getId(),
+                            localeMessage.getMessage("reply.meeting.ready",
+                                    ownerLink, Emojis.CALENDAR.getEmojiSpace() + date,
+                                    Emojis.OFFICE.getEmojiSpace() + meeting.getAddress()), null);
 
             executeSendMessage(sendMessage);
         }
@@ -110,7 +104,7 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
 
     public void sendSuccessMeetingConfirm(long userId) {
         SendMessage sendMessage = messageUtils.generateSendMessage(userId,
-                localeMessageService.getMessage("reply.meeting.confirmed.message"));
+                localeMessage.getMessage("reply.meeting.confirmed.message"));
         executeSendMessage(sendMessage);
     }
 
@@ -121,7 +115,7 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
         participants.add(owner);
         for (Account participant : participants) {
             SendMessage sendMessage = messageUtils.generateSendMessageHtml(participant.getId(),
-                    localeMessageService.getMessage("reply.meeting.canceled.participants",
+                    localeMessage.getMessage("reply.meeting.canceled.participants",
                             ownerLink), null);
 
             executeSendMessage(sendMessage);
@@ -132,17 +126,23 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
     public void editMeetingToParticipant(long userId, Meeting meeting, List<AccountTime> accountTimes) {
 
         MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meeting);
-        String textMeeting = localeMessageService.getMessage("reply.meeting.awaiting.participants",
+        String textMeeting = localeMessage.getMessage("reply.meeting.awaiting.participants",
                 meetingMessage.owner(), meetingMessage.subject(), meetingMessage.questions(),
                 meetingMessage.participants(), meetingMessage.duration(), meetingMessage.times(),
                 meetingMessage.address());
 
 
         InlineKeyboardMarkup keyboard =
-                meetingInlineKeyboardMaker.getChangeMeetingTimeKeyboard(meeting.getId(), accountTimes);
+                meetingKeyboard.getChangeMeetingTimeKeyboard(meeting.getId(), accountTimes);
         EditMessageText sendMessage = messageUtils.generateEditMessageHtml(userId, textMeeting, keyboard);
 
         executeEditMessage(sendMessage);
     }
 
+    public void sendMeetingsNotExist(long userId) {
+        SendMessage sendMessage =
+                messageUtils.generateSendMessage(userId,
+                        localeMessage.getMessage("reply.meeting.upcoming.notexist"), null);
+        executeSendMessage(sendMessage);
+    }
 }

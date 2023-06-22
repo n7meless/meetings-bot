@@ -31,7 +31,7 @@ public abstract class ReplyMessageService {
 
         disableInlineMessage(chatId, botState.getMessageId());
         log.info("send message to {}", chatId);
-        Message response = telegramBot.safeExecute(message);
+        Message response = (Message) telegramBot.safeExecute(message);
 
         if (response != null) {
             botState.setMessageId(response.getMessageId());
@@ -56,7 +56,6 @@ public abstract class ReplyMessageService {
             log.error("an occurred error when sending edit message with id {}", message.getMessageId());
         }
     }
-
     protected void disableInlineMessage(Long userId, Integer messageId) {
         if (messageId == null) return;
         try {

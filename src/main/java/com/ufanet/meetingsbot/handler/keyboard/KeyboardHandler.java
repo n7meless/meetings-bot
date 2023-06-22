@@ -7,6 +7,6 @@ public interface KeyboardHandler {
 
     void handleUpdate(Update update);
 
-    AccountState getUserStateHandler();
+    AccountState getAccountStateHandler();
 
 }

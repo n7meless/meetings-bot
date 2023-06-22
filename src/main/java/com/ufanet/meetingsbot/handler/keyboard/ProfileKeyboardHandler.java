@@ -13,7 +13,7 @@ public class ProfileKeyboardHandler implements KeyboardHandler {
     }
 
     @Override
-    public AccountState getUserStateHandler() {
-        return AccountState.PROFILE;
+    public AccountState getAccountStateHandler() {
+        return AccountState.PROFILE_SETTINGS;
     }
 }

@@ -1,6 +1,7 @@
 package com.ufanet.meetingsbot.service;
 
 import com.ufanet.meetingsbot.cache.impl.MeetingCacheManager;
+import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.model.Meeting;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +24,7 @@ public class CustomScheduler {
     private final MeetingService meetingService;
 
     @Async
-    @Scheduled(fixedRate = 30000)
+    @Scheduled(fixedRate = 10000)
     public void saveMeetingFromCache() {
         Map<Long, Meeting> meetingDataCache = new HashMap<>(meetingCacheManager.getMeetingDataCache());
         for (Map.Entry<Long, Meeting> entry : meetingDataCache.entrySet()) {
@@ -32,11 +33,17 @@ public class CustomScheduler {
             LocalDateTime updatedDt = meeting.getUpdatedDt();
             LocalDateTime expirationDt = LocalDateTime.now();
             long seconds = ChronoUnit.SECONDS.between(updatedDt, expirationDt);
-            log.info("difference times user {} meeting {} between last updates {} seconds", userId, meeting.getId(), seconds);
-            if (seconds > 30) {
-                meetingService.save(meeting);
-                meetingCacheManager.clearData(userId);
-                log.info("meeting {} cache was evicted by user {} ",meeting.getId(), userId);
+
+            if (seconds > 5) {
+                MeetingState state = meeting.getState();
+                switch (state) {
+                    case AWAITING, CONFIRMED, CANCELED -> meetingCacheManager.evict(userId);
+                    default -> {
+                        meetingService.save(meeting);
+                        meetingCacheManager.evict(userId);
+                    }
+                }
+                log.info("meeting {} with user id {} was evicted from cache", meeting.getId(), userId);
             }
         }
     }

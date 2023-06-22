@@ -33,13 +33,13 @@ public class CalendarKeyboardMaker {
 
         LocalDate date = LocalDate.now();
         //TODO поменять подход проверки
-//        if (callback.length() > 5) {
+        if (callback.length() > 5) {
             if (callback.startsWith(NEXT.name()) || callback.startsWith(PREV.name())) {
                 date = LocalDate.parse(callback.substring(4), DATE_FORMATTER);
             } else {
                 date = LocalDate.parse(callback, DATE_FORMATTER);
             }
-//        }
+        }
         setMonthHeaderCalendar(rowsInLine, date);
         setDaysOfWeeksHeaderCalendar(rowsInLine);
         setDaysOfMonthCalendar(rowsInLine, meeting, date);

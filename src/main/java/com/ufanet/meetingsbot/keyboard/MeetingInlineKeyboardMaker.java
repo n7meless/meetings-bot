@@ -2,7 +2,7 @@ package com.ufanet.meetingsbot.keyboard;
 
 import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.ToggleButton;
-import com.ufanet.meetingsbot.constants.UpcomingState;
+import com.ufanet.meetingsbot.constants.state.UpcomingState;
 import com.ufanet.meetingsbot.model.*;
 import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +13,6 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.ufanet.meetingsbot.utils.CustomFormatter.DATE_WEEK_FORMATTER;
 
@@ -81,9 +80,12 @@ public class MeetingInlineKeyboardMaker {
         for (Account participant : participants) {
             List<InlineKeyboardButton> button;
             if (selectedMembers.contains(participant)) {
-                button = List.of(defaultInlineButton(Emojis.SELECTED.getEmoji() + " " + participant.getFirstname(), String.valueOf(participant.getId())));
+                button = List.of(defaultInlineButton(
+                        Emojis.SELECTED.getEmoji() + " " + participant.getFirstname(),
+                        String.valueOf(participant.getId())));
             } else {
-                button = List.of(defaultInlineButton(participant.getFirstname(), String.valueOf(participant.getId())));
+                button = List.of(defaultInlineButton(participant.getFirstname(),
+                        Long.toString(participant.getId())));
             }
 
             keyboard.add(button);
@@ -95,7 +97,7 @@ public class MeetingInlineKeyboardMaker {
 
     public InlineKeyboardMarkup getGroupsInlineMarkup(Meeting meeting, List<Group> groups) {
         Group currentGroup = meeting.getGroup();
-        boolean hasGroup = currentGroup!= null && currentGroup.getId() != null;
+        boolean hasGroup = currentGroup != null && currentGroup.getId() != null;
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         for (Group group : groups) {
             List<InlineKeyboardButton> button;
@@ -160,14 +162,21 @@ public class MeetingInlineKeyboardMaker {
         keyboard.add(List.of(cancel, confirm));
         return InlineKeyboardMarkup.builder().keyboard(keyboard).build();
     }
+
     //TODO поменять подход
     public InlineKeyboardMarkup getChangeMeetingTimeKeyboard(long meetingId, List<AccountTime> accountTimes) {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        Map<LocalDate, List<AccountTime>> collected = new TreeMap<>();
 
-        Map<LocalDate, List<AccountTime>> collected = accountTimes.stream()
-                .sorted(Comparator.comparing(AccountTime::getMeetingTime))
-                .collect(Collectors.groupingBy(t -> t.getMeetingTime().getTime().toLocalDate()));
-
+        accountTimes.forEach(at -> {
+            MeetingTime meetingTime = at.getMeetingTime();
+            MeetingDate meetingDate = meetingTime.getMeetingDate();
+            LocalDate localDate = meetingDate.getDate();
+            List<AccountTime> times = collected.getOrDefault(localDate, new ArrayList<>());
+            times.add(at);
+            collected.put(localDate, times);
+        });
+        //TODO красивый вывод
         for (Map.Entry<LocalDate, List<AccountTime>> entry : collected.entrySet()) {
             LocalDate dateTime = entry.getKey();
             InlineKeyboardButton questionButton = InlineKeyboardButton.builder()
@@ -203,7 +212,7 @@ public class MeetingInlineKeyboardMaker {
     }
 
 
-    public InlineKeyboardMarkup getMeetingUpcomingMarkup(List<Meeting> meetings){
+    public InlineKeyboardMarkup getMeetingUpcomingMarkup(List<Meeting> meetings) {
         return InlineKeyboardMarkup.builder().build();
     }
 }

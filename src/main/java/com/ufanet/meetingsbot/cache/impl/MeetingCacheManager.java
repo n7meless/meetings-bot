@@ -1,6 +1,6 @@
 package com.ufanet.meetingsbot.cache.impl;
 
-import com.ufanet.meetingsbot.cache.DataCache;
+import com.ufanet.meetingsbot.cache.Cache;
 import com.ufanet.meetingsbot.model.Meeting;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -10,16 +10,16 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
-public class MeetingCacheManager implements DataCache<Meeting> {
+public class MeetingCacheManager implements Cache<Meeting> {
     private final Map<Long, Meeting> meetingDataCache = new HashMap<>();
 
     @Override
-    public void saveData(Long userId, Meeting meeting) {
+    public void save(Long userId, Meeting meeting) {
         meetingDataCache.put(userId, meeting);
     }
 
     @Override
-    public Meeting getData(Long userId) {
+    public Meeting get(Long userId) {
         if (meetingDataCache.containsKey(userId)) {
             return meetingDataCache.get(userId);
         }
@@ -27,7 +27,7 @@ public class MeetingCacheManager implements DataCache<Meeting> {
     }
 
     @Override
-    public void clearData(Long userId) {
+    public void evict(Long userId) {
         if (meetingDataCache.containsKey(userId)) {
             meetingDataCache.remove(userId);
         }

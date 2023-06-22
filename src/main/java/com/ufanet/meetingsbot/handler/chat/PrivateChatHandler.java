@@ -1,7 +1,6 @@
 package com.ufanet.meetingsbot.handler.chat;
 
 import com.ufanet.meetingsbot.constants.BotCommands;
-import com.ufanet.meetingsbot.constants.ReplyKeyboardButton;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.dto.UpdateDto;
 import com.ufanet.meetingsbot.handler.keyboard.KeyboardHandler;
@@ -23,7 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.ufanet.meetingsbot.constants.ReplyKeyboardButton.fromValue;
+import static com.ufanet.meetingsbot.constants.state.AccountState.UPCOMING_MEETINGS;
+import static com.ufanet.meetingsbot.constants.state.AccountState.fromValue;
 
 @Slf4j
 @Component
@@ -45,17 +45,17 @@ public class PrivateChatHandler implements ChatHandler {
 
         log.info("handle update from private chat with user {}", userId);
 
-        ReplyKeyboardButton button = fromValue(content);
+        AccountState button = fromValue(content);
 
         if (button != null) {
             handleReplyButton(userId, button);
             handleCallback(userId, update);
         } else if (BotCommands.typeOf(content)) {
             handleCommand(userId, message);
-        } else if (content.startsWith("UPCOMING")) {
-            accountService.setState(userId, AccountState.UPCOMING);
-            queryHandlers.get(AccountState.UPCOMING).handleUpdate(update);
         } else {
+            if (content.startsWith("UPCOMING")) {
+                accountService.setState(userId, UPCOMING_MEETINGS);
+            }
             handleCallback(userId, update);
         }
     }
@@ -79,26 +79,26 @@ public class PrivateChatHandler implements ChatHandler {
     void handleCallback(long userId, Update update) {
         AccountState state = accountService.getState(userId);
         switch (state) {
-            case CREATE -> queryHandlers.get(AccountState.CREATE).handleUpdate(update);
-            case EDIT -> queryHandlers.get(AccountState.EDIT).handleUpdate(update);
-            case PROFILE -> queryHandlers.get(AccountState.PROFILE).handleUpdate(update);
-            case UPCOMING -> queryHandlers.get(AccountState.UPCOMING).handleUpdate(update);
+            case CREATE_MEETING -> queryHandlers.get(AccountState.CREATE_MEETING).handleUpdate(update);
+            case EDIT_MEETING -> queryHandlers.get(AccountState.EDIT_MEETING).handleUpdate(update);
+            case PROFILE_SETTINGS -> queryHandlers.get(AccountState.PROFILE_SETTINGS).handleUpdate(update);
+            case UPCOMING_MEETINGS -> queryHandlers.get(AccountState.UPCOMING_MEETINGS).handleUpdate(update);
         }
     }
 
-    void handleReplyButton(long userId, ReplyKeyboardButton button) {
+    void handleReplyButton(long userId, AccountState button) {
         switch (button) {
-            case CREATE_MEETING -> accountService.setState(userId, AccountState.CREATE);
-            case EDIT_MEETING -> accountService.setState(userId, AccountState.EDIT);
-            case MY_PROFILE -> accountService.setState(userId, AccountState.PROFILE);
-            case UPCOMING_MEETINGS -> accountService.setState(userId, AccountState.UPCOMING);
+            case CREATE_MEETING -> accountService.setState(userId, AccountState.CREATE_MEETING);
+            case EDIT_MEETING -> accountService.setState(userId, AccountState.EDIT_MEETING);
+            case PROFILE_SETTINGS -> accountService.setState(userId, AccountState.PROFILE_SETTINGS);
+            case UPCOMING_MEETINGS -> accountService.setState(userId, AccountState.UPCOMING_MEETINGS);
         }
     }
 
     @Autowired
     void setQueryHandlers(List<KeyboardHandler> keyboardHandlers) {
         keyboardHandlers.forEach(handler ->
-                this.queryHandlers.put(handler.getUserStateHandler(), handler));
+                this.queryHandlers.put(handler.getAccountStateHandler(), handler));
     }
 
     @Override

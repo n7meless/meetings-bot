@@ -61,37 +61,15 @@ public class MessageUtils {
                 .sorted().toList();
 
         Account meetingOwner = meeting.getOwner();
-        String owner;
+        String owner = generateAccountLink(meetingOwner, "");
 
-        if (meetingOwner.getUsername() == null) {
-            owner = "<a href='tg://user?id=" + meetingOwner.getId() + "'>" + meetingOwner.getFirstname() + "</a>";
-        } else {
-            owner = "<a href='https://t.me/" + meetingOwner.getUsername() + "'>" + meetingOwner.getFirstname() + "</a>";
-        }
         Set<Account> accounts = meeting.getParticipants();
 
         accounts.add(meetingOwner);
-        StringBuilder sb = new StringBuilder();
-        for (Account account : accounts) {
-            if (account.getUsername() == null) {
-                sb.append(SELECTED.getEmojiSpace()).append("<a href='tg://user?id=")
-                        .append(account.getId()).append("'>")
-                        .append(account.getFirstname()).append("</a>");
-            } else {
-                sb.append(SELECTED.getEmojiSpace()).append("<a href='https://t.me/")
-                        .append(account.getUsername()).append("'>")
-                        .append(account.getFirstname()).append("</a>");
-            }
-            sb.append("\n");
-        }
-        String participants = sb.toString();
-        accounts.remove(meetingOwner);
 
-//        accounts.add(meetingOwner);
-//        String participants = accounts.stream()
-//                .map(account -> "<a href='tg://user?id=" + account.getId() + "'>" + account.getFirstname() + "</a>")
-//                .collect(joining("\n" + SELECTED.getEmojiSpace(), SELECTED.getEmojiSpace(), "\n"));
-//        accounts.remove(meetingOwner);
+        String participants = generateAccountLink(accounts, SELECTED.getEmojiSpace());
+
+        accounts.remove(meetingOwner);
 
         String subject = CLIPBOARD.getEmojiSpace() + meeting.getSubject().getTitle();
         String questions = meeting.getSubject().getQuestions().stream().map(Question::getTitle)
@@ -106,5 +84,28 @@ public class MessageUtils {
 
         return new MeetingMessage(owner, participants, subject,
                 questions, duration, times, address);
+    }
+
+    public String generateAccountLink(Account account, String delimiter) {
+        StringBuilder sb = new StringBuilder();
+        if (account.getUsername() == null) {
+            sb.append(delimiter).append("<a href='tg://user?id=")
+                    .append(account.getId()).append("'>")
+                    .append(account.getFirstname()).append("</a>");
+        } else {
+            sb.append(delimiter).append("<a href='https://t.me/")
+                    .append(account.getUsername()).append("'>")
+                    .append(account.getFirstname()).append("</a>");
+        }
+        return sb.toString();
+    }
+
+    public String generateAccountLink(Set<Account> accounts, String delimiter) {
+        StringBuilder sb = new StringBuilder();
+        for (Account account : accounts) {
+            sb.append(generateAccountLink(account, delimiter));
+            sb.append("\n");
+        }
+        return sb.toString();
     }
 }

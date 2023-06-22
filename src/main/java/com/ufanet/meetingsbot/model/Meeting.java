@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -19,7 +20,7 @@ import java.util.function.Predicate;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity(name = "meetings")
-@NamedEntityGraph(name = "client_entity-graph", attributeNodes = {
+@NamedEntityGraph(name = "meeting-entity-graph", attributeNodes = {
         @NamedAttributeNode(value = "dates", subgraph = "dates.meetingTime"),
         @NamedAttributeNode(value = "subject", subgraph = "subject.questions"),
         @NamedAttributeNode(value = "owner"),
@@ -32,7 +33,7 @@ import java.util.function.Predicate;
                         attributeNodes = @NamedAttributeNode(value = "questions")),
                 @NamedSubgraph(name = "meetingTimes.accountTimes",
                         attributeNodes = @NamedAttributeNode(value = "accountTimes"))})
-public class Meeting {
+public class Meeting implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

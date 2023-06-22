@@ -7,7 +7,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 
 import java.util.List;
 
-import static com.ufanet.meetingsbot.constants.ReplyKeyboardButton.*;
+import static com.ufanet.meetingsbot.constants.state.AccountState.*;
 @Component
 public class ReplyKeyboardMaker {
     public ReplyKeyboardMarkup getMainMenuKeyboard() {
@@ -17,11 +17,12 @@ public class ReplyKeyboardMaker {
 
         KeyboardRow row2 = new KeyboardRow();
         row2.add(new KeyboardButton(EDIT_MEETING.getButtonName()));
-        row2.add(new KeyboardButton(MY_PROFILE.getButtonName()));
+        row2.add(new KeyboardButton(PROFILE_SETTINGS.getButtonName()));
         return ReplyKeyboardMarkup.builder()
                 .keyboard(List.of(row1, row2))
                 .resizeKeyboard(true)
                 .oneTimeKeyboard(false)
+                .selective(true)
                 .build();
     }
 }

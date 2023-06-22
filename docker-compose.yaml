@@ -16,7 +16,7 @@ services:
       - "6379:6379"
     volumes:
       - /db_data:/var/lib/redis/data
-    command: ["--notify-keyspace-events", "Ex"]
+#    command: ["--notify-keyspace-events", "Ex"]
 #  mongodb:
 #    image: mongo
 #    restart: unless-stopped

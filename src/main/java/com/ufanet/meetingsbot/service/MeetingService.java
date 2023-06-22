@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -38,7 +39,7 @@ public class MeetingService {
     }
 
     @Transactional
-    public void updateAccountTimes(Meeting meeting) {
+    public void saveByOwner(Meeting meeting) {
         log.info("saving meeting by user {}", meeting.getOwner().getId());
         Set<Account> participants = meeting.getParticipants();
         Set<MeetingDate> dates = meeting.getDates();
@@ -60,22 +61,23 @@ public class MeetingService {
         }
         meeting.setParticipants(participants);
         meetingRepository.save(meeting);
-        meetingCacheManager.clearData(meeting.getOwner().getId());
+        meetingCacheManager.evict(meeting.getOwner().getId());
     }
 
     public Meeting getByOwnerIdAndStateNotReady(long ownerId) {
-        Meeting meetingCache = meetingCacheManager.getData(ownerId);
+        Meeting meetingCache = meetingCacheManager.get(ownerId);
         if (meetingCache == null) {
-            Meeting meeting = meetingRepository.findByOwnerIdAndStateIsNotIn(ownerId, List.of(MeetingState.CONFIRMED, MeetingState.AWAITING, MeetingState.CANCELED))
+            Meeting meeting = meetingRepository.findByOwnerIdAndStateIsNotIn(ownerId,
+                            List.of(MeetingState.CONFIRMED, MeetingState.AWAITING, MeetingState.CANCELED))
                     .orElseGet(() -> createMeeting(ownerId));
-            meetingCacheManager.saveData(ownerId, meeting);
+            meetingCacheManager.save(ownerId, meeting);
             return meeting;
         }
         return meetingCache;
     }
 
     public Meeting getByOwnerId(long ownerId) {
-        Meeting meetingCache = meetingCacheManager.getData(ownerId);
+        Meeting meetingCache = meetingCacheManager.get(ownerId);
         if (meetingCache == null) {
             return meetingRepository.findByOwnerId(ownerId)
                     .orElseGet(() -> createMeeting(ownerId));
@@ -89,13 +91,12 @@ public class MeetingService {
         meeting.setCreatedDt(LocalDateTime.now());
         meeting.setUpdatedDt(LocalDateTime.now());
         meeting.setOwner(account);
-//        meeting.setGroup(new Group());
         meeting.setSubject(new Subject());
         meeting.setDates(new TreeSet<>(Comparator.comparing(MeetingDate::getDate)));
         meeting.setParticipants(new HashSet<>());
         meeting.setState(MeetingState.GROUP_SELECT);
 
-        meetingCacheManager.saveData(ownerId, meeting);
+        meetingCacheManager.save(ownerId, meeting);
         return meeting;
     }
 
@@ -107,12 +108,12 @@ public class MeetingService {
         meeting.setState(nextState);
     }
 
-    public void updateSubjectDuration(Meeting meeting, String callback) {
+    public void updateSubjectDuration(Meeting meeting, int duration) {
         Subject subject = meeting.getSubject();
-        subject.setDuration(Integer.parseInt(callback));
+        subject.setDuration(duration);
     }
 
-    public void updateGroup(Meeting meeting, Long groupId) {
+    public void updateGroup(Meeting meeting, long groupId) {
         log.info("updating group {} in meeting", groupId);
         Group group = meeting.getGroup();
         if (group == null) {
@@ -123,12 +124,12 @@ public class MeetingService {
         meeting.setState(MeetingState.PARTICIPANT_SELECT);
     }
 
-    public void updateParticipants(Meeting meeting, Long participantId) {
+    public void updateParticipants(Meeting meeting, long participantId) {
         log.info("updating participant {} in meeting", participantId);
         Optional<Account> participantOptional = accountService.getByUserId(participantId);
         Set<Account> participants = meeting.getParticipants();
 
-        if (!participantOptional.isEmpty()) {
+        if (participantOptional.isPresent()) {
             Account participant = participantOptional.get();
             if (participants.contains(participant)) {
                 participants.remove(participant);
@@ -154,10 +155,18 @@ public class MeetingService {
         save(meeting);
     }
 
-    public void updateMeetingAccountTime(long userId, Meeting meeting, long timeId, List<AccountTime> accountTimes) {
+    public void clearCache(long userId) {
+        meetingCacheManager.evict(userId);
+    }
 
-        AccountTime accountTime = accountTimes.stream().filter(at -> at.getId() == timeId)
-                .findFirst().orElseThrow();
+    public void saveOnCache(long userId, Meeting meeting) {
+        meetingCacheManager.save(userId, meeting);
+    }
+
+    public void updateMeetingAccountTime(Meeting meeting, long timeId, List<AccountTime> accountTimes) {
+
+        AccountTime accountTime = accountTimes.stream()
+                .filter(at -> at.getId() == timeId).findFirst().orElseThrow();
 
         Status status = accountTime.getStatus();
 
@@ -171,7 +180,6 @@ public class MeetingService {
         meetingTime.addAccountTime(accountTime);
         meetingDate.addMeetingTime(meetingTime);
         meeting.addMeetingDate(meetingDate);
-        meetingCacheManager.saveData(userId, meeting);
         accountService.saveAccountTime(accountTime);
     }
 
@@ -181,11 +189,10 @@ public class MeetingService {
     }
 
     public void updateSubject(Meeting meeting, String callback) {
-        log.info("updating subject '{}' in meeting", callback);
         Subject subject = meeting.getSubject();
         subject.setTitle(callback);
         subject.setMeeting(meeting);
-        meeting.setState(MeetingState.QUESTION_SELECT);
+        meeting.setState(MeetingState.SUBJECT_DURATION_SELECT);
     }
 
     public void updateQuestion(Meeting meeting, String questionCallback) {
@@ -195,19 +202,18 @@ public class MeetingService {
                 .filter((q) -> q.getTitle().equals(questionCallback)).findFirst();
 
         if (optional.isEmpty()) {
-            Question question = Question.builder().title(questionCallback).subject(subject).build();
+            Question question = Question.builder().title(questionCallback)
+                    .subject(subject).build();
             questions.add(question);
         } else questions.remove(optional.get());
         subject.setQuestions(questions);
         meeting.setSubject(subject);
     }
 
-    @SneakyThrows
+    @SneakyThrows(DateTimeException.class)
     public void updateDate(Meeting meeting, String callback) {
         Set<MeetingDate> meetingDates = meeting.getDates();
-
         if (!callback.startsWith(NEXT.name()) && !callback.startsWith(PREV.name())) {
-
             LocalDate localDate = LocalDate.parse(callback, CustomFormatter.DATE_FORMATTER);
 
             Optional<MeetingDate> dateOptional = meetingDates.stream()
@@ -223,15 +229,20 @@ public class MeetingService {
         }
     }
 
+    @SneakyThrows(value = IllegalArgumentException.class)
     public void updateTime(Meeting meeting, String callback) {
         Set<MeetingDate> meetingDates = meeting.getDates();
 
         LocalDateTime localDateTime = LocalDateTime.parse(callback, CustomFormatter.DATE_TIME_FORMATTER);
 
         LocalDate localDate = localDateTime.toLocalDate();
-        MeetingDate date = meetingDates.stream().filter(meetingDate -> meetingDate.getDate().isEqual(localDate)).findFirst().orElseThrow();
+        MeetingDate date = meetingDates.stream().filter(meetingDate -> meetingDate.getDate()
+                .isEqual(localDate)).findFirst().orElseThrow();
+
         Set<MeetingTime> times = date.getMeetingTimes();
-        Optional<MeetingTime> meetingTime = times.stream().filter(t -> t.getTime().isEqual(localDateTime)).findFirst();
+        Optional<MeetingTime> meetingTime = times.stream()
+                .filter(t -> t.getTime().isEqual(localDateTime)).findFirst();
+
         if (meetingTime.isEmpty()) {
             MeetingTime time = MeetingTime.builder().meetingDate(date).time(localDateTime).build();
             times.add(time);
@@ -249,32 +260,36 @@ public class MeetingService {
     @Transactional
     public void removeByOwnerId(long ownerId) {
         meetingRepository.deleteByOwnerId(ownerId);
-        meetingCacheManager.clearData(ownerId);
+        meetingCacheManager.evict(ownerId);
     }
+
     @Transactional
     public Meeting getByMeetingId(long userId, long meetingId) {
-        Meeting cache = meetingCacheManager.getData(userId);
+        Meeting cache = meetingCacheManager.get(userId);
         if (cache == null) {
             Meeting meeting = meetingRepository.findById(meetingId).orElseThrow();
-            meetingCacheManager.saveData(userId, meeting);
+            meetingCacheManager.save(userId, meeting);
             return meeting;
         } else {
             return save(cache);
         }
     }
+
     @Transactional
-    public List<MeetingTime> getByMeetingIdAndConfirmedState(long meetingId) {
+    public Optional<MeetingTime> getByMeetingIdAndConfirmedState(long meetingId) {
         return meetingTimeRepository.findByMeetingIdAndConfirmed(meetingId);
     }
 
-    public void processConfirmedMeeting(Meeting meeting, List<MeetingTime> confirmed) {
-        MeetingTime meetingTime = confirmed.get(0);
+    public void processConfirmedMeeting(long userId, Meeting meeting, Optional<MeetingTime> confirmed) {
+        MeetingTime meetingTime = confirmed.get();
         MeetingDate meetingDate = meetingTime.getMeetingDate();
         meetingDate.setMeetingTimes(Set.of(meetingTime));
         meeting.setDates(Set.of(meetingDate));
         meeting.setState(MeetingState.CONFIRMED);
+        meetingCacheManager.evict(userId);
         save(meeting);
     }
+
     @Transactional
     public List<Meeting> getMeetingsByUserIdAndState(long userId, MeetingState state) {
         return meetingRepository.findByParticipantsIdOrOwnerIdAndStateEquals(userId, userId, state);

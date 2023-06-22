@@ -8,8 +8,8 @@ import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-@CacheConfig(cacheNames = "bot_state")
 @Service
+@CacheConfig(cacheNames = "bot_state")
 @RequiredArgsConstructor
 public class BotService {
     private final BotRepository botRepository;
