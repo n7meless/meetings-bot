@@ -19,6 +19,11 @@ public class UpdateService {
             String data = query.getData();
             String chatType = message.getChat().getType();
             return new UpdateDto(chatId, data, chatType);
+        } else if (update.hasInlineQuery()){
+            String chatType = update.getInlineQuery().getChatType();
+            String data = update.getInlineQuery().getQuery();
+            Long id = update.getInlineQuery().getFrom().getId();
+            return new UpdateDto(id, data, chatType);
         }else return null;
     }
     public User getLeftChatMembers(Update update){

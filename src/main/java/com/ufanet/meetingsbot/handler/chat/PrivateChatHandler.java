@@ -1,12 +1,13 @@
 package com.ufanet.meetingsbot.handler.chat;
 
-import com.ufanet.meetingsbot.constants.BotCommands;
 import com.ufanet.meetingsbot.constants.state.AccountState;
+import com.ufanet.meetingsbot.constants.state.ProfileState;
 import com.ufanet.meetingsbot.dto.UpdateDto;
 import com.ufanet.meetingsbot.handler.keyboard.KeyboardHandler;
 import com.ufanet.meetingsbot.handler.type.ChatType;
-import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.service.AccountService;
+import com.ufanet.meetingsbot.service.BotService;
+import com.ufanet.meetingsbot.service.MeetingService;
 import com.ufanet.meetingsbot.service.UpdateService;
 import com.ufanet.meetingsbot.service.message.CommandReplyMessageService;
 import lombok.RequiredArgsConstructor;
@@ -20,10 +21,8 @@ import org.telegram.telegrambots.meta.api.objects.User;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
-import static com.ufanet.meetingsbot.constants.state.AccountState.UPCOMING_MEETINGS;
-import static com.ufanet.meetingsbot.constants.state.AccountState.fromValue;
+import static com.ufanet.meetingsbot.constants.state.AccountState.*;
 
 @Slf4j
 @Component
@@ -33,65 +32,75 @@ public class PrivateChatHandler implements ChatHandler {
     private final AccountService accountService;
     private final CommandReplyMessageService commandHandler;
     private final UpdateService updateService;
+    private final BotService botService;
+    private final MeetingService meetingService;
 
     @Override
     public void chatUpdate(Update update) {
-        Message message = update.getMessage();
         UpdateDto updateDto = updateService.parseUpdate(update);
         long userId = updateDto.chatId();
         String content = updateDto.content();
 
-        if (content.isBlank()) return;
-
         log.info("handle update from private chat with user {}", userId);
 
-        AccountState button = fromValue(content);
-
-        if (button != null) {
-            handleReplyButton(userId, button);
-            handleCallback(userId, update);
-        } else if (BotCommands.typeOf(content)) {
-            handleCommand(userId, message);
-        } else {
-            if (content.startsWith("UPCOMING")) {
-                accountService.setState(userId, UPCOMING_MEETINGS);
+        if (update.hasMessage()) {
+            handleMessage(userId, update);
+        } else if (update.hasInlineQuery()) {
+            botService.setState(userId, ProfileState.PROFILE_TIMEZONE_SELECT);
+            handleBotState(userId, update);
+        } else if (update.hasCallbackQuery()) {
+            if (AccountState.startWithState(content)) {
+                botService.setState(userId, content);
             }
-            handleCallback(userId, update);
+            handleBotState(userId, update);
         }
+    }
+
+    public void handleMessage(long userId, Update update) {
+        Message message = update.getMessage();
+        String messageText = message.getText();
+
+        botService.setLastMsgFromUser(userId, true);
+        //TODO вынести текст в пропертис
+        AccountState pressedButton = fromValue(messageText);
+
+        if (pressedButton != null) {
+            botService.setState(userId, pressedButton);
+//            meetingService.clearCache(userId);
+        } else if (messageText.startsWith("/")) {
+            handleCommand(userId, message);
+        }
+        handleBotState(userId, update);
     }
 
     public void handleCommand(long userId, Message message) {
         Long chatId = message.getChat().getId();
-        String text = message.getText();
+        String messageText = message.getText();
         User user = message.getFrom();
-        switch (text) {
+        switch (messageText) {
             case "/start" -> {
-                Optional<Account> optionalAccount = accountService.getByUserId(chatId);
-                optionalAccount.ifPresentOrElse((account) -> accountService.updateTgUser(account, user),
-                        () -> accountService.saveTgUser(user));
-                commandHandler.sendStartMessage(userId);
+                accountService.getByUserId(chatId)
+                        .ifPresentOrElse((account) -> accountService.updateTgUser(account, user),
+                                () -> accountService.saveTgUser(user));
+                commandHandler.sendLanguageSelectMessage(userId);
             }
             case "/help" -> commandHandler.sendHelpMessage(userId);
             case "/about" -> commandHandler.sendAboutMessage(userId);
         }
     }
 
-    void handleCallback(long userId, Update update) {
-        AccountState state = accountService.getState(userId);
-        switch (state) {
-            case CREATE_MEETING -> queryHandlers.get(AccountState.CREATE_MEETING).handleUpdate(update);
-            case EDIT_MEETING -> queryHandlers.get(AccountState.EDIT_MEETING).handleUpdate(update);
-            case PROFILE_SETTINGS -> queryHandlers.get(AccountState.PROFILE_SETTINGS).handleUpdate(update);
-            case UPCOMING_MEETINGS -> queryHandlers.get(AccountState.UPCOMING_MEETINGS).handleUpdate(update);
-        }
-    }
-
-    void handleReplyButton(long userId, AccountState button) {
-        switch (button) {
-            case CREATE_MEETING -> accountService.setState(userId, AccountState.CREATE_MEETING);
-            case EDIT_MEETING -> accountService.setState(userId, AccountState.EDIT_MEETING);
-            case PROFILE_SETTINGS -> accountService.setState(userId, AccountState.PROFILE_SETTINGS);
-            case UPCOMING_MEETINGS -> accountService.setState(userId, AccountState.UPCOMING_MEETINGS);
+    void handleBotState(long userId, Update update) {
+        String state = botService.getState(userId);
+        if (state.startsWith(CREATE.name())) {
+            queryHandlers.get(CREATE).handleUpdate(update);
+        } else if (state.startsWith(UPCOMING.name())) {
+            queryHandlers.get(UPCOMING).handleUpdate(update);
+        } else if (state.startsWith(PREVIOUS.name())) {
+            queryHandlers.get(PREVIOUS).handleUpdate(update);
+        } else if (state.startsWith(PROFILE.name())) {
+            queryHandlers.get(PROFILE).handleUpdate(update);
+        } else if (state.startsWith(EDIT.name())) {
+            queryHandlers.get(EDIT).handleUpdate(update);
         }
     }
 
@@ -102,7 +111,7 @@ public class PrivateChatHandler implements ChatHandler {
     }
 
     @Override
-    public ChatType getMessageType() {
+    public ChatType getChatType() {
         return ChatType.PRIVATE;
     }
 }

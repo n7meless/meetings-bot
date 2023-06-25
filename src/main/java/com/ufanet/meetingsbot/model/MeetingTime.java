@@ -1,17 +1,13 @@
 package com.ufanet.meetingsbot.model;
 
-import com.ufanet.meetingsbot.constants.Status;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
+import org.springframework.format.annotation.DateTimeFormat;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 @Getter
 @Setter
@@ -19,20 +15,27 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity(name = "meeting_time")
-public class MeetingTime implements Serializable, Comparable<MeetingTime> {
+@NamedEntityGraph(name = "meetingtime-with-accounttimes",
+        attributeNodes = {
+                @NamedAttributeNode(value = "accountTimes", subgraph = "accountTimes.account")
+        },
+        subgraphs = @NamedSubgraph(name = "accountTimes.account",
+                attributeNodes = @NamedAttributeNode(value = "account")))
+public class MeetingTime implements Comparable<MeetingTime> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @DateTimeFormat(pattern = "dd.MM.yyyy H:mm")
     private LocalDateTime time;
     @ManyToOne
     @JoinColumn(name = "date_id", referencedColumnName = "id")
     private MeetingDate meetingDate;
-    @OneToMany(mappedBy = "meetingTime",cascade = CascadeType.ALL)
-    @Fetch(FetchMode.JOIN)
+    @OneToMany(mappedBy = "meetingTime", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+//    @Fetch(FetchMode.JOIN)
     private Set<AccountTime> accountTimes;
 
-    public void addAccountTime(AccountTime accountTime){
+    public void addAccountTime(AccountTime accountTime) {
         this.accountTimes.add(accountTime);
     }
 

@@ -1,18 +1,22 @@
 package com.ufanet.meetingsbot.service;
 
-import com.ufanet.meetingsbot.config.BotConfig;
+import com.ufanet.meetingsbot.config.TelegramFacade;
 import com.ufanet.meetingsbot.dto.UpdateDto;
 import com.ufanet.meetingsbot.handler.chat.ChatHandler;
 import com.ufanet.meetingsbot.handler.type.ChatType;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.bots.DefaultBotOptions;
+import org.telegram.telegrambots.bots.TelegramWebhookBot;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
+import org.telegram.telegrambots.meta.api.methods.updates.SetWebhook;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.starter.SpringWebhookBot;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -21,38 +25,18 @@ import java.util.Map;
 
 @Slf4j
 @Getter
-@Component
-public class TelegramBot extends TelegramLongPollingBot {
+@Setter
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class TelegramBot extends SpringWebhookBot {
 
-    private final BotConfig botConfig;
-    private final Map<ChatType, ChatHandler> chatHandlers = new HashMap<>();
-    private final AccountService accountService;
-    private final UpdateService updateService;
+    String botToken;
+    String botUsername;
+    String botPath;
 
-    @Autowired
-    public TelegramBot(BotConfig botConfig, List<ChatHandler> chatHandlers,
-                       SetMyCommands setMyCommands, AccountService accountService, UpdateService updateService) {
-        this.botConfig = botConfig;
-        this.accountService = accountService;
-        this.updateService = updateService;
-        chatHandlers.forEach(handler -> this.chatHandlers.put(handler.getMessageType(), handler));
-        safeExecute(setMyCommands);
-    }
-
-    @Override
-    public void onUpdateReceived(Update update) {
-        if (update == null) return;
-        UpdateDto updateDto = updateService.parseUpdate(update);
-        ChatType chat = ChatType.typeOf(updateDto.chatType());
-
-        if (chat == null) return;
-
-        log.info("received message from {}", updateDto.chatId());
-
-        switch (chat) {
-            case PRIVATE -> chatHandlers.get(ChatType.PRIVATE).chatUpdate(update);
-            case GROUP, SUPERGROUP -> chatHandlers.get(ChatType.GROUP).chatUpdate(update);
-        }
+    final TelegramFacade telegramFacade;
+    public TelegramBot(TelegramFacade telegramFacade, SetWebhook setWebhook) {
+        super(setWebhook);
+        this.telegramFacade = telegramFacade;
     }
 
     public Serializable safeExecute(BotApiMethod<?> message) {
@@ -65,14 +49,10 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    @Override
-    public String getBotUsername() {
-        return botConfig.getUsername();
-    }
 
     @Override
-    public String getBotToken() {
-        return botConfig.getBotToken();
+    public BotApiMethod<?> onWebhookUpdateReceived(Update update) {
+        return telegramFacade.handleUpdate(update);
     }
 
 }

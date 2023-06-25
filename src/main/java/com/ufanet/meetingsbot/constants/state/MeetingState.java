@@ -16,12 +16,18 @@ public enum MeetingState {
     CANCELED,
     EDIT;
 
-    public static MeetingState typeOf(String state){
+    public static MeetingState typeOf(String state) {
         for (MeetingState meetingState : MeetingState.values()) {
-            if (meetingState.name().equals(state)){
+            if (meetingState.name().equals(state)) {
                 return meetingState;
             }
         }
         return null;
+    }
+
+    public static MeetingState setNextState(MeetingState meetingState) {
+        MeetingState[] values = MeetingState.values();
+        int current = meetingState.ordinal();
+        return values[current + 1];
     }
 }

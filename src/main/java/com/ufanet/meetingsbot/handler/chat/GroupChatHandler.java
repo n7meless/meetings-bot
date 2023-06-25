@@ -3,7 +3,6 @@ package com.ufanet.meetingsbot.handler.chat;
 import com.ufanet.meetingsbot.handler.type.ChatType;
 import com.ufanet.meetingsbot.model.Group;
 import com.ufanet.meetingsbot.service.GroupService;
-import com.ufanet.meetingsbot.service.message.GroupReplyMessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Chat;
@@ -68,7 +67,7 @@ public class GroupChatHandler implements ChatHandler {
     }
 
     @Override
-    public ChatType getMessageType() {
+    public ChatType getChatType() {
         return ChatType.GROUP;
     }
 }

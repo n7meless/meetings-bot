@@ -5,40 +5,51 @@ import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.dto.UpdateDto;
 import com.ufanet.meetingsbot.model.Meeting;
+import com.ufanet.meetingsbot.service.BotService;
 import com.ufanet.meetingsbot.service.MeetingService;
 import com.ufanet.meetingsbot.service.UpdateService;
 import com.ufanet.meetingsbot.service.message.MeetingReplyMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Controller;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.DateTimeException;
-
-import static com.ufanet.meetingsbot.constants.state.AccountState.CREATE_MEETING;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Slf4j
-@Component
+@Controller
 @RequiredArgsConstructor
 public class CreateKeyboardHandler implements KeyboardHandler {
     private final MeetingService meetingService;
     private final MeetingReplyMessageService messageService;
     private final UpdateService updateService;
+    private final BotService botService;
 
     @Override
     public void handleUpdate(Update update) {
-        UpdateDto updateDto = updateService.parseUpdate(update);
-        long userId = updateDto.chatId();
-        String message = updateDto.content();
 
-        Meeting meeting = meetingService.getByOwnerIdAndStateNotReady(userId);
-        if (message.equals(CREATE_MEETING.getButtonName())) {
-            handleMessage(userId, meeting, message);
-        } else if (update.hasCallbackQuery()) {
-            handleToggleButton(userId, meeting, message);
-        } else if (update.hasMessage()) {
-            handleStep(userId, meeting, message);
-            handleMessage(userId, meeting, message);
+        if (update.hasCallbackQuery()) {
+            CallbackQuery callbackQuery = update.getCallbackQuery();
+            String callback = callbackQuery.getData();
+            Long userId = callbackQuery.getMessage().getChatId();
+            Meeting meeting = meetingService.getByOwnerIdAndStateNotReady(userId);
+            handleToggleButton(userId, meeting, callback);
+        }
+        else if (update.hasMessage()) {
+            String message = update.getMessage().getText();
+            Long userId = update.getMessage().getChatId();
+            Meeting meeting = meetingService.getByOwnerIdAndStateNotReady(userId);
+
+            //TODO поменять подход проверки
+            if (message.equals(AccountState.CREATE.getButtonName())) {
+                handleMessage(userId, meeting, message);
+            } else {
+                handleStep(userId, meeting, message);
+                handleMessage(userId, meeting, message);
+            }
         }
     }
 
@@ -48,15 +59,17 @@ public class CreateKeyboardHandler implements KeyboardHandler {
             case SEND -> {
                 meetingService.saveByOwner(meeting);
                 messageService.sendMeetingToParticipants(meeting);
-                messageService.sendSuccessMessageParticipants(userId);
+                messageService.sendMessageSentSuccessfully(userId);
             }
             case NEXT -> {
-                meetingService.setNextState(meeting);
+                MeetingState currState = meeting.getState();
+                MeetingState newState = MeetingState.setNextState(currState);
+                meeting.setState(newState);
                 handleMessage(userId, meeting, message);
             }
             case CANCEL -> {
                 messageService.sendCanceledMessage(userId);
-                meetingService.removeByOwnerId(userId);
+                meetingService.deleteByOwnerId(userId);
             }
             case CURRENT -> {
                 handleStep(userId, meeting, message);
@@ -66,20 +79,33 @@ public class CreateKeyboardHandler implements KeyboardHandler {
     }
 
     public void handleStep(long userId, Meeting meeting, String callback) {
-        MeetingState state = meeting.getState();
+        MeetingState meetingState = meeting.getState();
         try {
-            switch (state) {
-                case GROUP_SELECT -> meetingService.updateGroup(meeting, Long.parseLong(callback));
+            switch (meetingState) {
+                case GROUP_SELECT -> {
+                    meetingService.updateGroup(meeting, Long.parseLong(callback));
+                    meeting.setState(MeetingState.PARTICIPANT_SELECT);
+                }
                 case PARTICIPANT_SELECT -> meetingService.updateParticipants(meeting, Long.parseLong(callback));
-                case SUBJECT_SELECT -> meetingService.updateSubject(meeting, callback);
-                case SUBJECT_DURATION_SELECT ->
-                        meetingService.updateSubjectDuration(meeting, Integer.parseInt(callback));
+                case SUBJECT_SELECT -> {
+                    meetingService.updateSubject(meeting, callback);
+                    meeting.setState(MeetingState.SUBJECT_DURATION_SELECT);
+                }
+                case SUBJECT_DURATION_SELECT -> {
+                    meetingService.updateSubjectDuration(meeting, Integer.parseInt(callback));
+                    meeting.setState(MeetingState.QUESTION_SELECT);
+                }
                 case QUESTION_SELECT -> meetingService.updateQuestion(meeting, callback);
                 case DATE_SELECT -> meetingService.updateDate(meeting, callback);
                 case TIME_SELECT -> meetingService.updateTime(meeting, callback);
-                case ADDRESS_SELECT -> meetingService.updateAddress(meeting, callback);
-                case CANCELED -> meetingService.removeByOwnerId(userId);
+                case ADDRESS_SELECT -> {
+                    meetingService.updateAddress(meeting, callback);
+                    meeting.setState(MeetingState.READY);
+                }
+                case CANCELED -> meetingService.deleteByOwnerId(userId);
             }
+            meeting.setUpdatedDt(LocalDateTime.now());
+
         } catch (IllegalArgumentException | DateTimeException e) {
             log.debug("invalid value entered by user {}", userId);
         }
@@ -102,18 +128,8 @@ public class CreateKeyboardHandler implements KeyboardHandler {
         }
     }
 
-//    public void handleMessage(long userId, String message, Meeting meeting) {
-//        MeetingState state = meeting.getState();
-//        switch (state) {
-//            case SUBJECT_SELECT -> meetingService.updateSubject(meeting, message);
-//            case QUESTION_SELECT -> meetingService.updateQuestion(meeting, message);
-//            case ADDRESS_SELECT -> meetingService.updateAddress(meeting, message);
-//        }
-//        meetingService.saveOnCache(userId, meeting);
-//    }
-
     @Override
     public AccountState getAccountStateHandler() {
-        return CREATE_MEETING;
+        return AccountState.CREATE;
     }
 }

@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS users
 (
     id         BIGSERIAL PRIMARY KEY,
-    username   VARCHAR(64) UNIQUE,
+    username   VARCHAR(64),
     first_name VARCHAR(64),
     last_name  VARCHAR(64),
     created_dt TIMESTAMP DEFAULT now()
@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS meetings
     created_dt TIMESTAMP DEFAULT now(),
     updated_dt TIMESTAMP,
     state      VARCHAR(100),
-    FOREIGN KEY (group_id) REFERENCES chats (id)
+    FOREIGN KEY (group_id) REFERENCES chats (id),
+    FOREIGN KEY (owner_id) REFERENCES users (id)
 );
 
 --changeset aidar:4
@@ -38,6 +39,8 @@ CREATE TABLE IF NOT EXISTS user_meetings
     id         BIGSERIAL PRIMARY KEY,
     user_id    BIGINT NOT NULL,
     meeting_id BIGINT NOT NULL,
+    comment    VARCHAR(255),
+    rate       INT,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (meeting_id) REFERENCES meetings (id) ON DELETE CASCADE
 );
@@ -45,14 +48,14 @@ CREATE TABLE IF NOT EXISTS user_meetings
 --changeset aidar:5
 CREATE TABLE IF NOT EXISTS subject
 (
-    id         SERIAL PRIMARY KEY,
+    id         BIGSERIAL PRIMARY KEY,
     title      VARCHAR(100),
     duration   INT,
     meeting_id BIGINT NOT NULL,
     FOREIGN KEY (meeting_id) REFERENCES meetings (id) ON DELETE CASCADE
 );
 --changeset aidar:6
-CREATE TABLE IF NOT EXISTS question
+CREATE TABLE IF NOT EXISTS questions
 (
     id         BIGSERIAL PRIMARY KEY,
     title      VARCHAR(150),
@@ -98,7 +101,7 @@ CREATE TABLE IF NOT EXISTS user_times
     id              BIGSERIAL PRIMARY KEY,
     user_id         BIGINT NOT NULL,
     meeting_time_id BIGINT NOT NULL,
-    status          VARCHAR(10),
+    status          VARCHAR(100),
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (meeting_time_id) REFERENCES meeting_time (id) ON DELETE CASCADE
 );
@@ -108,6 +111,7 @@ CREATE TABLE IF NOT EXISTS bot_state
     id       BIGSERIAL PRIMARY KEY,
     user_id  BIGINT NOT NULL,
     msg_type VARCHAR(20),
+    last_from_user bool,
     msg_id   INT,
     state    VARCHAR(100),
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE

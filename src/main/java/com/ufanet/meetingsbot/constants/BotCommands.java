@@ -9,11 +9,12 @@ public enum BotCommands {
 
     START("/start"),
     HELP("/help"),
-    ABOUT("/about");
+    ABOUT("/about"),
+    SETTIMEZONE("/settimezone");
 
     private final String command;
 
-    public static boolean typeOf(String command) {
+    public static boolean isCommand(String command) {
         BotCommands[] values = BotCommands.values();
         for (BotCommands value : values) {
             if (value.getCommand().equals(command)) {

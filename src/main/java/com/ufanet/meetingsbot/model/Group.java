@@ -35,9 +35,6 @@ public class Group implements Serializable {
             joinColumns = @JoinColumn(name = "chat_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"))
     @Fetch(value = FetchMode.JOIN)
-    private Set<Account> members;
-
-    public Set<Account> getMembers() {
-        return members == null? new HashSet<>() : members;
-    }
+    @Builder.Default
+    private Set<Account> members = new HashSet<>();
 }

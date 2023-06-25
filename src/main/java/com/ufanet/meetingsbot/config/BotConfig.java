@@ -24,6 +24,8 @@ public class BotConfig {
     String username;
     @Value("${telegram.bot.token}")
     String botToken;
+    @Value("${telegram.bot.webHookPath}")
+    String webHookPath;
 
     @Bean
     public SetMyCommands setMyCommands() {

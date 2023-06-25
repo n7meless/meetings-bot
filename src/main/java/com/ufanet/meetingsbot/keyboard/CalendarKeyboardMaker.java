@@ -1,11 +1,11 @@
 package com.ufanet.meetingsbot.keyboard;
 
+import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.model.MeetingDate;
 import com.ufanet.meetingsbot.model.MeetingTime;
 import com.ufanet.meetingsbot.utils.CustomFormatter;
 import com.ufanet.meetingsbot.utils.Emojis;
-import lombok.SneakyThrows;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
@@ -16,13 +16,8 @@ import java.time.format.TextStyle;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.ufanet.meetingsbot.constants.ToggleButton.NEXT;
-import static com.ufanet.meetingsbot.constants.ToggleButton.PREV;
-import static com.ufanet.meetingsbot.utils.CustomFormatter.DATE_FORMATTER;
-import static com.ufanet.meetingsbot.utils.CustomFormatter.DATE_WEEK_FORMATTER;
-
 @Component
-public class CalendarKeyboardMaker {
+public class CalendarKeyboardMaker extends KeyboardMaker {
     private final String[] dayOfWeek = {"Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"};
 
     private final int startWorkDay = 9;
@@ -31,14 +26,16 @@ public class CalendarKeyboardMaker {
     public List<List<InlineKeyboardButton>> getCalendarInlineMarkup(Meeting meeting, String callback) {
         List<List<InlineKeyboardButton>> rowsInLine = new ArrayList<>();
 
-        LocalDate date = LocalDate.now();
+        LocalDate date;
         //TODO поменять подход проверки
-        if (callback.length() > 5) {
-            if (callback.startsWith(NEXT.name()) || callback.startsWith(PREV.name())) {
-                date = LocalDate.parse(callback.substring(4), DATE_FORMATTER);
+        try {
+            if (callback.startsWith(ToggleButton.NEXT.name()) || callback.startsWith(ToggleButton.PREV.name())) {
+                date = LocalDate.parse(callback.substring(4), CustomFormatter.DATE_FORMATTER);
             } else {
-                date = LocalDate.parse(callback, DATE_FORMATTER);
+                date = LocalDate.parse(callback, CustomFormatter.DATE_FORMATTER);
             }
+        } catch (Exception e) {
+            date = LocalDate.now();
         }
         setMonthHeaderCalendar(rowsInLine, date);
         setDaysOfWeeksHeaderCalendar(rowsInLine);
@@ -53,13 +50,12 @@ public class CalendarKeyboardMaker {
         List<MeetingDate> meetingDates = meeting.getDates().stream()
                 .sorted().toList();
         LocalDateTime currentDate = LocalDateTime.now();
-
         for (MeetingDate meetingDate : meetingDates) {
 
             LocalDate localDate = meetingDate.getDate();
             InlineKeyboardButton dateHeader =
                     InlineKeyboardButton.builder()
-                            .text(Emojis.CALENDAR.getEmoji() + " " + localDate.format(DATE_WEEK_FORMATTER))
+                            .text(Emojis.CALENDAR.getEmoji() + " " + localDate.format(CustomFormatter.DATE_WEEK_FORMATTER))
                             .callbackData(" ")
                             .build();
 
@@ -109,8 +105,6 @@ public class CalendarKeyboardMaker {
         return rowsInLine;
     }
 
-    //TODO подумать над оптимизацией
-    @SneakyThrows
     private void setDaysOfMonthCalendar(List<List<InlineKeyboardButton>> rowsInLine,
                                         Meeting meeting, LocalDate chosenDate) {
         LocalDate currentDate = LocalDate.now();
@@ -136,7 +130,7 @@ public class CalendarKeyboardMaker {
 
                 InlineKeyboardButton day =
                         InlineKeyboardButton.builder().text(Integer.toString(difference))
-                                .callbackData(DATE_FORMATTER.format(currentDate))
+                                .callbackData(CustomFormatter.DATE_FORMATTER.format(currentDate))
                                 .build();
 
                 // если дата выбрана, то помечаем
@@ -175,8 +169,8 @@ public class CalendarKeyboardMaker {
         if (currentDate.getMonthValue() < monthValue) {
             InlineKeyboardButton left =
                     InlineKeyboardButton.builder().text("<<")
-                            .callbackData(PREV.name() + chosenDate.minusMonths(1).format(DATE_FORMATTER))
-                            .build();
+                            .callbackData(ToggleButton.PREV.name() + chosenDate.minusMonths(1)
+                                    .format(CustomFormatter.DATE_FORMATTER)).build();
             buttons.add(left);
         }
 
@@ -188,8 +182,8 @@ public class CalendarKeyboardMaker {
         if (monthValue <= Calendar.DECEMBER) {
             InlineKeyboardButton right =
                     InlineKeyboardButton.builder().text(">>")
-                            .callbackData(NEXT.name() + chosenDate.plusMonths(1).format(DATE_FORMATTER)).build();
-
+                            .callbackData(ToggleButton.NEXT.name() + chosenDate.plusMonths(1)
+                                    .format(CustomFormatter.DATE_FORMATTER)).build();
             buttons.add(right);
         }
 

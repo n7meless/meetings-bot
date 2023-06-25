@@ -17,6 +17,8 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
+import java.util.concurrent.ExecutorService;
+
 @Slf4j
 @Service
 public abstract class ReplyMessageService {
@@ -24,38 +26,65 @@ public abstract class ReplyMessageService {
     protected BotService botService;
     protected MessageUtils messageUtils;
     protected LocaleMessageService localeMessageService;
+    protected ExecutorService executorService;
 
     void executeSendMessage(SendMessage message) {
         long chatId = Long.parseLong(message.getChatId());
         BotState botState = botService.getByUserId(chatId);
 
-        disableInlineMessage(chatId, botState.getMessageId());
+        Integer messageId = botState.getMessageId();
+        if (messageId != null) {
+            disableInlineMessage(chatId, messageId);
+        }
+
         log.info("send message to {}", chatId);
         Message response = (Message) telegramBot.safeExecute(message);
 
         if (response != null) {
             botState.setMessageId(response.getMessageId());
         }
+        botState.setLastFromUser(false);
         botState.setMessageType(MessageType.SEND_MESSAGE);
-        botService.save(botState);
+        botService.saveCache(chatId, botState);
     }
 
-    void executeEditMessage(EditMessageText message) {
+    void executeMessage(EditMessageText message) {
         long chatId = Long.parseLong(message.getChatId());
-        int messageId = botService.getByUserId(chatId).getMessageId();
+        BotState botState = botService.getByUserId(chatId);
+        boolean fromUser = botState.isLastFromUser();
+        if (fromUser) {
+            SendMessage sendMessage =
+                    messageUtils.generateSendMessageHtml(chatId, message.getText(),
+                            message.getReplyMarkup());
+
+            executeSendMessage(sendMessage);
+        } else {
+            executeEditMessage(message);
+        }
+    }
+
+    protected void executeEditMessage(EditMessageText message) {
+        long chatId = Long.parseLong(message.getChatId());
+        BotState botState = botService.getByUserId(chatId);
+        int messageId = botState.getMessageId();
         message.setMessageId(messageId);
         try {
             telegramBot.execute(message);
         } catch (TelegramApiRequestException e) {
-            log.error("message {} is not modified", message.getMessageId());
-            SendMessage sendMessage =
-                    messageUtils.generateSendMessageHtml(chatId, message.getText(), message.getReplyMarkup());
-
-            executeSendMessage(sendMessage);
+            log.warn(e.getMessage());
+            log.warn("message {} in chat {} has not been modified", messageId, chatId);
+//            SendMessage sendMessage =
+//                    messageUtils.generateSendMessageHtml(chatId, message.getText(), message.getReplyMarkup());
+//
+//            executeSendMessage(sendMessage);
         } catch (TelegramApiException e) {
-            log.error("an occurred error when sending edit message with id {}", message.getMessageId());
+            log.warn(e.getMessage());
+            log.error("an occurred error when sending message {} in chat {}", messageId, chatId);
         }
+        botState.setMessageType(MessageType.EDIT_MESSAGE);
+        botService.saveCache(chatId, botState);
     }
+
     protected void disableInlineMessage(Long userId, Integer messageId) {
         if (messageId == null) return;
         try {
@@ -65,16 +94,18 @@ public abstract class ReplyMessageService {
             log.info("disable inline markup with message id {}", messageId);
             telegramBot.execute(disableMarkup);
         } catch (TelegramApiException e) {
-            log.error("can not disable inline markup with message id {}", messageId);
+            log.warn("can not disable inline markup with message id {}", messageId);
         }
     }
 
     @Autowired
     private void setDependencies(@Lazy TelegramBot telegramBot, BotService botService,
-                                 MessageUtils messageUtils, LocaleMessageService localeMessageService) {
+                                 MessageUtils messageUtils, LocaleMessageService localeMessageService,
+                                 ExecutorService executorService) {
         this.botService = botService;
         this.telegramBot = telegramBot;
         this.messageUtils = messageUtils;
         this.localeMessageService = localeMessageService;
+        this.executorService = executorService;
     }
 }

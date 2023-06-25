@@ -4,14 +4,12 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDate;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 
 @Getter
@@ -20,22 +18,20 @@ import java.util.function.Predicate;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity(name = "meeting_date")
-public class MeetingDate implements Serializable, Comparable<MeetingDate> {
+public class MeetingDate implements Comparable<MeetingDate> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @DateTimeFormat(pattern = "dd.MM.yyyy")
     private LocalDate date;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "meeting_id", referencedColumnName = "id")
     private Meeting meeting;
     @Fetch(FetchMode.JOIN)
     @OneToMany(mappedBy = "meetingDate", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<MeetingTime> meetingTimes;
-
-    public Set<MeetingTime> getMeetingTimes() {
-        return meetingTimes == null ? new HashSet<>() : meetingTimes;
-    }
+    @Builder.Default
+    private Set<MeetingTime> meetingTimes = new HashSet<>();
 
     public void addMeetingTime(MeetingTime meetingTime) {
         this.meetingTimes.add(meetingTime);

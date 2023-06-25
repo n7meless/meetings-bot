@@ -26,6 +26,8 @@ telegram:
   bot:
     username: ${TELEGRAM_USERNAME}
     token: ${TELEGRAM_TOKEN}
+    webHookPath: https://aea3-145-255-2-121.ngrok-free.app
+    utc: UTC+3
 redis:
   ttl:
     user: 60

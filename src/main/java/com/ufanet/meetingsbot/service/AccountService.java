@@ -34,11 +34,16 @@ public class AccountService {
     @Transactional
     public List<Meeting> getMeetingsByUserId(long userId) {
         Account account = getByUserId(userId).orElseThrow();
-        return account.getMeetings();
+        return account.getAccountMeetings().stream()
+                .map(AccountMeeting::getMeeting).toList();
+    }
+
+    public List<AccountTime> getAccountTimesByMeetingId(long meetingId){
+        return accountTimeRepository.findByMeetingId(meetingId);
     }
 
     //    @Cacheable(cacheNames = "account_times", key = "#userId",unless = "#result == null")
-    public List<AccountTime> getAccountTimesByUserIdAndMeetingId(long userId, long meetingId) {
+    public Optional<AccountTime> getAccountTimesByUserIdAndMeetingId(long userId, long meetingId) {
         return accountTimeRepository.findByAccountIdAndMeetingId(userId, meetingId);
     }
 
@@ -69,9 +74,10 @@ public class AccountService {
                 .lastname(user.getLastName())
                 .username(user.getUserName())
                 .build();
-        Settings settings = Settings.builder().account(account)
-                .language(user.getLanguageCode()).build();
+        Settings settings = Settings.builder()
+                .account(account).timeZone("UTC+3").build();
         BotState botState = BotState.builder()
+                .state(AccountState.PROFILE.name())
                 .account(account)
                 .build();
 
@@ -88,16 +94,7 @@ public class AccountService {
         save(account);
     }
 
-    public void setState(long userId, AccountState accountState) {
-        BotState botState = botService.getByUserId(userId);
-        AccountState state = botState.getState();
-        if (state == null || !state.equals(accountState)) {
-            botState.setState(accountState);
-            botService.save(botState);
-        }
-    }
-
-    public AccountState getState(long userId) {
+    public String getState(long userId) {
         BotState botState = botService.getByUserId(userId);
         return botState.getState();
     }

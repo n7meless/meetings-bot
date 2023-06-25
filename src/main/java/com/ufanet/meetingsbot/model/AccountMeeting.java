@@ -4,29 +4,23 @@ import com.ufanet.meetingsbot.constants.Status;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.io.Serial;
 import java.io.Serializable;
-import java.util.Objects;
-
 @Builder
-@Getter
 @Setter
-@NoArgsConstructor
+@Getter
 @AllArgsConstructor
-@Entity(name = "user_times")
-public class AccountTime{
-
+@NoArgsConstructor
+@Entity(name = "user_meetings")
+public class AccountMeeting{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "status")
-    @Enumerated(EnumType.STRING)
-    private Status status;
-    @ManyToOne(cascade = {CascadeType.MERGE}, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private Account account;
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "meeting_time_id", referencedColumnName = "id")
-    private MeetingTime meetingTime;
-
+    @JoinColumn(name = "meeting_id", referencedColumnName = "id")
+    private Meeting meeting;
+    private String comment;
+    private Integer rate;
 }
