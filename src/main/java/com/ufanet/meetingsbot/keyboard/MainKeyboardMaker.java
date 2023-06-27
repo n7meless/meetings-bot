@@ -10,6 +10,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.ufanet.meetingsbot.constants.state.AccountState.*;
@@ -26,10 +27,22 @@ public class MainKeyboardMaker extends KeyboardMaker {
                 ProfileState.PROFILE_LANGUAGE_SELECT.name() + Language.ENGLISH);
         return buildInlineMarkup(List.of(List.of(russian, english)));
     }
-//    public InlineKeyboardMarkup getProfileOptionsMarkup(){
-//        InlineKeyboardButton language = defaultInlineButton("Изменить язык",
-//                ProfileState.PROFILE_LANGUAGE_SELECT.name());
-//    }
+
+    public InlineKeyboardMarkup getProfileOptionsMarkup(){
+        InlineKeyboardButton timeZone = InlineKeyboardButton.builder()
+                .text(Emojis.ALARM_CLOCK.getEmojiSpace() + "Выбрать часовой пояс")
+                .switchInlineQueryCurrentChat("").build();
+
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        InlineKeyboardButton language =
+                defaultInlineButton(Emojis.RUSSIA.getEmojiSpace() +  "Выбрать язык",
+                        ProfileState.PROFILE_LANGUAGE_SELECT.name());
+
+        keyboard.add(List.of(language));
+        keyboard.add(List.of(timeZone));
+
+        return buildInlineMarkup(keyboard);
+    }
 
     public ReplyKeyboardMarkup getMainMenuKeyboard() {
         KeyboardRow row1 = new KeyboardRow();

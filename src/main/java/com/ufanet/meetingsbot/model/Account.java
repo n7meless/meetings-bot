@@ -2,14 +2,11 @@ package com.ufanet.meetingsbot.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 
 @Getter
@@ -20,15 +17,6 @@ import java.util.List;
 @Entity(name = "users")
 @EqualsAndHashCode(of = {"id"})
 @EntityListeners({AuditingEntityListener.class})
-@NamedEntityGraph(name = "account_with_settings", attributeNodes = {
-        @NamedAttributeNode(value = "settings"),
-        @NamedAttributeNode(value = "botState"),
-})
-@NamedEntityGraph(name = "accounts_with_settings_and_botstate", attributeNodes = {
-        @NamedAttributeNode(value = "groups"),
-        @NamedAttributeNode(value = "settings"),
-        @NamedAttributeNode(value = "botState")
-})
 public class Account implements Serializable {
 
     @Id
@@ -42,7 +30,7 @@ public class Account implements Serializable {
     @CreatedDate
     private LocalDateTime createdDt;
 //    @Fetch(FetchMode.JOIN)
-    @OneToOne(fetch = FetchType.LAZY, optional = false, mappedBy = "account", orphanRemoval = true, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, mappedBy = "account", orphanRemoval = true, cascade = CascadeType.ALL)
     private Settings settings;
 //    @Fetch(FetchMode.JOIN)
     @OneToOne(fetch = FetchType.LAZY, optional = false, mappedBy = "account", orphanRemoval = true, cascade = CascadeType.ALL)

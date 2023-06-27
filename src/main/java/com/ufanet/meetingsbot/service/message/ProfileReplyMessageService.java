@@ -1,18 +1,14 @@
 package com.ufanet.meetingsbot.service.message;
 
 import com.ufanet.meetingsbot.constants.BotCommands;
-import com.ufanet.meetingsbot.constants.state.ProfileState;
 import com.ufanet.meetingsbot.keyboard.MainKeyboardMaker;
 import com.ufanet.meetingsbot.utils.CustomFormatter;
-import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.inlinequery.inputmessagecontent.InputTextMessageContent;
 import org.telegram.telegrambots.meta.api.objects.inlinequery.result.InlineQueryResultArticle;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -58,20 +54,8 @@ public class ProfileReplyMessageService extends ReplyMessageService {
     }
 
     public void sendProfileMessage(Long chatId) {
-        InlineKeyboardButton timeZone = InlineKeyboardButton.builder().text(Emojis.ALARM_CLOCK.getEmojiSpace() + "Выбрать часовой пояс")
-                .switchInlineQueryCurrentChat("").build();
-
-        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
-        InlineKeyboardButton language = mainKeyboard.defaultInlineButton(Emojis.RUSSIA.getEmojiSpace() +  "Выбрать язык",
-                ProfileState.PROFILE_LANGUAGE_SELECT.name());
-
-        keyboard.add(List.of(language));
-        keyboard.add(List.of(timeZone));
-
-        InlineKeyboardMarkup keyboardMarkup = mainKeyboard.buildInlineMarkup(keyboard);
-
         SendMessage sendMessage = messageUtils.generateSendMessage(chatId,
-                "Выберите нужную опцию:", keyboardMarkup);
+                "Выберите нужную опцию:", mainKeyboard.getProfileOptionsMarkup());
         executeSendMessage(sendMessage);
     }
 

@@ -1,10 +1,7 @@
 package com.ufanet.meetingsbot.model;
 
-import com.ufanet.meetingsbot.constants.Status;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.io.Serializable;
 @Builder
 @Setter
 @Getter

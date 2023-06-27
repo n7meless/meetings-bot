@@ -9,21 +9,11 @@ public enum MeetingState {
     DATE_SELECT,
     TIME_SELECT,
     ADDRESS_SELECT,
-    READY,
+    EDIT,
     AWAITING,
     CONFIRMED,
     PASSED,
-    CANCELED,
-    EDIT;
-
-    public static MeetingState typeOf(String state) {
-        for (MeetingState meetingState : MeetingState.values()) {
-            if (meetingState.name().equals(state)) {
-                return meetingState;
-            }
-        }
-        return null;
-    }
+    CANCELED;
 
     public static MeetingState setNextState(MeetingState meetingState) {
         MeetingState[] values = MeetingState.values();

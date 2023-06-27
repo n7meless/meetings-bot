@@ -1,18 +1,17 @@
 package com.ufanet.meetingsbot.utils;
 
 import com.ufanet.meetingsbot.dto.MeetingMessage;
-import com.ufanet.meetingsbot.model.*;
-import org.hibernate.Hibernate;
+import com.ufanet.meetingsbot.model.Account;
+import com.ufanet.meetingsbot.model.Meeting;
+import com.ufanet.meetingsbot.model.Question;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 
-import java.time.LocalDateTime;
-import java.util.Collection;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -55,11 +54,6 @@ public class MessageUtils {
     }
 
     public MeetingMessage generateMeetingMessage(Meeting meeting) {
-        List<LocalDateTime> dateTimes = meeting.getDates().stream()
-                .map(MeetingDate::getMeetingTimes)
-                .flatMap(Collection::stream)
-                .map(MeetingTime::getTime)
-                .sorted().toList();
 
         Account meetingOwner = meeting.getOwner();
         String owner = generateAccountLink(meetingOwner, "", "");
@@ -73,23 +67,28 @@ public class MessageUtils {
                 .collect(joining("\n" + QUESTION.getEmojiSpace(), QUESTION.getEmojiSpace(), "\n"));
 
         Integer subjectDuration = meeting.getSubject().getDuration();
-        String duration = subjectDuration == null ? "(не указано)" : CLOCK.getEmojiSpace() + subjectDuration;
-        String times = dateTimes.stream().map(date -> date.format(CustomFormatter.DATE_TIME_WEEK_FORMATTER))
-                .collect(joining("\n" + CALENDAR.getEmojiSpace(), CALENDAR.getEmojiSpace(), "\n"));
+        String duration = subjectDuration == null ? "(не указано)" : DURATION.getEmojiSpace() + subjectDuration;
 
         String address = meeting.getAddress() == null ? "(не указано)" : OFFICE.getEmojiSpace() + meeting.getAddress();
 
         return new MeetingMessage(owner, participants, subject,
-                questions, duration, times, address);
+                questions, duration, address);
+    }
+    public String generateDatesText(List<ZonedDateTime> dates) {
+        StringBuilder sb = new StringBuilder();
+        for (ZonedDateTime zonedDateTime : dates) {
+            String formattedDate = zonedDateTime.format(CustomFormatter.DATE_TIME_WEEK_FORMATTER);
+            sb.append(CALENDAR.getEmojiSpace()).append(formattedDate).append("\n");
+        }
+        return sb.toString();
     }
 
     public String generateAccountLink(Account account, String prefix, String suffix) {
         StringBuilder sb = new StringBuilder();
         sb.append(prefix);
-        if (account.getUsername()==null){
+        if (account.getUsername() == null) {
             sb.append("<a href='tg://user?id=").append(account.getId());
-        }
-        else {
+        } else {
             sb.append("<a href='https://t.me/").append(account.getUsername());
         }
         sb.append("'>").append(account.getFirstname()).append("</a>").append(suffix);
@@ -101,6 +100,14 @@ public class MessageUtils {
         for (Account account : accounts) {
             sb.append(generateAccountLink(account, prefix, suffix));
             sb.append("\n");
+        }
+        return sb.toString();
+    }
+
+    public String buildText(String ...text){
+        StringBuilder sb = new StringBuilder();
+        for (String s : text) {
+            sb.append(s);
         }
         return sb.toString();
     }

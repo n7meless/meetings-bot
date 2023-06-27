@@ -29,29 +29,31 @@ public abstract class ReplyMessageService {
     protected ExecutorService executorService;
 
     void executeSendMessage(SendMessage message) {
-        long chatId = Long.parseLong(message.getChatId());
-        BotState botState = botService.getByUserId(chatId);
+        executorService.execute(() -> {
+            long chatId = Long.parseLong(message.getChatId());
+            BotState botState = botService.getByUserId(chatId);
 
-        Integer messageId = botState.getMessageId();
-        if (messageId != null) {
-            disableInlineMessage(chatId, messageId);
-        }
+            Integer messageId = botState.getMessageId();
+            if (messageId != null) {
+                disableInlineMessage(chatId, messageId);
+            }
 
-        log.info("send message to {}", chatId);
-        Message response = (Message) telegramBot.safeExecute(message);
+            log.info("send message to {}", chatId);
+            Message response = (Message) telegramBot.safeExecute(message);
 
-        if (response != null) {
-            botState.setMessageId(response.getMessageId());
-        }
-        botState.setLastFromUser(false);
-        botState.setMessageType(MessageType.SEND_MESSAGE);
-        botService.saveCache(chatId, botState);
+            if (response != null) {
+                botState.setMessageId(response.getMessageId());
+            }
+            botState.setMsgFromUser(false);
+            botState.setMessageType(MessageType.SEND_MESSAGE);
+            botService.saveCache(chatId, botState);
+        });
     }
 
     void executeMessage(EditMessageText message) {
         long chatId = Long.parseLong(message.getChatId());
         BotState botState = botService.getByUserId(chatId);
-        boolean fromUser = botState.isLastFromUser();
+        boolean fromUser = botState.isMsgFromUser();
         if (fromUser) {
             SendMessage sendMessage =
                     messageUtils.generateSendMessageHtml(chatId, message.getText(),
@@ -73,10 +75,6 @@ public abstract class ReplyMessageService {
         } catch (TelegramApiRequestException e) {
             log.warn(e.getMessage());
             log.warn("message {} in chat {} has not been modified", messageId, chatId);
-//            SendMessage sendMessage =
-//                    messageUtils.generateSendMessageHtml(chatId, message.getText(), message.getReplyMarkup());
-//
-//            executeSendMessage(sendMessage);
         } catch (TelegramApiException e) {
             log.warn(e.getMessage());
             log.error("an occurred error when sending message {} in chat {}", messageId, chatId);
@@ -102,10 +100,10 @@ public abstract class ReplyMessageService {
     private void setDependencies(@Lazy TelegramBot telegramBot, BotService botService,
                                  MessageUtils messageUtils, LocaleMessageService localeMessageService,
                                  ExecutorService executorService) {
+        this.executorService = executorService;
         this.botService = botService;
         this.telegramBot = telegramBot;
         this.messageUtils = messageUtils;
         this.localeMessageService = localeMessageService;
-        this.executorService = executorService;
     }
 }

@@ -18,6 +18,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        jdbc:
+          time_zone: UTC
   data:
     redis:
       host: localhost
@@ -26,10 +28,10 @@ telegram:
   bot:
     username: ${TELEGRAM_USERNAME}
     token: ${TELEGRAM_TOKEN}
-    webHookPath: https://aea3-145-255-2-121.ngrok-free.app
-    utc: UTC+3
+    webHookPath: https://7224-145-255-2-121.ngrok-free.app
 redis:
   ttl:
     user: 60
 application:
   locale: ru-RU
+  zone: UTC+03:00

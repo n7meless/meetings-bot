@@ -1,13 +1,14 @@
-package com.ufanet.meetingsbot.handler.keyboard;
+package com.ufanet.meetingsbot.handler.event;
 
 import com.ufanet.meetingsbot.constants.BotCommands;
 import com.ufanet.meetingsbot.constants.state.AccountState;
+import com.ufanet.meetingsbot.exceptions.ValidationMeetingException;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Settings;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.message.ProfileReplyMessageService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -16,9 +17,9 @@ import org.telegram.telegrambots.meta.api.objects.inlinequery.InlineQuery;
 
 import static com.ufanet.meetingsbot.constants.state.AccountState.PROFILE;
 
-@Component
+@Service
 @RequiredArgsConstructor
-public class ProfileKeyboardHandler implements KeyboardHandler {
+public class ProfileEventHandler implements EventHandler {
     private final ProfileReplyMessageService profileReplyMessage;
     private final AccountService accountService;
 
@@ -33,29 +34,33 @@ public class ProfileKeyboardHandler implements KeyboardHandler {
         }
     }
 
-    private void handleMessage(Message message) {
+    protected void handleMessage(Message message) {
         String messageText = message.getText();
         Long userId = message.getChatId();
         if (messageText.equals(PROFILE.getButtonName())) {
             profileReplyMessage.sendProfileMessage(userId);
-        }else if (messageText.startsWith(BotCommands.SETTIMEZONE.getCommand())){
-            String timeZone = messageText.split(" ")[1];
-            System.out.println(timeZone);
-            Account account = accountService.getByUserId(userId).orElseThrow();
-            Settings settings = account.getSettings();
-            settings.setTimeZone(timeZone);
-            account.setSettings(settings);
-            accountService.save(account);
-            profileReplyMessage.sendSuccessTimezoneSelected(userId);
+        } else if (messageText.startsWith(BotCommands.SETTIMEZONE.getCommand())) {
+            String timeZone = messageText.substring(BotCommands.SETTIMEZONE.getCommand().length() + 1);
+
+            if (timeZone.startsWith("UTC")) {
+                System.out.println(timeZone);
+                Account account = accountService.getByUserId(userId).orElseThrow();
+                Settings settings = account.getSettings();
+                settings.setTimeZone(timeZone);
+                account.setSettings(settings);
+                accountService.save(account);
+                profileReplyMessage.sendSuccessTimezoneSelected(userId);
+            } else throw new ValidationMeetingException(userId,
+                    "Неправильно введена команда или часовой пояс. Введите в формате: /settimezone UTC+03:00");
         }
     }
 
-    private void handleInlineQuery(InlineQuery inlineQuery) {
+    protected void handleInlineQuery(InlineQuery inlineQuery) {
         String queryId = inlineQuery.getId();
         profileReplyMessage.sendInlineMessageQuery(queryId);
     }
 
-    void handleCallback(CallbackQuery callbackQuery) {
+    protected void handleCallback(CallbackQuery callbackQuery) {
         User tgUser = callbackQuery.getFrom();
         String callback = callbackQuery.getData();
     }

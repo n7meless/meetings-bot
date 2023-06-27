@@ -3,15 +3,12 @@ package com.ufanet.meetingsbot.keyboard;
 import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.model.MeetingDate;
-import com.ufanet.meetingsbot.model.MeetingTime;
 import com.ufanet.meetingsbot.utils.CustomFormatter;
 import com.ufanet.meetingsbot.utils.Emojis;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.time.format.TextStyle;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -23,7 +20,7 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
     private final int startWorkDay = 9;
     private final int endWorkDay = 18;
 
-    public List<List<InlineKeyboardButton>> getCalendarInlineMarkup(Meeting meeting, String callback) {
+    public List<List<InlineKeyboardButton>> getCalendarInlineMarkup(Meeting meeting, String callback, String zoneId) {
         List<List<InlineKeyboardButton>> rowsInLine = new ArrayList<>();
 
         LocalDate date;
@@ -35,21 +32,21 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
                 date = LocalDate.parse(callback, CustomFormatter.DATE_FORMATTER);
             }
         } catch (Exception e) {
-            date = LocalDate.now();
+            date = LocalDate.now(ZoneId.of(zoneId));
         }
-        setMonthHeaderCalendar(rowsInLine, date);
+        setMonthHeaderCalendar(rowsInLine, date, zoneId);
         setDaysOfWeeksHeaderCalendar(rowsInLine);
-        setDaysOfMonthCalendar(rowsInLine, meeting, date);
+        setDaysOfMonthCalendar(rowsInLine, meeting, date, zoneId);
 
         return rowsInLine;
     }
 
-    public List<List<InlineKeyboardButton>> getTimeInlineMarkup(Meeting meeting) {
+    public List<List<InlineKeyboardButton>> getTimeInlineMarkup(Meeting meeting, String zoneId) {
         List<List<InlineKeyboardButton>> rowsInLine = new ArrayList<>();
 
         List<MeetingDate> meetingDates = meeting.getDates().stream()
                 .sorted().toList();
-        LocalDateTime currentDate = LocalDateTime.now();
+        LocalDateTime currentDate = LocalDateTime.now(ZoneId.of(zoneId));
         for (MeetingDate meetingDate : meetingDates) {
 
             LocalDate localDate = meetingDate.getDate();
@@ -59,8 +56,8 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
                             .callbackData(" ")
                             .build();
 
-            List<LocalDateTime> dateTimes = meetingDate.getMeetingTimes().stream()
-                    .map(MeetingTime::getTime).toList();
+            List<ZonedDateTime> dateTimes = meetingDate.getMeetingTimes().stream()
+                    .map(t->t.getTimeWithZoneOffset(zoneId)).toList();
 
 
             int startWorkDay = this.startWorkDay; // начало рабочего дня
@@ -72,7 +69,6 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
 
                 startWorkDay++;
             }
-
             rowsInLine.add(List.of(dateHeader));
             //сколько рабочих часов для встречи осталось
             //определяем длину inline кнопок
@@ -87,14 +83,16 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
                 for (int j = 0; j < columns && startWorkDay <= endWorkDay; j++, startWorkDay++) {
                     LocalTime localTime = LocalTime.of(startWorkDay, 0);
 
-                    LocalDateTime localDateTime = LocalDateTime.of(localDate, localTime);
+                    ZonedDateTime of = ZonedDateTime.of(localDate, localTime, ZoneId.of(zoneId));
 
                     InlineKeyboardButton time =
                             InlineKeyboardButton.builder()
                                     .text(localTime.toString())
-                                    .callbackData(localDateTime.format(CustomFormatter.DATE_TIME_FORMATTER))
+//                                    .callbackData(of.format(CustomFormatter.DATE_TIME_ZONE_FORMATTER))
+                                    .callbackData(of.toString())
                                     .build();
-                    if (dateTimes.contains(localDateTime)) {
+
+                    if (dateTimes.contains(of)) {
                         time.setText("(" + localTime + ")");
                     }
                     timeButtons.add(time);
@@ -106,12 +104,12 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
     }
 
     private void setDaysOfMonthCalendar(List<List<InlineKeyboardButton>> rowsInLine,
-                                        Meeting meeting, LocalDate chosenDate) {
-        LocalDate currentDate = LocalDate.now();
+                                        Meeting meeting, LocalDate chosenDate, String zoneId) {
+        LocalDate currentDate = LocalDate.now(ZoneId.of(zoneId));
 
         if (currentDate.getMonthValue() != chosenDate.getMonthValue()) {
             currentDate = LocalDate.of(chosenDate.getYear(), chosenDate.getMonth(), 1);
-        } else if (LocalTime.now().isAfter(LocalTime.of(this.endWorkDay, 0))) {
+        } else if (LocalTime.now(ZoneId.of(zoneId)).isAfter(LocalTime.of(endWorkDay, 0))) {
             currentDate = currentDate.plusDays(1);
         }
 
@@ -130,7 +128,7 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
 
                 InlineKeyboardButton day =
                         InlineKeyboardButton.builder().text(Integer.toString(difference))
-                                .callbackData(CustomFormatter.DATE_FORMATTER.format(currentDate))
+                                .callbackData(currentDate.toString())
                                 .build();
 
                 // если дата выбрана, то помечаем
@@ -160,8 +158,8 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
         rowsInLine.add(new ArrayList<>(dayOfWeeks));
     }
 
-    private void setMonthHeaderCalendar(List<List<InlineKeyboardButton>> rowsInLine, LocalDate chosenDate) {
-        LocalDate currentDate = LocalDate.now();
+    private void setMonthHeaderCalendar(List<List<InlineKeyboardButton>> rowsInLine, LocalDate chosenDate, String zoneId) {
+        LocalDate currentDate = LocalDate.now(ZoneId.of(zoneId));
         int monthValue = chosenDate.getMonthValue();
 
         List<InlineKeyboardButton> buttons = new ArrayList<>();
@@ -169,8 +167,7 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
         if (currentDate.getMonthValue() < monthValue) {
             InlineKeyboardButton left =
                     InlineKeyboardButton.builder().text("<<")
-                            .callbackData(ToggleButton.PREV.name() + chosenDate.minusMonths(1)
-                                    .format(CustomFormatter.DATE_FORMATTER)).build();
+                            .callbackData(ToggleButton.PREV.name() + chosenDate.minusMonths(1)).build();
             buttons.add(left);
         }
 
@@ -182,8 +179,7 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
         if (monthValue <= Calendar.DECEMBER) {
             InlineKeyboardButton right =
                     InlineKeyboardButton.builder().text(">>")
-                            .callbackData(ToggleButton.NEXT.name() + chosenDate.plusMonths(1)
-                                    .format(CustomFormatter.DATE_FORMATTER)).build();
+                            .callbackData(ToggleButton.NEXT.name() + chosenDate.plusMonths(1)).build();
             buttons.add(right);
         }
 

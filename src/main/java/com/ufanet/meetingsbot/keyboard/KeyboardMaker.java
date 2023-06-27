@@ -8,9 +8,12 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import java.util.List;
 
 public abstract class KeyboardMaker {
-    protected final InlineKeyboardButton stepNext = defaultInlineButton("Далее", ToggleButton.NEXT.name());
-    protected final InlineKeyboardButton cancel = defaultInlineButton(Emojis.CANCEL_CIRCLE.getEmojiSpace() + "Отменить", ToggleButton.CANCEL.name());
-    protected final InlineKeyboardButton ready = defaultInlineButton("Готово", ToggleButton.READY.name());
+    protected final InlineKeyboardButton stepNext =
+            defaultInlineButton("Далее " + Emojis.RIGHT.getEmoji(), ToggleButton.NEXT.name());
+    protected final InlineKeyboardButton cancel =
+            defaultInlineButton(Emojis.CANCEL_CIRCLE.getEmojiSpace() + "Отменить", ToggleButton.CANCEL.name());
+    protected final InlineKeyboardButton ready =
+            defaultInlineButton("Готово", ToggleButton.READY.name());
 
     public InlineKeyboardButton defaultInlineButton(String text, String callback) {
         return InlineKeyboardButton.builder().text(text)
@@ -18,8 +21,9 @@ public abstract class KeyboardMaker {
     }
 
     public InlineKeyboardButton getReadyInlineButton(String callback) {
-        return defaultInlineButton("Готово", callback);
+        return defaultInlineButton(Emojis.GREEN_SELECTED.getEmojiSpace() + "Готово", callback);
     }
+
     public InlineKeyboardMarkup buildInlineMarkup(List<List<InlineKeyboardButton>> keyboard) {
         return InlineKeyboardMarkup.builder().keyboard(keyboard).build();
     }

@@ -1,9 +1,6 @@
 package com.ufanet.meetingsbot.model;
 
 import com.ufanet.meetingsbot.constants.MessageType;
-import com.ufanet.meetingsbot.constants.State;
-import com.ufanet.meetingsbot.constants.state.AccountState;
-import com.ufanet.meetingsbot.constants.state.EditState;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -34,7 +31,7 @@ public class BotState implements Serializable {
     @MapsId
     @JoinColumn(name = "user_id")
     private Account account;
-    @Column(name = "last_from_user")
-    private boolean lastFromUser;
+    @Column(name = "msg_from_user")
+    private boolean msgFromUser;
 
 }

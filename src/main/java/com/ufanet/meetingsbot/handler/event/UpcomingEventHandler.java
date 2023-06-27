@@ -1,4 +1,4 @@
-package com.ufanet.meetingsbot.handler.keyboard;
+package com.ufanet.meetingsbot.handler.event;
 
 import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.state.AccountState;
@@ -10,7 +10,6 @@ import com.ufanet.meetingsbot.model.MeetingTime;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.BotService;
 import com.ufanet.meetingsbot.service.MeetingService;
-import com.ufanet.meetingsbot.service.UpdateService;
 import com.ufanet.meetingsbot.service.message.UpcomingReplyMessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -23,10 +22,9 @@ import static com.ufanet.meetingsbot.constants.state.AccountState.UPCOMING;
 
 @Component
 @RequiredArgsConstructor
-public class UpcomingKeyboardHandler implements KeyboardHandler {
+public class UpcomingEventHandler implements EventHandler {
     private final UpcomingReplyMessageService replyMessage;
     private final MeetingService meetingService;
-    private final UpdateService updateService;
     private final AccountService accountService;
     private final BotService botService;
 
@@ -45,17 +43,18 @@ public class UpcomingKeyboardHandler implements KeyboardHandler {
         }
     }
 
-    void handleCallback(long userId, String callback) {
+    protected void handleCallback(long userId, String callback) {
         String[] split = callback.split(" ");
         UpcomingState state = UpcomingState.typeOf(split[0]);
         if (state == null) return;
 
-        botService.setState(userId, state);
-
+        botService.setState(userId, state.name());
 
         switch (state) {
             case UPCOMING_MEETINGS -> {
-                List<Meeting> meetings = meetingService.getMeetingsByUserIdAndState(userId, MeetingState.CONFIRMED);
+                List<Meeting> meetings = meetingService.getMeetingsByUserIdAndStateIn(userId,
+                        List.of(MeetingState.AWAITING, MeetingState.CONFIRMED));
+
                 if (meetings.isEmpty()) {
                     replyMessage.sendMeetingsNotExist(userId);
                 } else {
@@ -66,15 +65,20 @@ public class UpcomingKeyboardHandler implements KeyboardHandler {
                 long meetingId = Long.parseLong(split[1]);
                 Meeting meeting = meetingService.getByMeetingId(userId, meetingId);
 
-                meetingService.deleteByOwnerId(userId);
                 replyMessage.sendCanceledMeetingByOwner(userId, meeting);
-
+                meetingService.delete(meeting);
             }
             case UPCOMING_SELECTED_MEETING -> {
                 long meetingId = Long.parseLong(split[1]);
                 Meeting meeting = meetingService.getByMeetingId(userId, meetingId);
                 List<AccountTime> accountTimes = accountService.getAccountTimesByMeetingId(meetingId);
-                replyMessage.sendSelectedUpcomingMeeting(userId, meeting, accountTimes, null);
+                if (meeting.getState().equals(MeetingState.AWAITING)) {
+                    if (meeting.getOwner().getId() == userId) {
+                        replyMessage.sendSelectedReadyMeeting(userId, meeting);
+                    } else {
+                        replyMessage.sendSelectedAwaitingMeeting(userId, meeting);
+                    }
+                } else replyMessage.sendSelectedUpcomingMeeting(userId, meeting, accountTimes);
             }
             case UPCOMING_EDIT_MEETING_TIME -> {
                 long meetingId = Long.parseLong(split[1]);
@@ -127,7 +131,7 @@ public class UpcomingKeyboardHandler implements KeyboardHandler {
         }
     }
 
-    public void handleAccountTimeState(long userId, long meetingId, UpcomingState state) {
+    protected void handleAccountTimeState(long userId, long meetingId, UpcomingState state) {
         Meeting meeting = meetingService.getByMeetingId(userId, meetingId);
         List<AccountTime> accountTimes = accountService.getAccountTimesByMeetingId(meetingId);
 
@@ -137,18 +141,22 @@ public class UpcomingKeyboardHandler implements KeyboardHandler {
 
         switch (state) {
             case UPCOMING_IAMREADY -> {
-                meetingService.setAccountTimeState(userId, meeting, accountTime, Status.CONFIRMED);
-                replyMessage.sendSelectedUpcomingMeeting(userId, meeting, accountTimes, Status.CONFIRMED);
+                accountTime.setStatus(Status.CONFIRMED);
+                accountService.saveAccountTime(accountTime);
+                replyMessage.sendSelectedUpcomingMeeting(userId, meeting, accountTimes);
             }
             case UPCOMING_IAMLATE -> {
-                meetingService.setAccountTimeState(userId, meeting, accountTime, Status.AWAITING);
-                replyMessage.sendSelectedUpcomingMeeting(userId, meeting, accountTimes, Status.AWAITING);
+                accountTime.setStatus(Status.AWAITING);
+                accountService.saveAccountTime(accountTime);
+                replyMessage.sendSelectedUpcomingMeeting(userId, meeting, accountTimes);
             }
             case UPCOMING_IWILLNOTCOME -> {
-                meetingService.setAccountTimeState(userId, meeting, accountTime, Status.CANCELED);
-                replyMessage.sendSelectedUpcomingMeeting(userId, meeting, accountTimes, Status.CANCELED);
+                accountTime.setStatus(Status.CANCELED);
+                accountService.saveAccountTime(accountTime);
+                replyMessage.sendSelectedUpcomingMeeting(userId, meeting, accountTimes);
             }
         }
+        meetingService.clearCache(userId);
     }
 
     @Override

@@ -10,6 +10,7 @@ public enum UpcomingState{
     UPCOMING_IAMLATE,
     UPCOMING_IAMREADY,
     UPCOMING_IWILLNOTCOME;
+
     public static UpcomingState typeOf(String type){
         for (UpcomingState value : UpcomingState.values()) {
             if (value.name().equals(type)) return value;

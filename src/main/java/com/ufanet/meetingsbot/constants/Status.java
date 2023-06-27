@@ -4,7 +4,5 @@ public enum Status {
     CONFIRMED,
     CANCELED,
     AWAITING,
-    IAMLATE,
-    IWILLNOTCOME,
-    IAMREADY
+    PASSED
 }

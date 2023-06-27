@@ -2,7 +2,6 @@ package com.ufanet.meetingsbot.cache.impl;
 
 import com.ufanet.meetingsbot.cache.Cache;
 import com.ufanet.meetingsbot.model.BotState;
-import com.ufanet.meetingsbot.repository.BotRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,7 +11,7 @@ import java.util.Map;
 @Getter
 @Service
 @RequiredArgsConstructor
-public class BotStateManager implements Cache<BotState> {
+public class BotStateCache implements Cache<BotState> {
     private final Map<Long, BotState> botStateCache = new HashMap<>();
 
     @Override

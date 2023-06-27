@@ -2,18 +2,16 @@ package com.ufanet.meetingsbot.handler.chat;
 
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.ProfileState;
-import com.ufanet.meetingsbot.dto.UpdateDto;
-import com.ufanet.meetingsbot.handler.keyboard.KeyboardHandler;
+import com.ufanet.meetingsbot.handler.event.EventHandler;
 import com.ufanet.meetingsbot.handler.type.ChatType;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.BotService;
-import com.ufanet.meetingsbot.service.MeetingService;
-import com.ufanet.meetingsbot.service.UpdateService;
 import com.ufanet.meetingsbot.service.message.CommandReplyMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
@@ -28,29 +26,38 @@ import static com.ufanet.meetingsbot.constants.state.AccountState.*;
 @Component
 @RequiredArgsConstructor
 public class PrivateChatHandler implements ChatHandler {
-    private final Map<AccountState, KeyboardHandler> queryHandlers = new HashMap<>();
+    private final Map<AccountState, EventHandler> queryHandlers = new HashMap<>();
     private final AccountService accountService;
     private final CommandReplyMessageService commandHandler;
-    private final UpdateService updateService;
     private final BotService botService;
-    private final MeetingService meetingService;
 
     @Override
     public void chatUpdate(Update update) {
-        UpdateDto updateDto = updateService.parseUpdate(update);
-        long userId = updateDto.chatId();
-        String content = updateDto.content();
-
-        log.info("handle update from private chat with user {}", userId);
-
         if (update.hasMessage()) {
+            Message message = update.getMessage();
+            long userId = message.getChatId();
+
+            log.info("received message from user {}", userId);
             handleMessage(userId, update);
-        } else if (update.hasInlineQuery()) {
-            botService.setState(userId, ProfileState.PROFILE_TIMEZONE_SELECT);
+        }
+        else if (update.hasInlineQuery()) {
+            long userId = update.getInlineQuery().getFrom().getId();
+
+            log.info("received inline query from user {}", userId);
+            botService.setState(userId, ProfileState.PROFILE_TIMEZONE_SELECT.name());
             handleBotState(userId, update);
-        } else if (update.hasCallbackQuery()) {
-            if (AccountState.startWithState(content)) {
-                botService.setState(userId, content);
+        }
+        else if (update.hasCallbackQuery()) {
+            CallbackQuery query = update.getCallbackQuery();
+            Message message = query.getMessage();
+            long userId = message.getChatId();
+            String data = query.getData();
+
+            if (data.isBlank()) return;
+
+            log.info("received callback query from user {}", userId);
+            if (AccountState.startWithState(data)) {
+                botService.setState(userId, data);
             }
             handleBotState(userId, update);
         }
@@ -65,8 +72,7 @@ public class PrivateChatHandler implements ChatHandler {
         AccountState pressedButton = fromValue(messageText);
 
         if (pressedButton != null) {
-            botService.setState(userId, pressedButton);
-//            meetingService.clearCache(userId);
+            botService.setState(userId, pressedButton.name());
         } else if (messageText.startsWith("/")) {
             handleCommand(userId, message);
         }
@@ -105,8 +111,8 @@ public class PrivateChatHandler implements ChatHandler {
     }
 
     @Autowired
-    void setQueryHandlers(List<KeyboardHandler> keyboardHandlers) {
-        keyboardHandlers.forEach(handler ->
+    void setQueryHandlers(List<EventHandler> eventHandlers) {
+        eventHandlers.forEach(handler ->
                 this.queryHandlers.put(handler.getAccountStateHandler(), handler));
     }
 

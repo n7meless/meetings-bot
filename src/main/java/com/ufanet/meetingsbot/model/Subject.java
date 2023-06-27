@@ -1,16 +1,13 @@
 package com.ufanet.meetingsbot.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.springframework.data.jpa.repository.EntityGraph;
 
-import java.io.Serial;
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Setter
@@ -26,9 +23,9 @@ public class Subject{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Size(min = 3, message = "title must be larger than 3 chars")
     private String title;
-//    @Fetch(FetchMode.SUBSELECT)
-    @OneToMany(mappedBy = "subject", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL, orphanRemoval = true)
     @Fetch(FetchMode.SUBSELECT)
     private Set<Question> questions;
     @OneToOne(fetch = FetchType.LAZY)
@@ -36,10 +33,6 @@ public class Subject{
     private Meeting meeting;
     private Integer duration;
 
-    public void addQuestion(Question question){
-        question.setSubject(this);
-        this.questions.add(question);
-    }
     public Set<Question> getQuestions() {
         return questions == null ? new HashSet<>() : questions;
     }

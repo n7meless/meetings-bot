@@ -6,7 +6,10 @@ import com.ufanet.meetingsbot.repository.AccountRepository;
 import com.ufanet.meetingsbot.repository.AccountTimeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.*;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.telegram.telegrambots.meta.api.objects.User;
@@ -31,13 +34,6 @@ public class AccountService {
         return accountRepository.findById(userId);
     }
 
-    @Transactional
-    public List<Meeting> getMeetingsByUserId(long userId) {
-        Account account = getByUserId(userId).orElseThrow();
-        return account.getAccountMeetings().stream()
-                .map(AccountMeeting::getMeeting).toList();
-    }
-
     public List<AccountTime> getAccountTimesByMeetingId(long meetingId){
         return accountTimeRepository.findByMeetingId(meetingId);
     }
@@ -56,7 +52,7 @@ public class AccountService {
     public void saveAccountTimes(List<AccountTime> accountTimes) {
         accountTimeRepository.saveAll(accountTimes);
     }
-
+    @Transactional
     @CacheEvict(key = "#account.id", value = "account")
     public void save(Account account) {
         log.info("saving user {} to database", account.getId());
@@ -67,7 +63,10 @@ public class AccountService {
     public Set<Account> getAccountByGroupsIdAndIdNot(long groupId, long userId) {
         return accountRepository.findAccountByGroupsIdAndIdNot(groupId, userId);
     }
-
+    public List<Account> getAccountByMeetingId(long meetingId){
+        return accountRepository.findAccountsByMeetingId(meetingId);
+    }
+    @Transactional
     public Account saveTgUser(User user) {
         Account account = Account.builder().id(user.getId())
                 .firstname(user.getFirstName())
@@ -75,7 +74,8 @@ public class AccountService {
                 .username(user.getUserName())
                 .build();
         Settings settings = Settings.builder()
-                .account(account).timeZone("UTC+3").build();
+                .account(account).timeZone("UTC+03:00")
+                .language("ru-RU").build();
         BotState botState = BotState.builder()
                 .state(AccountState.PROFILE.name())
                 .account(account)
@@ -86,17 +86,12 @@ public class AccountService {
         save(account);
         return account;
     }
-
+    @Transactional
     public void updateTgUser(Account account, User user) {
         account.setLastname(user.getLastName());
         account.setFirstname(user.getFirstName());
         account.setUsername(user.getUserName());
         save(account);
-    }
-
-    public String getState(long userId) {
-        BotState botState = botService.getByUserId(userId);
-        return botState.getState();
     }
 
 }

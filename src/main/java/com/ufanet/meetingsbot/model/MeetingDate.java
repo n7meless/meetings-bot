@@ -6,10 +6,12 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import java.io.Serial;
-import java.io.Serializable;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.util.*;
+import java.time.ZoneId;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 
 @Getter
@@ -29,11 +31,17 @@ public class MeetingDate implements Comparable<MeetingDate> {
     @JoinColumn(name = "meeting_id", referencedColumnName = "id")
     private Meeting meeting;
     @Fetch(FetchMode.JOIN)
+    @OrderBy("dateTime")
     @OneToMany(mappedBy = "meetingDate", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<MeetingTime> meetingTimes = new HashSet<>();
 
+    public void setDateWithZoneId(String zoneId){
+        this.date = LocalDate.ofInstant(Instant.from(this.date), ZoneId.of(zoneId));
+    }
+
     public void addMeetingTime(MeetingTime meetingTime) {
+
         this.meetingTimes.add(meetingTime);
     }
 

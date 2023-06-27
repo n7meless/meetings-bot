@@ -4,10 +4,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Predicate;
 
 @Getter
 @Setter
@@ -15,19 +15,14 @@ import java.util.function.Predicate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity(name = "meeting_time")
-@NamedEntityGraph(name = "meetingtime-with-accounttimes",
-        attributeNodes = {
-                @NamedAttributeNode(value = "accountTimes", subgraph = "accountTimes.account")
-        },
-        subgraphs = @NamedSubgraph(name = "accountTimes.account",
-                attributeNodes = @NamedAttributeNode(value = "account")))
 public class MeetingTime implements Comparable<MeetingTime> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(name = "date_time")
     @DateTimeFormat(pattern = "dd.MM.yyyy H:mm")
-    private LocalDateTime time;
+    private ZonedDateTime dateTime;
     @ManyToOne
     @JoinColumn(name = "date_id", referencedColumnName = "id")
     private MeetingDate meetingDate;
@@ -38,22 +33,25 @@ public class MeetingTime implements Comparable<MeetingTime> {
     public void addAccountTime(AccountTime accountTime) {
         this.accountTimes.add(accountTime);
     }
+    @Override
+    public int compareTo(MeetingTime meetingTime) {
+        return this.getDateTime().compareTo(meetingTime.getDateTime());
+    }
+
+    public ZonedDateTime getTimeWithZoneOffset(String zoneId) {
+        return this.dateTime.withZoneSameInstant(ZoneId.of(zoneId));
+    }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MeetingTime that = (MeetingTime) o;
-        return this.getTime().isEqual(that.getTime());
+        return this.getDateTime().isEqual(that.getDateTime());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(time);
-    }
-
-    @Override
-    public int compareTo(MeetingTime meetingTime) {
-        return this.getTime().compareTo(meetingTime.getTime());
+        return Objects.hash(dateTime);
     }
 }

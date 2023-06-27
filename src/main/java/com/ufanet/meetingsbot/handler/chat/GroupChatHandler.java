@@ -18,7 +18,6 @@ import java.util.Optional;
 public class GroupChatHandler implements ChatHandler {
 
     private final GroupService groupService;
-    private final GroupReplyMessageService groupReplyMessageHandler;
 
     @Override
     public void chatUpdate(Update update) {

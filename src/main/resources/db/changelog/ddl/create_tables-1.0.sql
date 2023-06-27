@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS meetings
     address    VARCHAR(255),
     group_id   BIGINT,
     created_dt TIMESTAMP DEFAULT now(),
-    updated_dt TIMESTAMP,
+    updated_dt TIMESTAMP DEFAULT now(),
     state      VARCHAR(100),
     FOREIGN KEY (group_id) REFERENCES chats (id),
     FOREIGN KEY (owner_id) REFERENCES users (id)
@@ -58,8 +58,8 @@ CREATE TABLE IF NOT EXISTS subject
 CREATE TABLE IF NOT EXISTS questions
 (
     id         BIGSERIAL PRIMARY KEY,
-    title      VARCHAR(150),
-    subject_id BIGINT NOT NULL,
+    title      VARCHAR(150) NOT NULL,
+    subject_id BIGINT       NOT NULL,
     FOREIGN KEY (subject_id) REFERENCES subject (id) ON DELETE CASCADE
 );
 --changeset aidar:7
@@ -75,8 +75,8 @@ CREATE TABLE IF NOT EXISTS user_settings
 (
     id        BIGSERIAL PRIMARY KEY,
     user_id   BIGINT NOT NULL,
-    time_zone VARCHAR(10),
-    language  VARCHAR(5),
+    time_zone VARCHAR(10) DEFAULT 'UTC+03:00',
+    language  VARCHAR(5)  DEFAULT 'ru-RU',
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 --changeset aidar:9
@@ -84,15 +84,15 @@ CREATE TABLE IF NOT EXISTS meeting_date
 (
     id         BIGSERIAL PRIMARY KEY,
     meeting_id BIGINT NOT NULL,
-    date       DATE,
+    date       DATE   NOT NULL,
     FOREIGN KEY (meeting_id) REFERENCES meetings (id) ON DELETE CASCADE
 );
 --changeset aidar:10
 CREATE TABLE IF NOT EXISTS meeting_time
 (
-    id      BIGSERIAL PRIMARY KEY,
-    time    TIMESTAMP NOT NULL,
-    date_id BIGINT    NOT NULL,
+    id        BIGSERIAL PRIMARY KEY,
+    date_time TIMESTAMP NOT NULL,
+    date_id   BIGINT    NOT NULL,
     FOREIGN KEY (date_id) REFERENCES meeting_date (id) ON DELETE CASCADE
 );
 --changeset aidar:11
@@ -108,11 +108,11 @@ CREATE TABLE IF NOT EXISTS user_times
 --changeset aidar:12
 CREATE TABLE IF NOT EXISTS bot_state
 (
-    id       BIGSERIAL PRIMARY KEY,
-    user_id  BIGINT NOT NULL,
-    msg_type VARCHAR(20),
-    last_from_user bool,
-    msg_id   INT,
-    state    VARCHAR(100),
+    id            BIGSERIAL PRIMARY KEY,
+    user_id       BIGINT NOT NULL,
+    msg_type      VARCHAR(20),
+    msg_from_user BOOLEAN,
+    msg_id        INT,
+    state         VARCHAR(100),
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );

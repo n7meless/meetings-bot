@@ -4,10 +4,6 @@ import com.ufanet.meetingsbot.constants.Status;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.io.Serial;
-import java.io.Serializable;
-import java.util.Objects;
-
 @Builder
 @Getter
 @Setter

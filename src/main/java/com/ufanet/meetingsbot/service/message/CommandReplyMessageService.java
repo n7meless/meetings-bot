@@ -1,19 +1,13 @@
 package com.ufanet.meetingsbot.service.message;
 
-import com.ufanet.meetingsbot.constants.BotCommands;
 import com.ufanet.meetingsbot.keyboard.MainKeyboardMaker;
-import com.ufanet.meetingsbot.utils.CustomFormatter;
+import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.telegram.telegrambots.meta.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.inlinequery.inputmessagecontent.InputTextMessageContent;
-import org.telegram.telegrambots.meta.api.objects.inlinequery.result.InlineQueryResultArticle;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,8 +15,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CommandReplyMessageService extends ReplyMessageService {
     private final MainKeyboardMaker mainKeyboard;
-    private final String[] rainbowEmotions = {"\uD83D\uDD34", "\uD83D\uDFE0",
-            "\uD83D\uDFE1", "\uD83D\uDFE2", "\uD83D\uDD35", "\uD83D\uDFE3"};
+    private final String[] rainbowEmotions = {Emojis.RED_CIRCLE.getEmoji(), Emojis.ORANGE_CIRCLE.getEmoji(),
+            Emojis.YELLOW_CIRCLE.getEmoji(), Emojis.GREEN_CIRCLE.getEmoji(), Emojis.BLUE_CIRCLE.getEmoji(),
+            Emojis.PURPLE_CIRCLE.getEmoji()};
 
     public void sendAboutMessage(long userId) {
         SendMessage aboutMessage = messageUtils.generateSendMessage(userId,
