@@ -1,8 +1,7 @@
 package com.ufanet.meetingsbot.keyboard;
 
 import com.ufanet.meetingsbot.constants.ToggleButton;
-import com.ufanet.meetingsbot.model.Meeting;
-import com.ufanet.meetingsbot.model.MeetingDate;
+import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.utils.CustomFormatter;
 import com.ufanet.meetingsbot.utils.Emojis;
 import org.springframework.stereotype.Component;
@@ -20,7 +19,7 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
     private final int startWorkDay = 9;
     private final int endWorkDay = 18;
 
-    public List<List<InlineKeyboardButton>> getCalendarInlineMarkup(Meeting meeting, String callback, String zoneId) {
+    public List<List<InlineKeyboardButton>> getCalendarInlineMarkup(MeetingDto meetingDto, String callback, String zoneId) {
         List<List<InlineKeyboardButton>> rowsInLine = new ArrayList<>();
 
         LocalDate date;
@@ -36,28 +35,28 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
         }
         setMonthHeaderCalendar(rowsInLine, date, zoneId);
         setDaysOfWeeksHeaderCalendar(rowsInLine);
-        setDaysOfMonthCalendar(rowsInLine, meeting, date, zoneId);
+        setDaysOfMonthCalendar(rowsInLine, meetingDto, date, zoneId);
 
         return rowsInLine;
     }
 
-    public List<List<InlineKeyboardButton>> getTimeInlineMarkup(Meeting meeting, String zoneId) {
+    public List<List<InlineKeyboardButton>> getTimeInlineMarkup(MeetingDto meetingDto, String zoneId) {
         List<List<InlineKeyboardButton>> rowsInLine = new ArrayList<>();
 
-        List<MeetingDate> meetingDates = meeting.getDates().stream()
-                .sorted().toList();
+//        List<MeetingDate> meetingDates = meeting.getDates().stream()
+//                .sorted().toList();
         LocalDateTime currentDate = LocalDateTime.now(ZoneId.of(zoneId));
-        for (MeetingDate meetingDate : meetingDates) {
-
-            LocalDate localDate = meetingDate.getDate();
+        Map<LocalDate, Set<ZonedDateTime>> datesMap = meetingDto.getDatesMap();
+        for (Map.Entry<LocalDate, Set<ZonedDateTime>> entry : datesMap.entrySet()) {
+            LocalDate localDate = entry.getKey();
             InlineKeyboardButton dateHeader =
                     InlineKeyboardButton.builder()
                             .text(Emojis.CALENDAR.getEmoji() + " " + localDate.format(CustomFormatter.DATE_WEEK_FORMATTER))
                             .callbackData(" ")
                             .build();
 
-            List<ZonedDateTime> dateTimes = meetingDate.getMeetingTimes().stream()
-                    .map(t->t.getTimeWithZoneOffset(zoneId)).toList();
+            Set<ZonedDateTime> zonedDateTimes = entry.getValue().stream()
+                    .map(t -> t.withZoneSameInstant(ZoneId.of(zoneId))).collect(Collectors.toSet());
 
 
             int startWorkDay = this.startWorkDay; // начало рабочего дня
@@ -92,7 +91,7 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
                                     .callbackData(of.toString())
                                     .build();
 
-                    if (dateTimes.contains(of)) {
+                    if (zonedDateTimes.contains(of)) {
                         time.setText("(" + localTime + ")");
                     }
                     timeButtons.add(time);
@@ -104,7 +103,7 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
     }
 
     private void setDaysOfMonthCalendar(List<List<InlineKeyboardButton>> rowsInLine,
-                                        Meeting meeting, LocalDate chosenDate, String zoneId) {
+                                        MeetingDto meetingDto, LocalDate chosenDate, String zoneId) {
         LocalDate currentDate = LocalDate.now(ZoneId.of(zoneId));
 
         if (currentDate.getMonthValue() != chosenDate.getMonthValue()) {
@@ -117,8 +116,7 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
         int dayOfWeek = currentDate.getDayOfWeek().getValue();
         int actualDaysOfMonth = currentDate.lengthOfMonth();
 
-        Set<LocalDate> dateSet = meeting.getDates().stream()
-                .map(MeetingDate::getDate).collect(Collectors.toSet());
+        Set<LocalDate> dateSet = meetingDto.getDatesMap().keySet();
 
         int difference = dayOfMonth - dayOfWeek + 1;
 

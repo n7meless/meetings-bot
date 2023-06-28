@@ -27,5 +27,5 @@ public interface AccountTimeRepository extends JpaRepository<AccountTime, Long> 
                      join meeting_date md on md.id = mt.date_id
                      join meetings m on ut.user_id =?1 and m.id = ?2 and m.id = md.meeting_id
                                     """, nativeQuery = true)
-    Optional<AccountTime> findByAccountIdAndMeetingId(Long userId, Long meetingId);
+    List<AccountTime> findByAccountIdAndMeetingId(Long userId, Long meetingId);
 }

@@ -3,6 +3,8 @@ package com.ufanet.meetingsbot.service.message;
 import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.constants.state.UpcomingState;
+import com.ufanet.meetingsbot.dto.AccountDto;
+import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.keyboard.MeetingKeyboardMaker;
 import com.ufanet.meetingsbot.model.*;
@@ -80,26 +82,26 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
         executeMessage(editMessage);
     }
 
-    public void sendSelectedUpcomingMeeting(long userId, Meeting meeting,
+    public void sendSelectedUpcomingMeeting(long userId, MeetingDto meetingDto,
                                             List<AccountTime> accountTimes) {
-        MeetingMessage message = messageUtils.generateMeetingMessage(meeting);
+        MeetingMessage message = messageUtils.generateMeetingMessage(meetingDto);
 
         StringBuilder sb = new StringBuilder();
-        sb.append(messageUtils.generateAccountLink(meeting.getOwner(),
+        sb.append(messageUtils.generateAccountLink(meetingDto.getOwner(),
                 Emojis.CROWN.getEmojiSpace(), "")).append("\n");
 
         for (AccountTime accountTime : accountTimes) {
             Status status = accountTime.getStatus();
             Account account = accountTime.getAccount();
-
+            AccountDto accountDto = accountService.mapToDto(account);
             switch (status) {
-                case AWAITING -> sb.append(messageUtils.generateAccountLink(account,
+                case AWAITING -> sb.append(messageUtils.generateAccountLink(accountDto,
                         Emojis.GREY_SELECTED.getEmojiSpace(), " (Опаздывает)"));
-                case CONFIRMED -> sb.append(messageUtils.generateAccountLink(account,
+                case CONFIRMED -> sb.append(messageUtils.generateAccountLink(accountDto,
                         Emojis.GREEN_SELECTED.getEmojiSpace(), " (Готов начать)"));
-                case CANCELED -> sb.append(messageUtils.generateAccountLink(account,
+                case CANCELED -> sb.append(messageUtils.generateAccountLink(accountDto,
                         Emojis.GREY_SELECTED.getEmojiSpace(), " (Не придет)"));
-                default -> sb.append(messageUtils.generateAccountLink(account,
+                default -> sb.append(messageUtils.generateAccountLink(accountDto,
                         Emojis.GREEN_SELECTED.getEmojiSpace(), ""));
 
             }
@@ -112,48 +114,23 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
 
         String textMessage = localeMessageService.getMessage("upcoming.meeting.confirmed.selected",
                 message.subject(), message.questions(), message.duration(),
-                participants, message.address(), meeting.getState().name());
+                participants, message.address(), meetingDto.getState().name());
 
-        InlineKeyboardMarkup upcomingMarkup = meetingKeyboard.getMeetingUpcomingMarkup(userId, meeting, accountTime);
+        InlineKeyboardMarkup upcomingMarkup = meetingKeyboard.getMeetingUpcomingMarkup(userId, meetingDto, accountTime);
 
         EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId, textMessage,
                 upcomingMarkup);
         executeMessage(editMessage);
     }
 
-    public void sendCanceledMeetingByMatching(Meeting meeting) {
-        Account owner = meeting.getOwner();
+    public void sendCanceledMeetingByMatching(MeetingDto meetingDto) {
+        AccountDto owner = meetingDto.getOwner();
         String ownerLink = messageUtils.generateAccountLink(owner, "", "");
-        Set<Account> participants = meeting.getParticipants();
-        for (Account participant : participants) {
+        Set<AccountDto> participants = meetingDto.getParticipants();
+        for (AccountDto participant : participants) {
             SendMessage sendMessage = messageUtils.generateSendMessageHtml(participant.getId(),
                     localeMessageService.getMessage("upcoming.meeting.canceled.match", ownerLink),
                     null);
-
-            executeSendMessage(sendMessage);
-        }
-    }
-
-    public void sendReadyMeeting(Meeting meeting) {
-        Set<Account> participants = meeting.getParticipants();
-        Optional<ZonedDateTime> readyTime = meeting.getDates().stream()
-                .map(MeetingDate::getMeetingTimes).flatMap(Collection::stream)
-                .map(MeetingTime::getDateTime).findFirst();
-
-        if (readyTime.isEmpty()) return;
-        String ownerLink = messageUtils.generateAccountLink(meeting.getOwner(), "", "");
-
-        for (Account participant : participants) {
-            String zoneId = participant.getZoneId();
-            ZonedDateTime zonedDateTime = readyTime.get();
-            String date = zonedDateTime.withZoneSameInstant(ZoneId.of(zoneId))
-                    .format(CustomFormatter.DATE_TIME_WEEK_FORMATTER);
-
-            SendMessage sendMessage =
-                    messageUtils.generateSendMessageHtml(participant.getId(),
-                            localeMessageService.getMessage("upcoming.meeting.confirmed.ready",
-                                    ownerLink, Emojis.CALENDAR.getEmojiSpace() + date,
-                                    Emojis.OFFICE.getEmojiSpace() + meeting.getAddress()), null);
 
             executeSendMessage(sendMessage);
         }
@@ -165,11 +142,11 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
         executeMessage(editMessage);
     }
 
-    public void sendCanceledAccountTimeMessage(Meeting meeting) {
-        Account owner = meeting.getOwner();
+    public void sendCanceledAccountTimeMessage(MeetingDto meetingDto) {
+        AccountDto owner = meetingDto.getOwner();
         String ownerLink = messageUtils.generateAccountLink(owner, "", "");
-        Set<Account> participants = meeting.getParticipants();
-        for (Account participant : participants) {
+        Set<AccountDto> participants = meetingDto.getParticipants();
+        for (AccountDto participant : participants) {
             SendMessage sendMessage = messageUtils.generateSendMessageHtml(participant.getId(),
                     localeMessageService.getMessage("upcoming.meeting.canceled.participants",
                             ownerLink), null);
@@ -178,35 +155,35 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
         }
     }
 
-    public void sendEditMeetingAccountTimes(long userId, Meeting meeting, List<AccountTime> accountTimes) {
+    public void sendEditMeetingAccountTimes(long userId, MeetingDto meetingDto, List<AccountTime> accountTimes) {
         Account account = accountService.getByUserId(userId).orElseThrow();
         String zoneId = account.getZoneId();
-        List<ZonedDateTime> dates = meeting.getDatesWithZoneId(zoneId);
+        List<ZonedDateTime> dates = meetingDto.getDatesWithZoneId(zoneId);
         String timesText = messageUtils.generateDatesText(dates);
 
-        MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meeting);
+        MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meetingDto);
         String textMeeting = localeMessageService.getMessage("create.meeting.awaiting.participants",
                 meetingMessage.owner(), meetingMessage.subject(), meetingMessage.questions(),
                 meetingMessage.participants(), meetingMessage.duration(), timesText,
                 meetingMessage.address());
 
         InlineKeyboardMarkup keyboard =
-                meetingKeyboard.getChangeMeetingTimeKeyboard(meeting.getId(), accountTimes, zoneId);
+                meetingKeyboard.getChangeMeetingTimeKeyboard(meetingDto.getId(), accountTimes, zoneId);
         EditMessageText sendMessage = messageUtils.generateEditMessageHtml(userId, textMeeting, keyboard);
 
         executeMessage(sendMessage);
     }
 
-    public void sendSelectedAwaitingMeeting(long userId, Meeting meeting) {
+    public void sendSelectedAwaitingMeeting(long userId, MeetingDto meetingDto) {
         Account account = accountService.getByUserId(userId).orElseThrow();
 
-        MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meeting);
+        MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meetingDto);
 
         InlineKeyboardMarkup keyboard =
-                meetingKeyboard.getMeetingConfirmKeyboard(meeting);
+                meetingKeyboard.getMeetingConfirmKeyboard(meetingDto.getId());
 
         String zoneId = account.getZoneId();
-        List<ZonedDateTime> dates = meeting.getDatesWithZoneId(zoneId);
+        List<ZonedDateTime> dates = meetingDto.getDatesWithZoneId(zoneId);
         String datesText = messageUtils.generateDatesText(dates);
 
         String textMeeting = localeMessageService.getMessage("create.meeting.awaiting.participants",
@@ -228,13 +205,13 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
         executeMessage(editMessage);
     }
 
-    public void sendCanceledMeetingByOwner(long userId, Meeting meeting) {
-        ZonedDateTime zonedDateTime = meeting.getDate();
-        String accountLink = messageUtils.generateAccountLink(meeting.getOwner(), "", "");
+    public void sendCanceledMeetingByOwner(long userId, MeetingDto meetingDto) {
+        ZonedDateTime zonedDateTime = meetingDto.getDate();
+        String accountLink = messageUtils.generateAccountLink(meetingDto.getOwner(), "", "");
 
-        List<Account> accounts = accountService.getAccountByMeetingId(meeting.getId());
+        List<Account> accounts = accountService.getAccountsByMeetingId(meetingDto.getId());
         for (Account account : accounts) {
-            if (Objects.equals(account.getId(), meeting.getOwner().getId())) continue;
+            if (Objects.equals(account.getId(), meetingDto.getOwner().getId())) continue;
 
             String zoneId = account.getZoneId();
             String dateWithZone = zonedDateTime.withZoneSameInstant(ZoneId.of(zoneId))
@@ -253,11 +230,11 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
         executeSendMessage(sendMessage);
     }
 
-    public void sendSelectedReadyMeeting(long userId, Meeting meeting) {
+    public void sendSelectedReadyMeeting(long userId, MeetingDto meetingDto) {
         InlineKeyboardButton btn1 = meetingKeyboard.defaultInlineButton("Назад",
                 UpcomingState.UPCOMING_MEETINGS.name());
         InlineKeyboardButton btn2 = meetingKeyboard.defaultInlineButton("Отменить встречу",
-                UpcomingState.UPCOMING_CANCEL_BY_OWNER.name() + " " + meeting.getId());
+                UpcomingState.UPCOMING_CANCEL_BY_OWNER.name() + " " + meetingDto.getId());
 
         SendMessage sendMessage = messageUtils.generateSendMessage(userId,
                 localeMessageService.getMessage("upcoming.meeting.selected.owner"),
@@ -284,16 +261,36 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
 
     }
 
-    public void sendCommentNotificationParticipants(Meeting meeting) {
-        Set<Account> participants = meeting.getParticipants();
-        String ownerLink = messageUtils.generateAccountLink(meeting.getOwner(), "", "");
+    public void sendCommentNotificationParticipants(MeetingDto meetingDto) {
+        Set<AccountDto> participants = meetingDto.getParticipants();
+        String ownerLink = messageUtils.generateAccountLink(meetingDto.getOwner(), "", "");
         String text = localeMessageService.getMessage("upcoming.meeting.notification.comment", ownerLink);
 
         InlineKeyboardButton skip = meetingKeyboard.defaultInlineButton("Пропустить", " ");
 
-        for (Account participant : participants) {
+        for (AccountDto participant : participants) {
             SendMessage sendMessage = messageUtils.generateSendMessageHtml(participant.getId(), text,
                     meetingKeyboard.buildInlineMarkup(List.of(List.of(skip))));
+            executeSendMessage(sendMessage);
+        }
+    }
+
+    public void sendReadyMeeting(MeetingDto meetingDto) {
+        Set<AccountDto> participants = meetingDto.getParticipants();
+        ZonedDateTime readyTime = meetingDto.getDate();
+        String ownerLink = messageUtils.generateAccountLink(meetingDto.getOwner(), "", "");
+
+        for (AccountDto participant : participants) {
+            String zoneId = participant.getTimeZone();
+            String date = readyTime.withZoneSameInstant(ZoneId.of(zoneId))
+                    .format(CustomFormatter.DATE_TIME_WEEK_FORMATTER);
+
+            SendMessage sendMessage =
+                    messageUtils.generateSendMessageHtml(participant.getId(),
+                            localeMessageService.getMessage("upcoming.meeting.confirmed.ready",
+                                    ownerLink, Emojis.CALENDAR.getEmojiSpace() + date,
+                                    Emojis.OFFICE.getEmojiSpace() + meetingDto.getAddress()), null);
+
             executeSendMessage(sendMessage);
         }
     }

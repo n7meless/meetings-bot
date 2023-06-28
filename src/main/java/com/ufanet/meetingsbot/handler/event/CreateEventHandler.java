@@ -1,8 +1,11 @@
 package com.ufanet.meetingsbot.handler.event;
 
+import com.ufanet.meetingsbot.cache.impl.MeetingStateCache;
 import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
+import com.ufanet.meetingsbot.dto.MeetingDto;
+import com.ufanet.meetingsbot.mapper.MeetingConstructor;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.service.BotService;
 import com.ufanet.meetingsbot.service.MeetingService;
@@ -10,113 +13,130 @@ import com.ufanet.meetingsbot.service.message.MeetingReplyMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
-import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Controller
 @RequiredArgsConstructor
 public class CreateEventHandler implements EventHandler {
     private final MeetingService meetingService;
+    private final MeetingConstructor meetingConstructor;
     private final MeetingReplyMessageService messageService;
+    private final MeetingStateCache meetingStateCache;
     private final BotService botService;
 
     @Override
     public void handleUpdate(Update update) {
         if (update.hasCallbackQuery()) {
-            CallbackQuery callbackQuery = update.getCallbackQuery();
-            String callback = callbackQuery.getData();
-            Long userId = callbackQuery.getMessage().getChatId();
-            Meeting meeting = meetingService.getByOwnerIdAndStateNotIn(userId,
-                    List.of(MeetingState.CONFIRMED, MeetingState.PASSED, MeetingState.AWAITING, MeetingState.CANCELED));
-            handleCallback(userId, meeting, callback);
-        }
-        else if (update.hasMessage()) {
+            String callback = update.getCallbackQuery().getData();
+            Long userId = update.getCallbackQuery().getMessage().getChatId();
+            MeetingDto meetingDto = meetingStateCache.get(userId);
+
+            if (meetingDto == null) {
+                Optional<Meeting> optionalMeeting = meetingService.getLastChangedMeetingByOwnerId(userId);
+                meetingDto = meetingConstructor.mapIfPresentOrElseGet(optionalMeeting, () -> new MeetingDto(userId));
+            }
+
+            handleCallback(userId, meetingDto, callback);
+        } else if (update.hasMessage()) {
             String message = update.getMessage().getText();
             Long userId = update.getMessage().getChatId();
-            Meeting meeting = meetingService.getByOwnerIdAndStateNotIn(
-                    userId, List.of(MeetingState.CONFIRMED, MeetingState.AWAITING, MeetingState.CANCELED));
+            MeetingDto meetingDto = meetingStateCache.get(userId);
 
-            if (!message.equals(AccountState.CREATE.getButtonName())) {
-                handleStep(userId, meeting, message);
+            if (meetingDto == null) {
+                Optional<Meeting> optionalMeeting = meetingService.getLastChangedMeetingByOwnerId(userId);
+                meetingDto = meetingConstructor.mapIfPresentOrElseGet(optionalMeeting, () -> new MeetingDto(userId));
             }
-            sendMessage(userId, meeting, message);
+            if (!message.equals(AccountState.CREATE.getButtonName())) {
+                handleStep(userId, meetingDto, message);
+            }
+            sendMessage(userId, meetingDto, message);
         }
     }
 
-    protected void handleCallback(long userId, Meeting meeting, String message) {
+    protected void handleCallback(long userId, MeetingDto meetingDto, String message) {
         ToggleButton toggleButton = ToggleButton.typeOf(message);
         switch (toggleButton) {
             case SEND -> {
+                Meeting meeting = meetingConstructor.mapToEntity(meetingDto);
                 meetingService.saveByOwner(meeting);
-                messageService.sendMeetingToParticipants(meeting);
+                meetingDto.setId(meeting.getId());
+                messageService.sendMeetingToParticipants(meetingDto);
                 messageService.sendMessageSentSuccessfully(userId);
             }
             case NEXT -> {
-                MeetingState currState = meeting.getState();
+                MeetingState currState = meetingDto.getState();
                 MeetingState newState = MeetingState.setNextState(currState);
-                meeting.setState(newState);
-                sendMessage(userId, meeting, message);
+                meetingDto.setState(newState);
+                sendMessage(userId, meetingDto, message);
             }
             case CANCEL -> {
-                meetingService.delete(meeting);
-                messageService.sendCanceledMessage(userId);
+//                meetingService.delete(meeting);
+//                messageService.sendCanceledMessage(userId);
             }
             case CURRENT -> {
-                handleStep(userId, meeting, message);
-                sendMessage(userId, meeting, message);
+                handleStep(userId, meetingDto, message);
+                sendMessage(userId, meetingDto, message);
             }
         }
     }
 
 
-    protected void handleStep(long userId, Meeting meeting, String callback) {
+    protected void handleStep(long userId, MeetingDto meetingDto, String callback) {
         try {
-            MeetingState meetingState = meeting.getState();
+            MeetingState meetingState = meetingDto.getState();
             switch (meetingState) {
-                case GROUP_SELECT -> meetingService.updateGroup(meeting, Integer.parseInt(callback));
-                case PARTICIPANT_SELECT -> meetingService.updateParticipants(meeting, Long.parseLong(callback));
+                case GROUP_SELECT -> {
+                    meetingDto.setGroupId(Integer.parseInt(callback));
+                    meetingDto.setState(MeetingState.PARTICIPANT_SELECT);
+                }
+                case PARTICIPANT_SELECT -> meetingConstructor.updateParticipants(meetingDto, Long.parseLong(callback));
                 case SUBJECT_SELECT -> {
-                    meetingService.updateSubject(meeting, callback);
-                    meeting.setState(MeetingState.SUBJECT_DURATION_SELECT);
+                    meetingDto.setSubjectTitle(callback);
+                    meetingDto.setState(MeetingState.SUBJECT_DURATION_SELECT);
                 }
                 case SUBJECT_DURATION_SELECT -> {
-                    meetingService.updateSubjectDuration(meeting, Integer.parseInt(callback));
-                    meeting.setState(MeetingState.QUESTION_SELECT);
+                    int duration = Integer.parseInt(callback);
+                    meetingDto.setSubjectDuration(duration);
+                    meetingDto.setState(MeetingState.QUESTION_SELECT);
                 }
-                case QUESTION_SELECT -> meetingService.updateQuestion(meeting, callback);
-                case DATE_SELECT -> meetingService.updateDate(meeting, callback);
-                case TIME_SELECT -> meetingService.updateTime(userId, meeting, callback);
+                case QUESTION_SELECT -> meetingConstructor.updateQuestion(meetingDto, callback);
+                case DATE_SELECT -> meetingConstructor.updateDate(meetingDto, callback);
+                case TIME_SELECT -> meetingConstructor.updateTime(meetingDto, callback);
                 case ADDRESS_SELECT -> {
-                    meetingService.updateAddress(meeting, callback);
-                    meeting.setState(MeetingState.EDIT);
+                    meetingDto.setState(MeetingState.ADDRESS_SELECT);
                 }
             }
-            meeting.setUpdatedDt(LocalDateTime.now());
+            meetingDto.setUpdatedDt(LocalDateTime.now());
+            meetingStateCache.save(userId, meetingDto);
         } catch (NumberFormatException | DateTimeException ex) {
             log.debug("invalid value entered by user {}", userId);
         } finally {
-            meetingService.saveOnCache(userId, meeting);
+//            meetingService.saveOnCache(userId, meetingDto);
         }
     }
 
 
-    protected void sendMessage(long userId, Meeting meeting, String callback) {
-        MeetingState state = meeting.getState();
+    protected void sendMessage(long userId, MeetingDto meetingDto, String callback) {
+        MeetingState state = meetingDto.getState();
         switch (state) {
-            case GROUP_SELECT -> messageService.sendGroupMessage(userId, meeting);
-            case PARTICIPANT_SELECT -> messageService.sendParticipantsMessage(userId, meeting);
-            case SUBJECT_SELECT -> messageService.sendSubjectMessage(userId, meeting);
-            case SUBJECT_DURATION_SELECT -> messageService.sendSubjectDurationMessage(userId, meeting);
-            case QUESTION_SELECT -> messageService.sendQuestionMessage(userId, meeting);
-            case DATE_SELECT -> messageService.sendDateMessage(userId, meeting, callback);
-            case TIME_SELECT -> messageService.sendTimeMessage(userId, meeting);
+            case GROUP_SELECT -> {
+                messageService.sendGroupMessage(userId, meetingDto);
+            }
+            case PARTICIPANT_SELECT -> messageService.sendParticipantsMessage(userId, meetingDto);
+            case SUBJECT_SELECT -> messageService.sendSubjectMessage(userId, meetingDto);
+            case SUBJECT_DURATION_SELECT -> messageService.sendSubjectDurationMessage(userId, meetingDto);
+            case QUESTION_SELECT -> messageService.sendQuestionMessage(userId, meetingDto);
+            case DATE_SELECT -> messageService.sendDateMessage(userId, meetingDto, callback);
+            case TIME_SELECT -> messageService.sendTimeMessage(userId, meetingDto);
             case ADDRESS_SELECT -> messageService.sendAddressMessage(userId);
-            case EDIT -> messageService.sendAwaitingMessage(userId, meeting);
+            case EDIT -> {
+                messageService.sendAwaitingMessage(userId, meetingDto);
+            }
             case CANCELED -> messageService.sendCanceledMessage(userId);
         }
     }

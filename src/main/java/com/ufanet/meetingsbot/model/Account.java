@@ -2,6 +2,8 @@ package com.ufanet.meetingsbot.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -33,10 +35,10 @@ public class Account implements Serializable {
     @Column(name = "created_dt")
     @CreatedDate
     private LocalDateTime createdDt;
-    //    @Fetch(FetchMode.JOIN)
+    @Fetch(FetchMode.JOIN)
     @OneToOne(fetch = FetchType.LAZY, optional = false, mappedBy = "account", orphanRemoval = true, cascade = CascadeType.ALL)
     private Settings settings;
-    //    @Fetch(FetchMode.JOIN)
+    //        @Fetch(FetchMode.JOIN)
     @OneToOne(fetch = FetchType.LAZY, optional = false, mappedBy = "account", orphanRemoval = true, cascade = CascadeType.ALL)
     private BotState botState;
     @OneToMany(mappedBy = "account", orphanRemoval = true, fetch = FetchType.LAZY, cascade = CascadeType.ALL)

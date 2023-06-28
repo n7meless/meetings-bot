@@ -13,6 +13,10 @@ public class ErrorReplyMessageService extends ReplyMessageService {
     public void userNotFoundExceptionHandler(UserNotFoundException e) {
         executeErrorMessage(e.getChatId(), e.getMessage());
     }
+    @ExceptionHandler
+    public void anyExceptionHandler(Exception e){
+        e.printStackTrace();
+    }
 
     protected void executeErrorMessage(long userId, String message) {
         SendMessage sendMessage = messageUtils.generateSendMessage(userId,

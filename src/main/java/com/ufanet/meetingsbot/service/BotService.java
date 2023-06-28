@@ -27,11 +27,11 @@ public class BotService {
         }
         return cacheState;
     }
-    @Transactional
+//    @Transactional
     public void setLastMsgFromUser(long userId, boolean fromUser) {
         BotState botState = getByUserId(userId);
         botState.setMsgFromUser(fromUser);
-        save(botState);
+//        save(botState);
     }
     @Transactional
     //    @CachePut(key = "#botState.account.id", value = "bot_state")

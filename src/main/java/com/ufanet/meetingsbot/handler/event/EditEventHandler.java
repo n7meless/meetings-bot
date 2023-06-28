@@ -1,9 +1,11 @@
 package com.ufanet.meetingsbot.handler.event;
 
+import com.ufanet.meetingsbot.cache.impl.MeetingStateCache;
 import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.EditState;
-import com.ufanet.meetingsbot.constants.state.MeetingState;
+import com.ufanet.meetingsbot.dto.MeetingDto;
+import com.ufanet.meetingsbot.mapper.MeetingConstructor;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.repository.AccountTimeRepository;
 import com.ufanet.meetingsbot.repository.MeetingTimeRepository;
@@ -19,7 +21,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -32,6 +34,8 @@ public class EditEventHandler implements EventHandler {
     private final AccountTimeRepository accountTimeRepository;
     private final BotService botService;
     private final EditReplyMessageService editReplyMessage;
+    private final MeetingStateCache meetingStateCache;
+    private final MeetingConstructor meetingConstructor;
 
     @Override
     public void handleUpdate(Update update) {
@@ -41,17 +45,22 @@ public class EditEventHandler implements EventHandler {
             String data = update.getCallbackQuery().getData();
             EditState editState;
 
-            Meeting meeting = meetingService.getByOwnerIdAndStateNotIn(userId,
-                    List.of(MeetingState.CONFIRMED, MeetingState.AWAITING, MeetingState.CANCELED));
+            MeetingDto meetingDto = meetingStateCache.get(userId);
+
+            if (meetingDto == null) {
+                Optional<Meeting> optionalMeeting = meetingService.getLastChangedMeetingByOwnerId(userId);
+                meetingDto = meetingConstructor.mapIfPresentOrElseThrow(optionalMeeting, RuntimeException::new);
+            }
+
             if (data.startsWith(AccountState.EDIT.name())) {
                 editState = EditState.valueOf(data);
                 botService.setState(userId, data);
             } else {
                 String state = botService.getState(userId);
                 editState = EditState.valueOf(state);
-                handleStep(userId, editState, meeting, data);
+                handleStep(userId, editState, meetingDto, data);
             }
-            handleToggleButton(userId, editState, meeting, data);
+            handleToggleButton(userId, editState, meetingDto, data);
 
         } else if (update.hasMessage()) {
             long userId = update.getMessage().getChatId();
@@ -59,57 +68,62 @@ public class EditEventHandler implements EventHandler {
 
             String botState = botService.getState(userId);
             EditState editState = EditState.valueOf(botState);
-            Meeting meeting = meetingService.getByOwnerIdAndStateNotIn(userId,
-                    List.of(MeetingState.CONFIRMED, MeetingState.AWAITING, MeetingState.CANCELED));
 
-            handleStep(userId, editState, meeting, message);
-            handleToggleButton(userId, editState, meeting, message);
+            MeetingDto meetingDto = meetingStateCache.get(userId);
+
+            if (meetingDto == null) {
+                Optional<Meeting> optionalMeeting = meetingService.getLastChangedMeetingByOwnerId(userId);
+                meetingDto = meetingConstructor.mapIfPresentOrElseThrow(optionalMeeting, RuntimeException::new);
+            }
+
+            handleStep(userId, editState, meetingDto, message);
+            handleToggleButton(userId, editState, meetingDto, message);
         }
     }
 
-    protected void handleToggleButton(long userId, EditState state, Meeting meeting, String message) {
+    protected void handleToggleButton(long userId, EditState state, MeetingDto meetingDto, String message) {
         ToggleButton toggleButton = ToggleButton.typeOf(message);
         switch (toggleButton) {
             case READY -> {
                 botService.setState(userId, AccountState.CREATE.name());
             }
             case NEXT -> {
-                sendMessage(userId, state.next(), meeting);
+                sendMessage(userId, state.next(), meetingDto);
             }
             case CURRENT -> {
-                sendMessage(userId, state, meeting);
+                sendMessage(userId, state, meetingDto);
             }
         }
     }
 
-    protected void handleStep(long userId, EditState state, Meeting meeting, String callback) {
+    protected void handleStep(long userId, EditState state, MeetingDto meetingDto, String callback) {
         try {
             switch (state) {
-                case EDIT_PARTICIPANT -> meetingService.updateParticipants(meeting, Long.parseLong(callback));
-                case EDIT_SUBJECT -> meetingService.updateSubject(meeting, callback);
-                case EDIT_SUBJECT_DURATION -> meetingService.updateSubjectDuration(meeting, Integer.parseInt(callback));
-                case EDIT_QUESTION -> meetingService.updateQuestion(meeting, callback);
-                case EDIT_DATE -> meetingService.updateDate(meeting, callback);
-                case EDIT_TIME -> meetingService.updateTime(userId, meeting, callback);
-                case EDIT_ADDRESS -> meetingService.updateAddress(meeting, callback);
+                case EDIT_PARTICIPANT -> meetingConstructor.updateParticipants(meetingDto, Long.parseLong(callback));
+                case EDIT_SUBJECT -> meetingDto.setSubjectTitle(callback);
+                case EDIT_SUBJECT_DURATION -> meetingDto.setSubjectDuration(Integer.parseInt(callback));
+                case EDIT_QUESTION -> meetingConstructor.updateQuestion(meetingDto, callback);
+                case EDIT_DATE -> meetingConstructor.updateDate(meetingDto, callback);
+                case EDIT_TIME -> meetingConstructor.updateTime(meetingDto, callback);
+                case EDIT_ADDRESS -> meetingDto.setAddress(callback);
             }
-            meeting.setUpdatedDt(LocalDateTime.now());
+            meetingDto.setUpdatedDt(LocalDateTime.now());
 
         } catch (NumberFormatException | DateTimeException ex) {
             log.debug("invalid value entered by user {}", userId);
         } finally {
-            meetingService.saveOnCache(userId, meeting);
+//            meetingService.saveOnCache(userId, meetingDto);
         }
     }
 
-    protected void sendMessage(long userId, EditState state, Meeting meeting) {
+    protected void sendMessage(long userId, EditState state, MeetingDto meetingDto) {
         switch (state) {
-            case EDIT_PARTICIPANT -> editReplyMessage.editParticipants(userId, meeting);
-            case EDIT_SUBJECT -> editReplyMessage.editSubject(userId, meeting);
-            case EDIT_SUBJECT_DURATION -> editReplyMessage.editSubjectDuration(userId, meeting);
-            case EDIT_QUESTION -> editReplyMessage.editQuestion(userId, meeting);
-            case EDIT_TIME -> editReplyMessage.editTime(userId, meeting);
-            case EDIT_ADDRESS -> editReplyMessage.editAddress(userId, meeting);
+            case EDIT_PARTICIPANT -> editReplyMessage.editParticipants(userId, meetingDto);
+            case EDIT_SUBJECT -> editReplyMessage.editSubject(userId, meetingDto);
+            case EDIT_SUBJECT_DURATION -> editReplyMessage.editSubjectDuration(userId, meetingDto);
+            case EDIT_QUESTION -> editReplyMessage.editQuestion(userId, meetingDto);
+            case EDIT_TIME -> editReplyMessage.editTime(userId, meetingDto);
+            case EDIT_ADDRESS -> editReplyMessage.editAddress(userId, meetingDto);
         }
     }
 

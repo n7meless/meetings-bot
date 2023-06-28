@@ -2,10 +2,7 @@ package com.ufanet.meetingsbot.model;
 
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
@@ -14,7 +11,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
+@Builder
 @Setter
 @Getter
 @AllArgsConstructor
@@ -62,13 +59,9 @@ public class Meeting implements Comparable<Meeting> {
     @OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<MeetingDate> dates;
 
-    public Meeting(Account owner) {
-        this.owner = owner;
-        this.createdDt = LocalDateTime.now();
-        this.updatedDt = LocalDateTime.now();
-        this.state = MeetingState.GROUP_SELECT;
-        this.accountMeetings = new HashSet<>();
-        this.dates = new HashSet<>();
+    public void setSubject(Subject subject) {
+        this.subject = subject;
+        subject.setMeeting(this);
     }
 
     public void addMeetingDate(MeetingDate meetingDate) {

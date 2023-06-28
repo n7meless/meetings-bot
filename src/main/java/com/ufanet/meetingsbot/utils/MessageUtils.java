@@ -1,5 +1,7 @@
 package com.ufanet.meetingsbot.utils;
 
+import com.ufanet.meetingsbot.dto.AccountDto;
+import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Meeting;
@@ -47,28 +49,24 @@ public class MessageUtils {
                 .replyMarkup(markup).build();
     }
 
-    public EditMessageReplyMarkup disableInlineMarkup(long chatId, Integer messageId) {
-        return EditMessageReplyMarkup.builder().chatId(chatId).messageId(messageId)
-                .replyMarkup(null).build();
-    }
 
-    public MeetingMessage generateMeetingMessage(Meeting meeting) {
+    public MeetingMessage generateMeetingMessage(MeetingDto meetingDto) {
 
-        Account meetingOwner = meeting.getOwner();
-        String owner = generateAccountLink(meetingOwner, "", "");
+        AccountDto accountDto = meetingDto.getOwner();
+        String owner = generateAccountLink(accountDto, "", "");
 
-        Set<Account> accounts = meeting.getParticipants();
+        Set<AccountDto> accounts = meetingDto.getParticipants();
 
         String participants = generateAccountLink(accounts, GREEN_SELECTED.getEmojiSpace(), "");
 
-        String subject = CLIPBOARD.getEmojiSpace() + meeting.getSubject().getTitle();
-        String questions = meeting.getSubject().getQuestions().stream()
+        String subject = CLIPBOARD.getEmojiSpace() + meetingDto.getSubjectTitle();
+        String questions = meetingDto.getQuestions().stream()
                 .collect(joining("\n" + QUESTION.getEmojiSpace(), QUESTION.getEmojiSpace(), "\n"));
 
-        Integer subjectDuration = meeting.getSubject().getDuration();
-        String duration = subjectDuration == null ? "(не указано)" : DURATION.getEmojiSpace() + subjectDuration;
+        int subjectDuration = meetingDto.getSubjectDuration();
+        String duration = subjectDuration == 0 ? "(не указано)" : DURATION.getEmojiSpace() + subjectDuration;
 
-        String address = meeting.getAddress() == null ? "(не указано)" : OFFICE.getEmojiSpace() + meeting.getAddress();
+        String address = meetingDto.getAddress() == null ? "(не указано)" : OFFICE.getEmojiSpace() + meetingDto.getAddress();
 
         return new MeetingMessage(owner, participants, subject,
                 questions, duration, address);
@@ -82,21 +80,21 @@ public class MessageUtils {
         return sb.toString();
     }
 
-    public String generateAccountLink(Account account, String prefix, String suffix) {
+    public String generateAccountLink(AccountDto accountDto, String prefix, String suffix) {
         StringBuilder sb = new StringBuilder();
         sb.append(prefix);
-        if (account.getUsername() == null) {
-            sb.append("<a href='tg://user?id=").append(account.getId());
+        if (accountDto.getUsername() == null) {
+            sb.append("<a href='tg://user?id=").append(accountDto.getId());
         } else {
-            sb.append("<a href='https://t.me/").append(account.getUsername());
+            sb.append("<a href='https://t.me/").append(accountDto.getUsername());
         }
-        sb.append("'>").append(account.getFirstname()).append("</a>").append(suffix);
+        sb.append("'>").append(accountDto.getFirstname()).append("</a>").append(suffix);
         return sb.toString();
     }
 
-    public String generateAccountLink(Set<Account> accounts, String prefix, String suffix) {
+    public String generateAccountLink(Set<AccountDto> accounts, String prefix, String suffix) {
         StringBuilder sb = new StringBuilder();
-        for (Account account : accounts) {
+        for (AccountDto account : accounts) {
             sb.append(generateAccountLink(account, prefix, suffix));
             sb.append("\n");
         }

@@ -1,16 +1,18 @@
 package com.ufanet.meetingsbot.service.message;
 
 import com.ufanet.meetingsbot.constants.ToggleButton;
+import com.ufanet.meetingsbot.dto.AccountDto;
+import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.keyboard.CalendarKeyboardMaker;
 import com.ufanet.meetingsbot.keyboard.MeetingKeyboardMaker;
-import com.ufanet.meetingsbot.model.*;
-import com.ufanet.meetingsbot.repository.GroupRepository;
+import com.ufanet.meetingsbot.model.Account;
+import com.ufanet.meetingsbot.model.Group;
+import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.GroupService;
 import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
@@ -21,6 +23,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +33,7 @@ public class MeetingReplyMessageService extends ReplyMessageService {
     private final AccountService accountService;
     private final GroupService groupService;
 
-    public void sendGroupMessage(long userId, Meeting meeting) {
+    public void sendGroupMessage(long userId, MeetingDto meeting) {
         List<Group> groups = groupService.getGroupsByMemberId(userId);
 
         EditMessageText editMessage =
@@ -40,12 +43,14 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         executeMessage(editMessage);
     }
 
-    public void sendParticipantsMessage(long userId, Meeting meeting) {
-        Set<Account> members = accountService.getAccountByGroupsIdAndIdNot(meeting.getGroup().getId(), userId);
+    public void sendParticipantsMessage(long userId, MeetingDto meeting) {
+        Set<AccountDto> members = accountService.getAccountByGroupsIdAndIdNot(meeting.getGroupId(), userId).stream()
+                .map(accountService::mapToDto).collect(Collectors.toSet());
 
-        Set<Account> participants = meeting.getParticipants();
-        List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getParticipantsInlineButtons(members, participants);
-        keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(participants.size() > 0));
+        Set<AccountDto> participantIds = meeting.getParticipants();
+
+        List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getParticipantsInlineButtons(members, participantIds);
+        keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(participantIds.size() > 0));
 
         EditMessageText message = messageUtils.generateEditMessageHtml(userId,
                 localeMessageService.getMessage("create.meeting.participants"),
@@ -54,11 +59,10 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         executeMessage(message);
     }
 
-    public void sendSubjectMessage(long userId, Meeting meeting) {
-        Subject subject = meeting.getSubject();
+    public void sendSubjectMessage(long userId, MeetingDto meetingDto) {
         InlineKeyboardMarkup keyboardMarkup;
         keyboardMarkup = InlineKeyboardMarkup.builder()
-                .keyboardRow(meetingKeyboard.defaultRowHelperInlineButtons(subject != null))
+                .keyboardRow(meetingKeyboard.defaultRowHelperInlineButtons(meetingDto.getSubjectTitle() != null))
                 .build();
 
         EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId, "Укажите тему встречи",
@@ -66,10 +70,9 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         executeMessage(editMessage);
     }
 
-    public void sendQuestionMessage(long userId, Meeting meeting) {
-        Subject subject = meeting.getSubject();
-        Set<String> questions = subject.getQuestions();
-        List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getQuestionsInlineMarkup(meeting);
+    public void sendQuestionMessage(long userId, MeetingDto meetingDto) {
+        Set<String> questions = meetingDto.getQuestions();
+        List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getQuestionsInlineMarkup(questions);
         keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(questions.size() > 0));
         EditMessageText editMessage =
                 messageUtils.generateEditMessageHtml(userId, localeMessageService.getMessage("create.meeting.question"),
@@ -77,11 +80,11 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         executeMessage(editMessage);
     }
 
-    public void sendDateMessage(long userId, Meeting meeting, String callback) {
+    public void sendDateMessage(long userId, MeetingDto meetingDto, String callback) {
         Account account = accountService.getByUserId(userId).orElseThrow();
         String zoneId = account.getZoneId();
-        List<List<InlineKeyboardButton>> keyboard = calendarKeyboard.getCalendarInlineMarkup(meeting, callback, zoneId);
-        keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(meeting.getDates().size() > 0));
+        List<List<InlineKeyboardButton>> keyboard = calendarKeyboard.getCalendarInlineMarkup(meetingDto, callback, zoneId);
+        keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(meetingDto.getDatesMap().size() > 0));
         EditMessageText message =
                 messageUtils.generateEditMessageHtml(userId, localeMessageService.getMessage("create.meeting.date"),
                         meetingKeyboard.buildInlineMarkup(keyboard));
@@ -89,11 +92,11 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         executeMessage(message);
     }
 
-    public void sendTimeMessage(long userId, Meeting meeting) {
+    public void sendTimeMessage(long userId, MeetingDto meetingDto) {
         Account account = accountService.getByUserId(userId).orElseThrow();
         String zoneId = account.getZoneId();
-        List<List<InlineKeyboardButton>> keyboard = calendarKeyboard.getTimeInlineMarkup(meeting, zoneId);
-        boolean hasTime = meeting.getDates().stream().anyMatch(t -> t.getMeetingTimes().size() > 0);
+        List<List<InlineKeyboardButton>> keyboard = calendarKeyboard.getTimeInlineMarkup(meetingDto, zoneId);
+        boolean hasTime = meetingDto.getDatesMap().values().stream().anyMatch(t -> t.size() > 0);
         keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(hasTime));
 
         EditMessageText message = messageUtils.generateEditMessageHtml(userId,
@@ -114,10 +117,9 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         executeMessage(message);
     }
 
-    public void sendSubjectDurationMessage(long userId, Meeting meeting) {
-        Subject subject = meeting.getSubject();
-        List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getSubjectDurationInlineMarkup(meeting);
-        keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(subject.getDuration() != null));
+    public void sendSubjectDurationMessage(long userId, MeetingDto meetingDto) {
+        List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getSubjectDurationInlineMarkup(meetingDto);
+        keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(meetingDto.getSubjectDuration() != 0));
 
         EditMessageText editMessage =
                 messageUtils.generateEditMessageHtml(userId,
@@ -140,7 +142,7 @@ public class MeetingReplyMessageService extends ReplyMessageService {
     }
 
 
-    public void sendAwaitingMessage(long userId, Meeting meeting) {
+    public void sendAwaitingMessage(long userId, MeetingDto meetingDto) {
         InlineKeyboardButton sendButton = InlineKeyboardButton.builder().callbackData(ToggleButton.SEND.name())
                 .text(Emojis.MESSAGE.getEmojiSpace() + "Отправить запрос участникам").build();
 
@@ -150,11 +152,11 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         InlineKeyboardMarkup keyboardMarkup = InlineKeyboardMarkup.builder()
                 .keyboard(keyboard).build();
 
-        MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meeting);
+        MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meetingDto);
 
         Account account = accountService.getByUserId(userId).orElseThrow();
         String zoneId = account.getZoneId();
-        List<ZonedDateTime> dates = meeting.getDatesWithZoneId(zoneId);
+        List<ZonedDateTime> dates = meetingDto.getDatesWithZoneId(zoneId);
         String timesText = messageUtils.generateDatesText(dates);
 
         String textMeeting =
@@ -168,20 +170,21 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         executeMessage(editMessage);
     }
 
-    public void sendMeetingToParticipants(Meeting meeting) {
-        MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meeting);
+    public void sendMeetingToParticipants(MeetingDto meetingDto) {
+        MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meetingDto);
 
-        List<Account> participants = accountService.getAccountByMeetingId(meeting.getId());
+//        List<Account> participants = accountService.getAccountByMeetingId(meetingDto.getId());
+        Set<AccountDto> accountDtos = meetingDto.getParticipants();
 
         InlineKeyboardMarkup keyboard =
-                meetingKeyboard.getMeetingConfirmKeyboard(meeting);
+                meetingKeyboard.getMeetingConfirmKeyboard(meetingDto.getId());
 
-        for (Account account : participants) {
+        for (AccountDto account : accountDtos) {
 
-            if (Objects.equals(account.getId(), meeting.getOwner().getId())) continue;
+            if (Objects.equals(account.getId(), meetingDto.getOwner().getId())) continue;
 
-            String zoneId = account.getZoneId();
-            List<ZonedDateTime> dates = meeting.getDatesWithZoneId(zoneId);
+            String zoneId = account.getTimeZone();
+            List<ZonedDateTime> dates = meetingDto.getDatesWithZoneId(zoneId);
             String datesText = messageUtils.generateDatesText(dates);
 
             String textMeeting = localeMessageService.getMessage("create.meeting.awaiting.participants",

@@ -28,7 +28,7 @@ telegram:
   bot:
     username: ${TELEGRAM_USERNAME}
     token: ${TELEGRAM_TOKEN}
-    webHookPath: https://401a-145-255-2-121.ngrok-free.app
+    webHookPath: https://ecf4-145-255-2-121.ngrok-free.app
 redis:
   ttl:
     user: 60

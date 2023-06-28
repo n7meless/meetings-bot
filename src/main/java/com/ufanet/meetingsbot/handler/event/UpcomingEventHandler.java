@@ -1,9 +1,12 @@
 package com.ufanet.meetingsbot.handler.event;
 
+import com.ufanet.meetingsbot.cache.impl.MeetingStateCache;
 import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.constants.state.UpcomingState;
+import com.ufanet.meetingsbot.dto.MeetingDto;
+import com.ufanet.meetingsbot.mapper.MeetingConstructor;
 import com.ufanet.meetingsbot.model.AccountTime;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.model.MeetingTime;
@@ -15,8 +18,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.util.*;
 
 import static com.ufanet.meetingsbot.constants.state.AccountState.UPCOMING;
 
@@ -27,6 +31,8 @@ public class UpcomingEventHandler implements EventHandler {
     private final MeetingService meetingService;
     private final AccountService accountService;
     private final BotService botService;
+    private final MeetingStateCache meetingStateCache;
+    private final MeetingConstructor meetingConstructor;
 
     @Override
     public void handleUpdate(Update update) {
@@ -47,7 +53,85 @@ public class UpcomingEventHandler implements EventHandler {
         String[] split = callback.split(" ");
         UpcomingState state = UpcomingState.typeOf(split[0]);
         if (state == null) return;
+        if (split.length > 1) {
+            long meetingId = Long.parseLong(split[1]);
 
+            MeetingDto meetingDto = meetingStateCache.get(userId);
+
+            if (meetingDto == null) {
+                Optional<Meeting> optionalMeeting = meetingService.getByMeetingId(meetingId);
+                meetingDto = meetingConstructor.mapIfPresentOrElseThrow(optionalMeeting,
+                        RuntimeException::new);
+            }
+
+            switch (state) {
+                case UPCOMING_CANCEL_BY_OWNER -> {
+                    replyMessage.sendCanceledMeetingByOwner(userId, meetingDto);
+                    meetingService.deleteById(meetingId);
+                }
+                case UPCOMING_SELECTED_MEETING -> {
+                    List<AccountTime> accountTimes = accountService.getAccountTimesByMeetingId(meetingId);
+                    if (meetingDto.getState().equals(MeetingState.AWAITING)) {
+                        if (meetingDto.getOwner().getId() == userId) {
+                            replyMessage.sendSelectedReadyMeeting(userId, meetingDto);
+                        } else {
+                            replyMessage.sendSelectedAwaitingMeeting(userId, meetingDto);
+                        }
+                    } else replyMessage.sendSelectedUpcomingMeeting(userId, meetingDto, accountTimes);
+                }
+                case UPCOMING_EDIT_MEETING_TIME -> {
+                    List<AccountTime> accountTimes = accountService.getAccountTimesByUserIdAndMeetingId(userId, meetingId);
+
+                    if (split.length > 2) {
+                        long accTimeId = Long.parseLong(split[2]);
+                        accountService.updateMeetingAccountTime(accTimeId, accountTimes);
+//                        meetingService.saveOnCache(userId, meeting);
+                    }
+                    replyMessage.sendEditMeetingAccountTimes(userId, meetingDto, accountTimes);
+                }
+                case UPCOMING_CANCEL_MEETING_TIME -> {
+                    meetingDto.getDatesMap().clear();
+//                    meetingService.cancelMeeting(meetingDto);
+//                meetingService.saveOnCache(userId, meeting);
+                    replyMessage.sendCanceledAccountTimeMessage(meetingDto);
+                }
+                case UPCOMING_CONFIRM_MEETING_TIME -> {
+                    List<AccountTime> accountTimes = accountService.getAccountTimesByMeetingId(meetingId);
+                    meetingService.updateMeetingAccountTimes(userId, accountTimes);
+
+                    boolean allVoted = accountTimes.stream()
+                            .allMatch(at -> at.getStatus().equals(Status.CONFIRMED) ||
+                                    at.getStatus().equals(Status.CANCELED));
+
+                    Optional<MeetingTime> confirmed = meetingService.getByMeetingIdAndConfirmedState(meetingId);
+
+                    if (allVoted && confirmed.isPresent()) {
+                        Map<LocalDate, Set<ZonedDateTime>> datesMap = meetingDto.getDatesMap();
+                        datesMap.clear();
+                        MeetingTime meetingTime = confirmed.get();
+                        ZonedDateTime dateTime = meetingTime.getDateTime();
+                        datesMap.put(dateTime.toLocalDate(), Set.of(dateTime));
+
+                        meetingDto.setState(MeetingState.CONFIRMED);
+                        meetingDto.setDatesMap(datesMap);
+//                        meetingService.processConfirmedMeeting(userId, meetingDto, confirmed);
+//                    meetingService.clearCache(userId);
+                        replyMessage.sendReadyMeeting(meetingDto);
+                    } else if (allVoted) {
+                        meetingDto.setDatesMap(new TreeMap<>());
+                        Meeting meeting = meetingConstructor.mapToEntity(meetingDto);
+                        meetingService.cancelMeeting(meeting);
+//                    meetingService.clearCache(userId);
+                        replyMessage.sendCanceledMeetingByMatching(meetingDto);
+                    } else {
+                        replyMessage.sendSuccessMeetingConfirm(userId);
+                    }
+                }
+                case UPCOMING_IWILLNOTCOME, UPCOMING_IAMLATE, UPCOMING_IAMREADY -> {
+                    handleAccountTimeState(userId, meetingId, state);
+                }
+            }
+        }
         botService.setState(userId, state.name());
 
         switch (state) {
@@ -61,78 +145,18 @@ public class UpcomingEventHandler implements EventHandler {
                     replyMessage.sendUpcomingMeetings(userId, meetings);
                 }
             }
-            case UPCOMING_CANCEL_BY_OWNER -> {
-                long meetingId = Long.parseLong(split[1]);
-                Meeting meeting = meetingService.getByMeetingId(userId, meetingId);
-
-                replyMessage.sendCanceledMeetingByOwner(userId, meeting);
-                meetingService.delete(meeting);
-            }
-            case UPCOMING_SELECTED_MEETING -> {
-                long meetingId = Long.parseLong(split[1]);
-                Meeting meeting = meetingService.getByMeetingId(userId, meetingId);
-                List<AccountTime> accountTimes = accountService.getAccountTimesByMeetingId(meetingId);
-                if (meeting.getState().equals(MeetingState.AWAITING)) {
-                    if (meeting.getOwner().getId() == userId) {
-                        replyMessage.sendSelectedReadyMeeting(userId, meeting);
-                    } else {
-                        replyMessage.sendSelectedAwaitingMeeting(userId, meeting);
-                    }
-                } else replyMessage.sendSelectedUpcomingMeeting(userId, meeting, accountTimes);
-            }
-            case UPCOMING_EDIT_MEETING_TIME -> {
-                long meetingId = Long.parseLong(split[1]);
-                Meeting meeting = meetingService.getByMeetingId(userId, meetingId);
-                List<AccountTime> accountTimes = meeting.getAccountTimes(at -> at.getAccount().getId() == userId);
-
-                if (split.length > 2) {
-                    long accTimeId = Long.parseLong(split[2]);
-                    meetingService.updateMeetingAccountTime(meeting, accTimeId, accountTimes);
-                    meetingService.saveOnCache(userId, meeting);
-                }
-                replyMessage.sendEditMeetingAccountTimes(userId, meeting, accountTimes);
-            }
-            case UPCOMING_CANCEL_MEETING_TIME -> {
-                long meetingId = Long.parseLong(split[1]);
-                Meeting meeting = meetingService.getByMeetingId(userId, meetingId);
-                meetingService.cancelMeeting(meeting);
-//                meetingService.saveOnCache(userId, meeting);
-                replyMessage.sendCanceledAccountTimeMessage(meeting);
-            }
-            case UPCOMING_CONFIRM_MEETING_TIME -> {
-                long meetingId = Long.parseLong(split[1]);
-                Meeting meeting = meetingService.getByMeetingId(userId, meetingId);
-
-                List<AccountTime> accountTimes = accountService.getAccountTimesByMeetingId(meetingId);
-                meetingService.updateMeetingAccountTimes(userId, accountTimes);
-
-                boolean allVoted = accountTimes.stream()
-                        .allMatch(at -> at.getStatus().equals(Status.CONFIRMED) ||
-                                at.getStatus().equals(Status.CANCELED));
-
-                Optional<MeetingTime> confirmed = meetingService.getByMeetingIdAndConfirmedState(meetingId);
-
-                if (allVoted && confirmed.isPresent()) {
-                    meetingService.processConfirmedMeeting(userId, meeting, confirmed);
-//                    meetingService.clearCache(userId);
-                    replyMessage.sendReadyMeeting(meeting);
-                } else if (allVoted) {
-                    meetingService.cancelMeeting(meeting);
-//                    meetingService.clearCache(userId);
-                    replyMessage.sendCanceledMeetingByMatching(meeting);
-                } else {
-                    replyMessage.sendSuccessMeetingConfirm(userId);
-                }
-            }
-            case UPCOMING_IWILLNOTCOME, UPCOMING_IAMLATE, UPCOMING_IAMREADY -> {
-                long meetingId = Long.parseLong(split[1]);
-                handleAccountTimeState(userId, meetingId, state);
-            }
         }
     }
 
     protected void handleAccountTimeState(long userId, long meetingId, UpcomingState state) {
-        Meeting meeting = meetingService.getByMeetingId(userId, meetingId);
+        MeetingDto meetingDto = meetingStateCache.get(userId);
+
+        if (meetingDto == null) {
+            Optional<Meeting> optionalMeeting = meetingService.getByMeetingId(meetingId);
+            meetingDto = meetingConstructor.mapIfPresentOrElseThrow(optionalMeeting,
+                    RuntimeException::new);
+        }
+
         List<AccountTime> accountTimes = accountService.getAccountTimesByMeetingId(meetingId);
 
         AccountTime accountTime = accountTimes.stream()
@@ -143,17 +167,17 @@ public class UpcomingEventHandler implements EventHandler {
             case UPCOMING_IAMREADY -> {
                 accountTime.setStatus(Status.CONFIRMED);
                 accountService.saveAccountTime(accountTime);
-                replyMessage.sendSelectedUpcomingMeeting(userId, meeting, accountTimes);
+                replyMessage.sendSelectedUpcomingMeeting(userId, meetingDto, accountTimes);
             }
             case UPCOMING_IAMLATE -> {
                 accountTime.setStatus(Status.AWAITING);
                 accountService.saveAccountTime(accountTime);
-                replyMessage.sendSelectedUpcomingMeeting(userId, meeting, accountTimes);
+                replyMessage.sendSelectedUpcomingMeeting(userId, meetingDto, accountTimes);
             }
             case UPCOMING_IWILLNOTCOME -> {
                 accountTime.setStatus(Status.CANCELED);
                 accountService.saveAccountTime(accountTime);
-                replyMessage.sendSelectedUpcomingMeeting(userId, meeting, accountTimes);
+                replyMessage.sendSelectedUpcomingMeeting(userId, meetingDto, accountTimes);
             }
         }
         meetingService.clearCache(userId);

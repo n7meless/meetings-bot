@@ -20,7 +20,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 //            join bot_state bs on u.id = bs.user_id
 //            join user_settings us on bs.user_id = us.user_id
 //            """, nativeQuery = true)
-    @EntityGraph(attributePaths = {"settings","botState"})
+    @EntityGraph(attributePaths = {"settings"})
     Set<Account> findAccountByGroupsIdAndIdNot(Long chatId, Long userId);
 
     @Override
@@ -31,5 +31,11 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     @Query("from users u join user_meetings um on u.id = um.account.id " +
             "join user_settings us on u.id = us.account.id and um.meeting.id=?1")
     List<Account> findAccountsByMeetingId(Long meetingId);
+
+//    @Query(value = """
+//            select users from users join user_chat uc on users.id = uc.user_id and
+//            uc.chat_id=?1 where users.id in (?2)
+//            """, nativeQuery = true)
+//    List<Account> findByGroupIdAndAccountsIdsIn(Long groupId, List<Long> accountIds);
 
 }

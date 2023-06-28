@@ -1,6 +1,7 @@
 package com.ufanet.meetingsbot.cache.impl;
 
 import com.ufanet.meetingsbot.cache.Cache;
+import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.model.Meeting;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -12,16 +13,16 @@ import java.util.Map;
 @Getter
 @Service
 @RequiredArgsConstructor
-public class MeetingStateCache implements Cache<Meeting> {
-    private final Map<Long, Meeting> meetingStateCache = new HashMap<>();
+public class MeetingStateCache implements Cache<MeetingDto> {
+    private final Map<Long, MeetingDto> meetingStateCache = new HashMap<>();
 
     @Override
-    public void save(Long userId, Meeting meeting) {
+    public void save(Long userId, MeetingDto meeting) {
         meetingStateCache.put(userId, meeting);
     }
 
     @Override
-    public Meeting get(Long userId) {
+    public MeetingDto get(Long userId) {
         return meetingStateCache.getOrDefault(userId, null);
     }
 

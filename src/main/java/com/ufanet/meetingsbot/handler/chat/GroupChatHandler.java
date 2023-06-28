@@ -35,7 +35,7 @@ public class GroupChatHandler implements ChatHandler {
                 groupService.saveMembers(group, List.of(tgUser));
             }
             if (hasMemberUpdate(message)) {
-                Optional<Group> optionalGroup = groupService.getByChatId(chatId);
+                Optional<Group> optionalGroup = groupService.getByGroupId(chatId);
                 Group group = optionalGroup.orElseGet(() -> groupService.saveTgChat(chat));
                 handleMembers(group, message);
             }
