@@ -5,6 +5,7 @@ import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,6 +20,9 @@ import java.util.List;
 @EntityListeners({AuditingEntityListener.class})
 public class Account implements Serializable {
 
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     @Id
     private Long id;
     @Column(name = "first_name")
@@ -29,10 +33,10 @@ public class Account implements Serializable {
     @Column(name = "created_dt")
     @CreatedDate
     private LocalDateTime createdDt;
-//    @Fetch(FetchMode.JOIN)
-    @OneToOne(fetch = FetchType.LAZY, mappedBy = "account", orphanRemoval = true, cascade = CascadeType.ALL)
+    //    @Fetch(FetchMode.JOIN)
+    @OneToOne(fetch = FetchType.LAZY, optional = false, mappedBy = "account", orphanRemoval = true, cascade = CascadeType.ALL)
     private Settings settings;
-//    @Fetch(FetchMode.JOIN)
+    //    @Fetch(FetchMode.JOIN)
     @OneToOne(fetch = FetchType.LAZY, optional = false, mappedBy = "account", orphanRemoval = true, cascade = CascadeType.ALL)
     private BotState botState;
     @OneToMany(mappedBy = "account", orphanRemoval = true, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
@@ -46,7 +50,7 @@ public class Account implements Serializable {
     @OneToMany(mappedBy = "account")
     private List<AccountTime> meetingTimes;
 
-    public String getZoneId(){
+    public String getZoneId() {
         return this.settings.getTimeZone();
     }
 }

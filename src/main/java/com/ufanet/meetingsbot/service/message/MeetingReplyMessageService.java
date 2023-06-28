@@ -68,7 +68,7 @@ public class MeetingReplyMessageService extends ReplyMessageService {
 
     public void sendQuestionMessage(long userId, Meeting meeting) {
         Subject subject = meeting.getSubject();
-        Set<Question> questions = subject.getQuestions();
+        Set<String> questions = subject.getQuestions();
         List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getQuestionsInlineMarkup(meeting);
         keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(questions.size() > 0));
         EditMessageText editMessage =

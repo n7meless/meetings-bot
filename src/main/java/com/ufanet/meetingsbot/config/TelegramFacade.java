@@ -1,7 +1,7 @@
 package com.ufanet.meetingsbot.config;
 
 import com.ufanet.meetingsbot.handler.chat.ChatHandler;
-import com.ufanet.meetingsbot.handler.type.ChatType;
+import com.ufanet.meetingsbot.constants.type.ChatType;
 import com.ufanet.meetingsbot.service.AccountService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +9,6 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;

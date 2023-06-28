@@ -25,7 +25,6 @@ public class MeetingDate implements Comparable<MeetingDate> {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @DateTimeFormat(pattern = "dd.MM.yyyy")
     private LocalDate date;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "meeting_id", referencedColumnName = "id")
@@ -41,7 +40,6 @@ public class MeetingDate implements Comparable<MeetingDate> {
     }
 
     public void addMeetingTime(MeetingTime meetingTime) {
-
         this.meetingTimes.add(meetingTime);
     }
 

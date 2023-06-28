@@ -1,7 +1,7 @@
 package com.ufanet.meetingsbot;
 
 import com.ufanet.meetingsbot.config.BotConfig;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -13,8 +13,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+@Slf4j
 @EnableCaching
-@RequiredArgsConstructor
 @SpringBootApplication
 public class MeetingsBotApplication {
     public static void main(String[] args) {
@@ -30,7 +30,11 @@ public class MeetingsBotApplication {
             HttpRequest request = HttpRequest.newBuilder(URI.create(url)).GET().build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            System.out.println(response.statusCode());
+            if (response.statusCode() == 200) {
+                log.info("bot '@{}' authorized successfully", botConfig.getUsername());
+            } else {
+                log.error("can not authorize bot '@{}' in telegram", botConfig.getUsername());
+            }
         };
     }
 }

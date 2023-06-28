@@ -7,10 +7,7 @@ import com.ufanet.meetingsbot.keyboard.CalendarKeyboardMaker;
 import com.ufanet.meetingsbot.keyboard.MeetingKeyboardMaker;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Meeting;
-import com.ufanet.meetingsbot.model.Question;
-import com.ufanet.meetingsbot.repository.GroupRepository;
 import com.ufanet.meetingsbot.service.AccountService;
-import com.ufanet.meetingsbot.service.GroupService;
 import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -120,7 +117,7 @@ public class EditReplyMessageService extends ReplyMessageService {
                 localeMessageService.getMessage("edit.meeting.questions"));
 
         List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getQuestionsInlineMarkup(meeting);
-        Set<Question> questions = meeting.getSubject().getQuestions();
+        Set<String> questions = meeting.getSubject().getQuestions();
         if (questions.size() > 0) {
             keyboard.add(List.of(meetingKeyboard.getReadyInlineButton(AccountState.CREATE.name())));
         }

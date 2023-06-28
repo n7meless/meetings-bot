@@ -33,12 +33,9 @@ import java.util.stream.Collectors;
                                 subgraph = "meetingTimes.accountTimes")),
                 @NamedSubgraph(name = "meetingTimes.accountTimes",
                         attributeNodes = @NamedAttributeNode(value = "accountTimes")),
-//                @NamedSubgraph(name = "accountTimes.account",
-//                        attributeNodes = @NamedAttributeNode(value = "account")),
                 @NamedSubgraph(name = "accountMeetings.account",
                         attributeNodes = @NamedAttributeNode(value = "account"))})
-
-public class Meeting implements Comparable<Meeting>{
+public class Meeting implements Comparable<Meeting> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -65,7 +62,7 @@ public class Meeting implements Comparable<Meeting>{
     @OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<MeetingDate> dates;
 
-    public Meeting(Account owner){
+    public Meeting(Account owner) {
         this.owner = owner;
         this.createdDt = LocalDateTime.now();
         this.updatedDt = LocalDateTime.now();
@@ -73,6 +70,7 @@ public class Meeting implements Comparable<Meeting>{
         this.accountMeetings = new HashSet<>();
         this.dates = new HashSet<>();
     }
+
     public void addMeetingDate(MeetingDate meetingDate) {
         this.dates.add(meetingDate);
     }

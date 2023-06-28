@@ -29,13 +29,13 @@ public enum Emojis {
     WARNING(EmojiParser.parseToUnicode(":warning:")),
     RIGHT(EmojiParser.parseToUnicode(":arrow_right:")),
     BANGBANG(EmojiParser.parseToUnicode(":bangbang:")),
+    HAMMER_WRENCH(":hammer_and_wrench:"),
     RED_CIRCLE("\uD83D\uDD34"),
     ORANGE_CIRCLE("\uD83D\uDFE0"),
     YELLOW_CIRCLE("\uD83D\uDFE1"),
     GREEN_CIRCLE("\uD83D\uDFE2"),
     BLUE_CIRCLE("\uD83D\uDD35"),
-    PURPLE_CIRCLE("\uD83D\uDFE3"),
-    HAMMER_WRENCH(":hammer_and_wrench:");
+    PURPLE_CIRCLE("\uD83D\uDFE3");
 
     private final String emoji;
 
@@ -44,10 +44,5 @@ public enum Emojis {
     }
     public String getEmojiSpace(){
         return emoji + " ";
-    }
-
-    @Override
-    public String toString() {
-        return emoji;
     }
 }

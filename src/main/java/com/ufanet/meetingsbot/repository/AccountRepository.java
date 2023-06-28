@@ -28,7 +28,8 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     Optional<Account> findById(Long id);
 
     @EntityGraph(attributePaths = {"settings"})
-    @Query("from users u join user_meetings um on u.id = um.account.id and um.meeting.id=?1")
+    @Query("from users u join user_meetings um on u.id = um.account.id " +
+            "join user_settings us on u.id = us.account.id and um.meeting.id=?1")
     List<Account> findAccountsByMeetingId(Long meetingId);
 
 }

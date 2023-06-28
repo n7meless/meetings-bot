@@ -32,7 +32,7 @@ public class CreateEventHandler implements EventHandler {
             String callback = callbackQuery.getData();
             Long userId = callbackQuery.getMessage().getChatId();
             Meeting meeting = meetingService.getByOwnerIdAndStateNotIn(userId,
-                    List.of(MeetingState.CONFIRMED, MeetingState.AWAITING, MeetingState.CANCELED));
+                    List.of(MeetingState.CONFIRMED, MeetingState.PASSED, MeetingState.AWAITING, MeetingState.CANCELED));
             handleCallback(userId, meeting, callback);
         }
         else if (update.hasMessage()) {

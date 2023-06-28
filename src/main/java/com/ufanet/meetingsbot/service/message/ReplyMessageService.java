@@ -1,6 +1,6 @@
 package com.ufanet.meetingsbot.service.message;
 
-import com.ufanet.meetingsbot.constants.MessageType;
+import com.ufanet.meetingsbot.constants.type.MessageType;
 import com.ufanet.meetingsbot.model.BotState;
 import com.ufanet.meetingsbot.service.BotService;
 import com.ufanet.meetingsbot.service.LocaleMessageService;

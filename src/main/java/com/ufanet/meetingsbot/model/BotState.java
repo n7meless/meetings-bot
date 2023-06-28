@@ -1,10 +1,9 @@
 package com.ufanet.meetingsbot.model;
 
-import com.ufanet.meetingsbot.constants.MessageType;
+import com.ufanet.meetingsbot.constants.type.MessageType;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.io.Serial;
 import java.io.Serializable;
 
 @Builder
@@ -15,8 +14,6 @@ import java.io.Serializable;
 @NoArgsConstructor
 public class BotState implements Serializable {
 
-    @Serial
-    private static final long serialVersionUID = 1498189718078742438L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

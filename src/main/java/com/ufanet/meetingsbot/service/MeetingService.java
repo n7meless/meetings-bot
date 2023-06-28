@@ -31,11 +31,6 @@ public class MeetingService {
     private final AccountService accountService;
     private final MeetingStateCache meetingStateCache;
     private final MeetingTimeRepository meetingTimeRepository;
-    private final Validator validator;
-
-    public List<Meeting> getMeetingsByOwnerIdOrParticipantsId(long userId) {
-        return meetingRepository.findMeetingsByAccountMeetings_AccountIdOrOwnerIdEquals(userId, userId);
-    }
 
     @Transactional
     public Meeting save(Meeting meeting) {
@@ -66,6 +61,7 @@ public class MeetingService {
         }
         accountMeetings.add(AccountMeeting.builder()
                 .account(owner).meeting(meeting).build());
+
         meeting.setAccountMeetings(accountMeetings);
         meetingStateCache.evict(owner.getId());
         meetingRepository.saveAndFlush(meeting);
@@ -172,7 +168,7 @@ public class MeetingService {
             throw new IllegalArgumentException("Длина заголовка должна быть больше 5 символов!");
         }
         Subject subject = meeting.getSubject();
-        if (subject == null){
+        if (subject == null) {
             subject = new Subject();
         }
         subject.setTitle(title);
@@ -182,15 +178,20 @@ public class MeetingService {
 
     public void updateQuestion(Meeting meeting, String question) {
         Subject subject = meeting.getSubject();
-        Set<Question> questions = subject.getQuestions();
-        Optional<Question> optional = questions.stream()
-                .filter((q) -> q.getTitle().equals(question)).findFirst();
-
-        if (optional.isEmpty()) {
-            Question newQuestion = Question.builder().title(question)
-                    .subject(subject).build();
-            questions.add(newQuestion);
-        } else questions.remove(optional.get());
+        Set<String> questions = subject.getQuestions();
+        if (questions.contains(question)) {
+            questions.remove(question);
+        } else {
+            questions.add(question);
+        }
+//        Optional<String> optional = questions.stream()
+//                .filter((q) -> q.getTitle().equals(question)).findFirst();
+//
+//        if (optional.isEmpty()) {
+//            Question newQuestion = Question.builder().title(question)
+//                    .subject(subject).build();
+//            questions.add(newQuestion);
+//        } else questions.remove(optional.get());
         subject.setQuestions(questions);
         meeting.setSubject(subject);
     }

@@ -13,6 +13,8 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.ufanet.meetingsbot.utils.CustomFormatter.DATE_WEEK_FORMATTER;
 
@@ -94,11 +96,11 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
     public List<List<InlineKeyboardButton>> getQuestionsInlineMarkup(Meeting meeting) {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         Subject subject = meeting.getSubject();
-        Set<Question> questions = subject.getQuestions();
-        for (Question question : questions) {
+        Set<String> questions = subject.getQuestions();
+        for (String question : questions) {
             InlineKeyboardButton questionButton = InlineKeyboardButton.builder()
                     .text(Emojis.GREY_SELECTED.getEmojiSpace()
-                            + question.getTitle()).callbackData(question.getTitle()).build();
+                            + question).callbackData(question).build();
             keyboard.add(List.of(questionButton));
         }
         return keyboard;
@@ -149,16 +151,19 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
     //TODO поменять подход
     public InlineKeyboardMarkup getChangeMeetingTimeKeyboard(long meetingId, List<AccountTime> accountTimes, String zoneId) {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
-        Map<LocalDate, List<AccountTime>> collected = new TreeMap<>();
+//        Map<LocalDate, List<AccountTime>> collected = new TreeMap<>();
+//
+//        accountTimes.forEach(at -> {
+//            MeetingTime meetingTime = at.getMeetingTime();
+//            MeetingDate meetingDate = meetingTime.getMeetingDate();
+//            LocalDate localDate = meetingDate.getDate();
+//            List<AccountTime> times = collected.getOrDefault(localDate, new ArrayList<>());
+//            times.add(at);
+//            collected.put(localDate, times);
+//        });
 
-        accountTimes.forEach(at -> {
-            MeetingTime meetingTime = at.getMeetingTime();
-            MeetingDate meetingDate = meetingTime.getMeetingDate();
-            LocalDate localDate = meetingDate.getDate();
-            List<AccountTime> times = collected.getOrDefault(localDate, new ArrayList<>());
-            times.add(at);
-            collected.put(localDate, times);
-        });
+        TreeMap<LocalDate, List<AccountTime>> collected =
+                accountTimes.stream().collect(Collectors.groupingBy(t -> t.getMeetingTime().getMeetingDate().getDate(), TreeMap::new, Collectors.toList()));
 
         for (Map.Entry<LocalDate, List<AccountTime>> entry : collected.entrySet()) {
             LocalDate dateTime = entry.getKey();

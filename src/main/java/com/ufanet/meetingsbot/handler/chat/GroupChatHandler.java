@@ -1,6 +1,6 @@
 package com.ufanet.meetingsbot.handler.chat;
 
-import com.ufanet.meetingsbot.handler.type.ChatType;
+import com.ufanet.meetingsbot.constants.type.ChatType;
 import com.ufanet.meetingsbot.model.Group;
 import com.ufanet.meetingsbot.service.GroupService;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +55,7 @@ public class GroupChatHandler implements ChatHandler {
         return message.getLeftChatMember() != null || !message.getNewChatMembers().isEmpty();
     }
 
-    private void handleMembers(Group group, Message message) {
+    protected void handleMembers(Group group, Message message) {
         List<User> newMembers = message.getNewChatMembers();
         User leftMember = message.getLeftChatMember();
         if (!newMembers.isEmpty()) {

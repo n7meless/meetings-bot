@@ -16,8 +16,6 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity(name = "subject")
-@NamedEntityGraph(name = "subject-with-questions",
-        attributeNodes = @NamedAttributeNode(value = "questions"))
 public class Subject{
 
     @Id
@@ -25,15 +23,16 @@ public class Subject{
     private Long id;
     @Size(min = 3, message = "title must be larger than 3 chars")
     private String title;
-    @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Fetch(FetchMode.SUBSELECT)
-    private Set<Question> questions;
+    @ElementCollection
+    @Column(name = "title")
+    @CollectionTable(name = "questions", joinColumns = @JoinColumn(name = "subject_id"))
+    private Set<String> questions;
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "meeting_id", referencedColumnName = "id")
     private Meeting meeting;
     private Integer duration;
 
-    public Set<Question> getQuestions() {
+    public Set<String> getQuestions() {
         return questions == null ? new HashSet<>() : questions;
     }
 }

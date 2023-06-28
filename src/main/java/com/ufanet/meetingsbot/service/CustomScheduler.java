@@ -40,7 +40,7 @@ public class CustomScheduler {
     private final UpcomingReplyMessageService upcomingReplyMessage;
 
     @Async
-    @Scheduled(fixedRate = 20000)
+    @Scheduled(fixedRate = 120000)
     public void saveMeetingFromCache() {
         Map<Long, Meeting> meetingDataCache = new HashMap<>(meetingStateCache.getMeetingStateCache());
         LocalDateTime now = LocalDateTime.now();
@@ -65,7 +65,7 @@ public class CustomScheduler {
             }
         }
 //        processConfirmedMeetings();
-        processExpiredMeetings();
+//        processExpiredMeetings();
     }
 
     public void processConfirmedMeetings() {

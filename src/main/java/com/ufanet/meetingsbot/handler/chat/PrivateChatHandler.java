@@ -3,7 +3,7 @@ package com.ufanet.meetingsbot.handler.chat;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.ProfileState;
 import com.ufanet.meetingsbot.handler.event.EventHandler;
-import com.ufanet.meetingsbot.handler.type.ChatType;
+import com.ufanet.meetingsbot.constants.type.ChatType;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.BotService;
 import com.ufanet.meetingsbot.service.message.CommandReplyMessageService;
@@ -63,7 +63,7 @@ public class PrivateChatHandler implements ChatHandler {
         }
     }
 
-    public void handleMessage(long userId, Update update) {
+    protected void handleMessage(long userId, Update update) {
         Message message = update.getMessage();
         String messageText = message.getText();
 
@@ -79,7 +79,7 @@ public class PrivateChatHandler implements ChatHandler {
         handleBotState(userId, update);
     }
 
-    public void handleCommand(long userId, Message message) {
+    protected void handleCommand(long userId, Message message) {
         Long chatId = message.getChat().getId();
         String messageText = message.getText();
         User user = message.getFrom();
@@ -95,7 +95,7 @@ public class PrivateChatHandler implements ChatHandler {
         }
     }
 
-    void handleBotState(long userId, Update update) {
+    protected void handleBotState(long userId, Update update) {
         String state = botService.getState(userId);
         if (state.startsWith(CREATE.name())) {
             queryHandlers.get(CREATE).handleUpdate(update);
@@ -111,7 +111,7 @@ public class PrivateChatHandler implements ChatHandler {
     }
 
     @Autowired
-    void setQueryHandlers(List<EventHandler> eventHandlers) {
+    private void setQueryHandlers(List<EventHandler> eventHandlers) {
         eventHandlers.forEach(handler ->
                 this.queryHandlers.put(handler.getAccountStateHandler(), handler));
     }

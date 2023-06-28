@@ -3,7 +3,6 @@ package com.ufanet.meetingsbot.utils;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Meeting;
-import com.ufanet.meetingsbot.model.Question;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
@@ -63,7 +62,7 @@ public class MessageUtils {
         String participants = generateAccountLink(accounts, GREEN_SELECTED.getEmojiSpace(), "");
 
         String subject = CLIPBOARD.getEmojiSpace() + meeting.getSubject().getTitle();
-        String questions = meeting.getSubject().getQuestions().stream().map(Question::getTitle)
+        String questions = meeting.getSubject().getQuestions().stream()
                 .collect(joining("\n" + QUESTION.getEmojiSpace(), QUESTION.getEmojiSpace(), "\n"));
 
         Integer subjectDuration = meeting.getSubject().getDuration();
