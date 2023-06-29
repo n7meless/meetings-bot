@@ -1,10 +1,8 @@
 package com.ufanet.meetingsbot.service;
 
 import com.ufanet.meetingsbot.config.TelegramFacade;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.updates.SetWebhook;
@@ -17,14 +15,13 @@ import java.io.Serializable;
 @Slf4j
 @Getter
 @Setter
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class TelegramBot extends SpringWebhookBot {
 
-    String botToken;
-    String botUsername;
-    String botPath;
+    private String botToken;
+    private String botUsername;
+    private String botPath;
 
-    final TelegramFacade telegramFacade;
+    private final TelegramFacade telegramFacade;
 
     public TelegramBot(TelegramFacade telegramFacade, SetWebhook setWebhook) {
         super(setWebhook);
@@ -40,11 +37,9 @@ public class TelegramBot extends SpringWebhookBot {
         }
     }
 
-
     @Override
     public BotApiMethod<?> onWebhookUpdateReceived(Update update) {
         telegramFacade.handleUpdate(update);
         return null;
     }
-
 }

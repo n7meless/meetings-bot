@@ -2,15 +2,17 @@ package com.ufanet.meetingsbot.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -21,28 +23,30 @@ import java.util.List;
 @EqualsAndHashCode(of = {"id"})
 @EntityListeners({AuditingEntityListener.class})
 public class Account implements Serializable {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
-
     @Id
     private Long id;
+
     @Column(name = "first_name")
     private String firstname;
+
     @Column(name = "last_name")
     private String lastname;
+
     private String username;
+
     @Column(name = "created_dt")
-    @CreatedDate
-    private LocalDateTime createdDt;
-    @Fetch(FetchMode.JOIN)
-    @OneToOne(fetch = FetchType.LAZY, optional = false, mappedBy = "account", orphanRemoval = true, cascade = CascadeType.ALL)
+    @CreationTimestamp
+    private ZonedDateTime createdDt;
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false, mappedBy = "account", cascade = CascadeType.ALL)
     private Settings settings;
-    //        @Fetch(FetchMode.JOIN)
-    @OneToOne(fetch = FetchType.LAZY, optional = false, mappedBy = "account", orphanRemoval = true, cascade = CascadeType.ALL)
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false, mappedBy = "account", cascade =  CascadeType.ALL)
     private BotState botState;
-    @OneToMany(mappedBy = "account", orphanRemoval = true, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<AccountMeeting> accountMeetings;
+
+    @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
+    private Set<AccountMeeting> accountMeetings;
+
     @ManyToMany
     @JoinTable(name = "user_chat",
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),

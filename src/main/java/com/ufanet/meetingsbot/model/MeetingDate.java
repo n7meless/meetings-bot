@@ -4,19 +4,17 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
+@Builder
 @Getter
 @Setter
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity(name = "meeting_date")
@@ -30,12 +28,10 @@ public class MeetingDate implements Comparable<MeetingDate> {
     @JoinColumn(name = "meeting_id", referencedColumnName = "id")
     private Meeting meeting;
     @Fetch(FetchMode.JOIN)
-    @OrderBy("dateTime")
-    @OneToMany(mappedBy = "meetingDate", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private Set<MeetingTime> meetingTimes = new HashSet<>();
+    @OneToMany(mappedBy = "meetingDate", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<MeetingTime> meetingTimes;
 
-    public void setDateWithZoneId(String zoneId){
+    public void setDateWithZoneId(String zoneId) {
         this.date = LocalDate.ofInstant(Instant.from(this.date), ZoneId.of(zoneId));
     }
 

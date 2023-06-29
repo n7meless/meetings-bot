@@ -7,7 +7,6 @@ import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.model.AccountTime;
 import com.ufanet.meetingsbot.model.Group;
-import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -28,14 +27,14 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
 
     public List<List<InlineKeyboardButton>> getSubjectDurationInlineMarkup(MeetingDto meetingDto) {
 //        Subject subject = meeting.getSubject();
-        int duration = meetingDto.getSubjectDuration();
+        Integer duration = meetingDto.getSubjectDto().getDuration();
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         List<InlineKeyboardButton> row = new ArrayList<>();
         int circleOrdinal = Emojis.RED_CIRCLE.ordinal();
         Emojis[] values = Emojis.values();
         for (int i = 15; i <= 90; i += 15, circleOrdinal++) {
             InlineKeyboardButton button;
-            if (duration != 0 && duration == i) {
+            if (duration != null && duration == i) {
                 button = defaultInlineButton(values[circleOrdinal].getEmojiSpace() + i, " ");
             } else {
                 button = defaultInlineButton(Integer.toString(i), Integer.toString(i));
@@ -150,19 +149,11 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
     //TODO поменять подход
     public InlineKeyboardMarkup getChangeMeetingTimeKeyboard(long meetingId, List<AccountTime> accountTimes, String zoneId) {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
-//        Map<LocalDate, List<AccountTime>> collected = new TreeMap<>();
-//
-//        accountTimes.forEach(at -> {
-//            MeetingTime meetingTime = at.getMeetingTime();
-//            MeetingDate meetingDate = meetingTime.getMeetingDate();
-//            LocalDate localDate = meetingDate.getDate();
-//            List<AccountTime> times = collected.getOrDefault(localDate, new ArrayList<>());
-//            times.add(at);
-//            collected.put(localDate, times);
-//        });
 
         TreeMap<LocalDate, List<AccountTime>> collected =
-                accountTimes.stream().collect(Collectors.groupingBy(t -> t.getMeetingTime().getMeetingDate().getDate(), TreeMap::new, Collectors.toList()));
+                accountTimes.stream().sorted()
+                        .collect(Collectors.groupingBy(t -> t.getMeetingTime().getMeetingDate().getDate(),
+                                TreeMap::new, Collectors.toList()));
 
         for (Map.Entry<LocalDate, List<AccountTime>> entry : collected.entrySet()) {
             LocalDate dateTime = entry.getKey();
@@ -205,18 +196,20 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
 
     public InlineKeyboardMarkup getMeetingUpcomingMarkup(long userId, MeetingDto meetingDto,
                                                          Optional<AccountTime> accountTime) {
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+
         Long meetingId = meetingDto.getId();
         InlineKeyboardButton btn1 = defaultInlineButton("Я опаздываю", UpcomingState.UPCOMING_IAMLATE + " " + meetingId);
         InlineKeyboardButton btn2 = defaultInlineButton("Я готов", UpcomingState.UPCOMING_IAMREADY + " " + meetingId);
         InlineKeyboardButton btn3 = defaultInlineButton("Я не приду", UpcomingState.UPCOMING_IWILLNOTCOME + " " + meetingId);
-        InlineKeyboardButton btn4 = defaultInlineButton("Пингануть участника", "Пингануть участника");
-        InlineKeyboardButton btn5 = defaultInlineButton("Назад", UpcomingState.UPCOMING_MEETINGS.name());
-        InlineKeyboardButton btn6 = defaultInlineButton("Отменить встречу",
+        InlineKeyboardButton btn4 = defaultInlineButton(Emojis.PIN.getEmojiSpace() + "Пингануть участника",
+                UpcomingState.UPCOMING_SELECT_PARTICIPANT.name() + " " + meetingDto.getId());
+        InlineKeyboardButton btn5 = defaultInlineButton(Emojis.LEFT.getEmojiSpace() + "Назад", UpcomingState.UPCOMING_MEETINGS.name());
+        InlineKeyboardButton btn6 = defaultInlineButton(Emojis.CANCEL_CIRCLE.getEmojiSpace() + "Отменить встречу",
                 UpcomingState.UPCOMING_CANCEL_BY_OWNER.name() + " " + meetingDto.getId());
 
-        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
-        boolean isOwner = meetingDto.getOwner().getId() == userId;
-        if (isOwner) {
+
+        if (meetingDto.getOwner().getId() == userId) {
             keyboard.add(List.of(btn4));
             keyboard.add(List.of(btn6, btn5));
         } else if (accountTime.isPresent()) {

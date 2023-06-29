@@ -8,7 +8,6 @@ import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.keyboard.CalendarKeyboardMaker;
 import com.ufanet.meetingsbot.keyboard.MeetingKeyboardMaker;
 import com.ufanet.meetingsbot.model.Account;
-import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
@@ -74,12 +73,12 @@ public class EditReplyMessageService extends ReplyMessageService {
         String secondText = messageUtils.buildText("\n\n", Emojis.BANGBANG.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.participants"));
 
-        Set<AccountDto> members = accountService.getAccountByGroupsIdAndIdNot(meetingDto.getGroupId(), userId)
+        Set<AccountDto> members = accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupId(), userId)
                 .stream().map(accountService::mapToDto).collect(Collectors.toSet());
 
         Set<AccountDto> participants = meetingDto.getParticipants();
         List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getParticipantsInlineButtons(members, participants);
-        if (participants.size() > 0) {
+        if (participants.size() > 1) {
             keyboard.add(List.of(meetingKeyboard.getReadyInlineButton(AccountState.CREATE.name())));
         }
         EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId, firstText + secondText,
@@ -121,7 +120,7 @@ public class EditReplyMessageService extends ReplyMessageService {
         String secondText = messageUtils.buildText("\n\n", Emojis.BANGBANG.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.questions"));
 
-        Set<String> questions = meetingDto.getQuestions();
+        Set<String> questions = meetingDto.getSubjectDto().getQuestions();
         List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getQuestionsInlineMarkup(questions);
         if (questions.size() > 0) {
             keyboard.add(List.of(meetingKeyboard.getReadyInlineButton(AccountState.CREATE.name())));

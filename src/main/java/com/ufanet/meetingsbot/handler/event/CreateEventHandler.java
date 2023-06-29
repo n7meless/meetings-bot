@@ -5,8 +5,12 @@ import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.dto.MeetingDto;
+import com.ufanet.meetingsbot.dto.SubjectDto;
+import com.ufanet.meetingsbot.exceptions.UserNotFoundException;
 import com.ufanet.meetingsbot.mapper.MeetingConstructor;
+import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Meeting;
+import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.BotService;
 import com.ufanet.meetingsbot.service.MeetingService;
 import com.ufanet.meetingsbot.service.message.MeetingReplyMessageService;
@@ -16,8 +20,9 @@ import org.springframework.stereotype.Controller;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.DateTimeException;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 @Controller
@@ -27,35 +32,40 @@ public class CreateEventHandler implements EventHandler {
     private final MeetingConstructor meetingConstructor;
     private final MeetingReplyMessageService messageService;
     private final MeetingStateCache meetingStateCache;
+    private final AccountService accountService;
     private final BotService botService;
 
     @Override
     public void handleUpdate(Update update) {
-        if (update.hasCallbackQuery()) {
-            String callback = update.getCallbackQuery().getData();
-            Long userId = update.getCallbackQuery().getMessage().getChatId();
-            MeetingDto meetingDto = meetingStateCache.get(userId);
+        if (update.hasMessage() || update.hasCallbackQuery()) {
+            long userId = getUserIdFromUpdate(update);
 
+            MeetingDto meetingDto = meetingStateCache.get(userId);
             if (meetingDto == null) {
                 Optional<Meeting> optionalMeeting = meetingService.getLastChangedMeetingByOwnerId(userId);
-                meetingDto = meetingConstructor.mapIfPresentOrElseGet(optionalMeeting, () -> new MeetingDto(userId));
+                Account account = accountService.getByUserId(userId).orElseThrow(UserNotFoundException::new);
+                meetingDto = meetingConstructor.mapIfPresentOrElseGet(optionalMeeting,
+                        () -> meetingConstructor.create(account));
+                meetingStateCache.save(userId, meetingDto);
             }
 
-            handleCallback(userId, meetingDto, callback);
-        } else if (update.hasMessage()) {
-            String message = update.getMessage().getText();
-            Long userId = update.getMessage().getChatId();
-            MeetingDto meetingDto = meetingStateCache.get(userId);
-
-            if (meetingDto == null) {
-                Optional<Meeting> optionalMeeting = meetingService.getLastChangedMeetingByOwnerId(userId);
-                meetingDto = meetingConstructor.mapIfPresentOrElseGet(optionalMeeting, () -> new MeetingDto(userId));
+            if (update.hasMessage()) {
+                String message = update.getMessage().getText();
+                if (!message.equals(AccountState.CREATE.getButtonName())) {
+                    handleStep(userId, meetingDto, message);
+                }
+                sendMessage(userId, meetingDto, message);
+            } else {
+                String callback = update.getCallbackQuery().getData();
+                handleCallback(userId, meetingDto, callback);
             }
-            if (!message.equals(AccountState.CREATE.getButtonName())) {
-                handleStep(userId, meetingDto, message);
-            }
-            sendMessage(userId, meetingDto, message);
         }
+    }
+
+    private long getUserIdFromUpdate(Update update) {
+        if (update.hasMessage()) {
+            return update.getMessage().getChatId();
+        } else return update.getCallbackQuery().getFrom().getId();
     }
 
     protected void handleCallback(long userId, MeetingDto meetingDto, String message) {
@@ -63,10 +73,11 @@ public class CreateEventHandler implements EventHandler {
         switch (toggleButton) {
             case SEND -> {
                 Meeting meeting = meetingConstructor.mapToEntity(meetingDto);
-                meetingService.saveByOwner(meeting);
+                meetingService.createMeeting(meeting);
                 meetingDto.setId(meeting.getId());
                 messageService.sendMeetingToParticipants(meetingDto);
                 messageService.sendMessageSentSuccessfully(userId);
+                meetingStateCache.evict(userId);
             }
             case NEXT -> {
                 MeetingState currState = meetingDto.getState();
@@ -75,8 +86,10 @@ public class CreateEventHandler implements EventHandler {
                 sendMessage(userId, meetingDto, message);
             }
             case CANCEL -> {
-//                meetingService.delete(meeting);
-//                messageService.sendCanceledMessage(userId);
+                meetingStateCache.evict(userId);
+                Meeting meeting = meetingConstructor.mapToEntity(meetingDto);
+                meetingService.deleteById(meeting.getId());
+                messageService.sendCanceledMessage(userId);
             }
             case CURRENT -> {
                 handleStep(userId, meetingDto, message);
@@ -94,29 +107,38 @@ public class CreateEventHandler implements EventHandler {
                     meetingDto.setGroupId(Integer.parseInt(callback));
                     meetingDto.setState(MeetingState.PARTICIPANT_SELECT);
                 }
-                case PARTICIPANT_SELECT -> meetingConstructor.updateParticipants(meetingDto, Long.parseLong(callback));
+                case PARTICIPANT_SELECT -> {
+                    long participantId = Long.parseLong(callback);
+                    Set<Account> accounts =
+                            accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupId(), meetingDto.getOwner().getId());
+                    meetingConstructor.updateParticipants(meetingDto, participantId, accounts);
+                }
                 case SUBJECT_SELECT -> {
-                    meetingDto.setSubjectTitle(callback);
+                    SubjectDto subjectDto = new SubjectDto();
+                    subjectDto.setTitle(callback);
+                    meetingDto.setSubjectDto(subjectDto);
                     meetingDto.setState(MeetingState.SUBJECT_DURATION_SELECT);
                 }
                 case SUBJECT_DURATION_SELECT -> {
-                    int duration = Integer.parseInt(callback);
-                    meetingDto.setSubjectDuration(duration);
+                    SubjectDto subjectDto = meetingDto.getSubjectDto();
+                    subjectDto.setDuration(Integer.parseInt(callback));
+                    meetingDto.setSubjectDto(subjectDto);
                     meetingDto.setState(MeetingState.QUESTION_SELECT);
                 }
                 case QUESTION_SELECT -> meetingConstructor.updateQuestion(meetingDto, callback);
                 case DATE_SELECT -> meetingConstructor.updateDate(meetingDto, callback);
                 case TIME_SELECT -> meetingConstructor.updateTime(meetingDto, callback);
                 case ADDRESS_SELECT -> {
-                    meetingDto.setState(MeetingState.ADDRESS_SELECT);
+                    meetingDto.setAddress(callback);
+                    meetingDto.setState(MeetingState.EDIT);
                 }
             }
-            meetingDto.setUpdatedDt(LocalDateTime.now());
+            meetingDto.setUpdatedDt(ZonedDateTime.now());
             meetingStateCache.save(userId, meetingDto);
         } catch (NumberFormatException | DateTimeException ex) {
             log.debug("invalid value entered by user {}", userId);
         } finally {
-//            meetingService.saveOnCache(userId, meetingDto);
+            meetingStateCache.save(userId, meetingDto);
         }
     }
 

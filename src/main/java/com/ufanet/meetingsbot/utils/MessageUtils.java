@@ -3,11 +3,8 @@ package com.ufanet.meetingsbot.utils;
 import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
-import com.ufanet.meetingsbot.model.Account;
-import com.ufanet.meetingsbot.model.Meeting;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
@@ -59,11 +56,11 @@ public class MessageUtils {
 
         String participants = generateAccountLink(accounts, GREEN_SELECTED.getEmojiSpace(), "");
 
-        String subject = CLIPBOARD.getEmojiSpace() + meetingDto.getSubjectTitle();
-        String questions = meetingDto.getQuestions().stream()
+        String subject = CLIPBOARD.getEmojiSpace() + meetingDto.getSubjectDto().getTitle();
+        String questions = meetingDto.getSubjectDto().getQuestions().stream()
                 .collect(joining("\n" + QUESTION.getEmojiSpace(), QUESTION.getEmojiSpace(), "\n"));
 
-        int subjectDuration = meetingDto.getSubjectDuration();
+        int subjectDuration = meetingDto.getSubjectDto().getDuration();
         String duration = subjectDuration == 0 ? "(не указано)" : DURATION.getEmojiSpace() + subjectDuration;
 
         String address = meetingDto.getAddress() == null ? "(не указано)" : OFFICE.getEmojiSpace() + meetingDto.getAddress();
@@ -71,6 +68,7 @@ public class MessageUtils {
         return new MeetingMessage(owner, participants, subject,
                 questions, duration, address);
     }
+
     public String generateDatesText(List<ZonedDateTime> dates) {
         StringBuilder sb = new StringBuilder();
         for (ZonedDateTime zonedDateTime : dates) {
@@ -101,7 +99,7 @@ public class MessageUtils {
         return sb.toString();
     }
 
-    public String buildText(String ...text){
+    public String buildText(String... text) {
         StringBuilder sb = new StringBuilder();
         for (String s : text) {
             sb.append(s);

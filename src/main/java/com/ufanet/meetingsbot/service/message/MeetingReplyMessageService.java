@@ -8,7 +8,6 @@ import com.ufanet.meetingsbot.keyboard.CalendarKeyboardMaker;
 import com.ufanet.meetingsbot.keyboard.MeetingKeyboardMaker;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Group;
-import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.GroupService;
 import com.ufanet.meetingsbot.utils.Emojis;
@@ -43,14 +42,15 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         executeMessage(editMessage);
     }
 
-    public void sendParticipantsMessage(long userId, MeetingDto meeting) {
-        Set<AccountDto> members = accountService.getAccountByGroupsIdAndIdNot(meeting.getGroupId(), userId).stream()
-                .map(accountService::mapToDto).collect(Collectors.toSet());
+    public void sendParticipantsMessage(long userId, MeetingDto meetingDto) {
+        Set<AccountDto> members =
+                accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupId(), userId).stream()
+                        .map(accountService::mapToDto).collect(Collectors.toSet());
 
-        Set<AccountDto> participantIds = meeting.getParticipants();
+        Set<AccountDto> participantIds = meetingDto.getParticipants();
 
         List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getParticipantsInlineButtons(members, participantIds);
-        keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(participantIds.size() > 0));
+        keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(participantIds.size() > 1));
 
         EditMessageText message = messageUtils.generateEditMessageHtml(userId,
                 localeMessageService.getMessage("create.meeting.participants"),
@@ -62,7 +62,7 @@ public class MeetingReplyMessageService extends ReplyMessageService {
     public void sendSubjectMessage(long userId, MeetingDto meetingDto) {
         InlineKeyboardMarkup keyboardMarkup;
         keyboardMarkup = InlineKeyboardMarkup.builder()
-                .keyboardRow(meetingKeyboard.defaultRowHelperInlineButtons(meetingDto.getSubjectTitle() != null))
+                .keyboardRow(meetingKeyboard.defaultRowHelperInlineButtons(false))
                 .build();
 
         EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId, "Укажите тему встречи",
@@ -71,7 +71,7 @@ public class MeetingReplyMessageService extends ReplyMessageService {
     }
 
     public void sendQuestionMessage(long userId, MeetingDto meetingDto) {
-        Set<String> questions = meetingDto.getQuestions();
+        Set<String> questions = meetingDto.getSubjectDto().getQuestions();
         List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getQuestionsInlineMarkup(questions);
         keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(questions.size() > 0));
         EditMessageText editMessage =
@@ -84,7 +84,7 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         Account account = accountService.getByUserId(userId).orElseThrow();
         String zoneId = account.getZoneId();
         List<List<InlineKeyboardButton>> keyboard = calendarKeyboard.getCalendarInlineMarkup(meetingDto, callback, zoneId);
-        keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(meetingDto.getDatesMap().size() > 0));
+        keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(meetingDto.getDates().size() > 0));
         EditMessageText message =
                 messageUtils.generateEditMessageHtml(userId, localeMessageService.getMessage("create.meeting.date"),
                         meetingKeyboard.buildInlineMarkup(keyboard));
@@ -96,7 +96,7 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         Account account = accountService.getByUserId(userId).orElseThrow();
         String zoneId = account.getZoneId();
         List<List<InlineKeyboardButton>> keyboard = calendarKeyboard.getTimeInlineMarkup(meetingDto, zoneId);
-        boolean hasTime = meetingDto.getDatesMap().values().stream().anyMatch(t -> t.size() > 0);
+        boolean hasTime = meetingDto.getDates().stream().anyMatch(t -> t.getMeetingTimes().size() > 0);
         keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(hasTime));
 
         EditMessageText message = messageUtils.generateEditMessageHtml(userId,
@@ -119,7 +119,8 @@ public class MeetingReplyMessageService extends ReplyMessageService {
 
     public void sendSubjectDurationMessage(long userId, MeetingDto meetingDto) {
         List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getSubjectDurationInlineMarkup(meetingDto);
-        keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(meetingDto.getSubjectDuration() != 0));
+
+        keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(meetingDto.getSubjectDto().getDuration() != null));
 
         EditMessageText editMessage =
                 messageUtils.generateEditMessageHtml(userId,

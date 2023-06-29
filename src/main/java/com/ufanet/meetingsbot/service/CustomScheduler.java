@@ -3,6 +3,8 @@ package com.ufanet.meetingsbot.service;
 import com.ufanet.meetingsbot.cache.impl.BotStateCache;
 import com.ufanet.meetingsbot.cache.impl.MeetingStateCache;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
+import com.ufanet.meetingsbot.dto.MeetingDto;
+import com.ufanet.meetingsbot.mapper.MeetingConstructor;
 import com.ufanet.meetingsbot.model.BotState;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.repository.BotRepository;
@@ -36,62 +38,63 @@ public class CustomScheduler {
     private final MeetingRepository meetingRepository;
     private final BotRepository botRepository;
     private final BotStateCache botStateCache;
-    private final MeetingTimeRepository meetingTimeRepository;
     private final UpcomingReplyMessageService upcomingReplyMessage;
+    private final MeetingConstructor meetingConstructor;
 
-//    @Async
-//    @Scheduled(fixedRate = 120000)
-//    public void saveMeetingFromCache() {
-//        Map<Long, Meeting> meetingDataCache = new HashMap<>(meetingStateCache.getMeetingStateCache());
-//        LocalDateTime now = LocalDateTime.now();
-//        for (Map.Entry<Long, Meeting> entry : meetingDataCache.entrySet()) {
-//            Long userId = entry.getKey();
-//            Meeting meeting = entry.getValue();
-//            LocalDateTime updatedDt = meeting.getUpdatedDt();
-//            LocalDateTime expirationDt = now;
-//            long seconds = ChronoUnit.SECONDS.between(updatedDt, expirationDt);
-//
-//            if (seconds > 5) {
-//                MeetingState state = meeting.getState();
-//                switch (state) {
-//                    case AWAITING, CONFIRMED, CANCELED -> meetingStateCache.evict(userId);
-//                    default -> {
-//                        meetingStateCache.evict(userId);
-//                        meetingRepository.save(meeting);
-//                        log.info("meeting {} with user id {} saved in database", meeting.getId(), userId);
-//                    }
-//                }
-//                log.info("meeting {} with user id {} was evicted from cache", meeting.getId(), userId);
-//            }
-//        }
-////        processConfirmedMeetings();
-////        processExpiredMeetings();
-//    }
+    @Async
+    @Scheduled(fixedRate = 5000)
+    public void saveMeetingFromCache() {
+        Map<Long, MeetingDto> meetingDataCache = new HashMap<>(meetingStateCache.getMeetingStateCache());
+        LocalDateTime now = LocalDateTime.now();
+        for (Map.Entry<Long, MeetingDto> entry : meetingDataCache.entrySet()) {
+            Long userId = entry.getKey();
+            MeetingDto meetingDto = entry.getValue();
+            LocalDateTime updatedDt = meetingDto.getUpdatedDt().toLocalDateTime();
+            long seconds = ChronoUnit.SECONDS.between(updatedDt, now);
+            if (seconds > 5) {
+                MeetingState state = meetingDto.getState();
+                switch (state) {
+                    case AWAITING, CONFIRMED, CANCELED, GROUP_SELECT -> meetingStateCache.evict(userId);
+                    default -> {
+                        meetingStateCache.evict(userId);
+                        Meeting meeting = meetingConstructor.mapToEntity(meetingDto);
+                        meetingRepository.save(meeting);
+                        log.info("meeting {} with user id {} saved in database", meetingDto.getId(), userId);
+                    }
+                }
+                log.info("meetingDto {} with user id {} was evicted from cache", meetingDto.getId(), userId);
+            }
+        }
+//        processConfirmedMeetings();
+//        processExpiredMeetings();
+    }
 
     public void processConfirmedMeetings() {
         ZonedDateTime now = ZonedDateTime.now();
-        List<Meeting> comingMeetings = meetingRepository.findConfirmedMeetingsWhereDatesBetween(now, 10);
-        for (Meeting meeting : comingMeetings) {
-            ZonedDateTime meetingDate = meeting.getDate();
+        List<MeetingDto> meetings = meetingRepository.findConfirmedMeetingsWhereDatesBetween(now, 10)
+                .stream().map(meetingConstructor::mapToDto).toList();
+        for (MeetingDto meetingDto : meetings) {
+            ZonedDateTime meetingDate = meetingDto.getDate();
             ZonedDateTime zonedDateTime = meetingDate.withZoneSameInstant(ZoneId.of("UTC+05:00"));
             System.out.println(zonedDateTime);
             System.out.println(now);
             long between = ChronoUnit.MINUTES.between(zonedDateTime.toLocalDateTime(), now);
-            upcomingReplyMessage.sendConfirmedComingMeeting(meeting);
+            upcomingReplyMessage.sendConfirmedComingMeeting(meetingDto);
             System.out.println(between);
         }
     }
 
     public void processExpiredMeetings() {
         //TODO найти участников и уведомить
-//        ZonedDateTime now = ZonedDateTime.now();
-//        List<Meeting> expiredMeetings = meetingRepository.findConfirmedMeetingsWhereDatesLaterThan(now, 90);
-//        for (Meeting meeting : expiredMeetings) {
-//            log.info("meeting {} expired", meeting.getId());
-//            meeting.setState(MeetingState.PASSED);
-//            upcomingReplyMessage.sendCommentNotificationParticipants(meeting);
-//        }
-//        meetingRepository.saveAll(expiredMeetings);
+        ZonedDateTime now = ZonedDateTime.now();
+        List<Meeting> expiredMeetings = meetingRepository.findConfirmedMeetingsWhereDatesLaterThan(now, 90);
+        for (Meeting meeting : expiredMeetings) {
+            meeting.setState(MeetingState.PASSED);
+            log.info("notification leave feedback about the meeting {}", meeting.getId());
+            MeetingDto meetingDto = meetingConstructor.mapToDto(meeting);
+            upcomingReplyMessage.sendCommentNotificationParticipants(meetingDto);
+        }
+        meetingRepository.saveAll(expiredMeetings);
     }
 
     @PreDestroy

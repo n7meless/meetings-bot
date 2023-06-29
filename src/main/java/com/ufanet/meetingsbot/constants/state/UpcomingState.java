@@ -9,7 +9,9 @@ public enum UpcomingState{
     UPCOMING_CANCEL_BY_OWNER,
     UPCOMING_IAMLATE,
     UPCOMING_IAMREADY,
-    UPCOMING_IWILLNOTCOME;
+    UPCOMING_IWILLNOTCOME,
+    UPCOMING_SELECT_PARTICIPANT,
+    UPCOMING_SEND_NOTIFICATION_PARTICIPANT;
 
     public static UpcomingState typeOf(String type){
         for (UpcomingState value : UpcomingState.values()) {

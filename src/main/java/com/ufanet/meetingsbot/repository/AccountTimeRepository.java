@@ -17,7 +17,6 @@ public interface AccountTimeRepository extends JpaRepository<AccountTime, Long> 
             join  meeting_date md on mt.meetingDate.id = md.id
             join  meetings m on md.meeting.id = m.id and m.id=?1
             """)
-    @EntityGraph(attributePaths = {"account"})
     List<AccountTime> findByMeetingId(Long meetingId);
 
     @Query(value = """

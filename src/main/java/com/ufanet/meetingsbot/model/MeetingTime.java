@@ -21,7 +21,6 @@ public class MeetingTime implements Comparable<MeetingTime> {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Column(name = "date_time")
-    @DateTimeFormat(pattern = "dd.MM.yyyy H:mm")
     private ZonedDateTime dateTime;
     @ManyToOne
     @JoinColumn(name = "date_id", referencedColumnName = "id")
@@ -30,9 +29,6 @@ public class MeetingTime implements Comparable<MeetingTime> {
 //    @Fetch(FetchMode.JOIN)
     private Set<AccountTime> accountTimes;
 
-    public void addAccountTime(AccountTime accountTime) {
-        this.accountTimes.add(accountTime);
-    }
     @Override
     public int compareTo(MeetingTime meetingTime) {
         return this.getDateTime().compareTo(meetingTime.getDateTime());

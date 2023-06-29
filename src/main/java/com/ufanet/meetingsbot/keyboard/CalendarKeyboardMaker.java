@@ -1,7 +1,9 @@
 package com.ufanet.meetingsbot.keyboard;
 
 import com.ufanet.meetingsbot.constants.ToggleButton;
+import com.ufanet.meetingsbot.dto.MeetingDateDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
+import com.ufanet.meetingsbot.dto.MeetingTimeDto;
 import com.ufanet.meetingsbot.utils.CustomFormatter;
 import com.ufanet.meetingsbot.utils.Emojis;
 import org.springframework.stereotype.Component;
@@ -43,10 +45,18 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
     public List<List<InlineKeyboardButton>> getTimeInlineMarkup(MeetingDto meetingDto, String zoneId) {
         List<List<InlineKeyboardButton>> rowsInLine = new ArrayList<>();
 
-//        List<MeetingDate> meetingDates = meeting.getDates().stream()
-//                .sorted().toList();
         LocalDateTime currentDate = LocalDateTime.now(ZoneId.of(zoneId));
-        Map<LocalDate, Set<ZonedDateTime>> datesMap = meetingDto.getDatesMap();
+
+        TreeMap<LocalDate, Set<ZonedDateTime>> datesMap = meetingDto.getDates()
+                .stream().collect(Collectors.toMap(MeetingDateDto::getDate,
+                        v -> v.getMeetingTimes().stream().map(MeetingTimeDto::getDateTime)
+                                .collect(Collectors.toSet()),
+                        (v1, v2) -> {
+                            throw new RuntimeException(String.format("Duplicate key for values %s and %s", v1, v2));
+                        },
+                        TreeMap::new));
+
+
         for (Map.Entry<LocalDate, Set<ZonedDateTime>> entry : datesMap.entrySet()) {
             LocalDate localDate = entry.getKey();
             InlineKeyboardButton dateHeader =
@@ -116,7 +126,8 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
         int dayOfWeek = currentDate.getDayOfWeek().getValue();
         int actualDaysOfMonth = currentDate.lengthOfMonth();
 
-        Set<LocalDate> dateSet = meetingDto.getDatesMap().keySet();
+        Set<LocalDate> dateSet = meetingDto.getDates().stream().map(MeetingDateDto::getDate)
+                .collect(Collectors.toSet());
 
         int difference = dayOfMonth - dayOfWeek + 1;
 

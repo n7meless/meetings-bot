@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public enum Emojis {
     GREEN_SELECTED(EmojiParser.parseToUnicode(":white_check_mark:")),
-//    GREY_SELECTED(EmojiParser.parseToUnicode(":heavy_check_mark:")),
     GREY_SELECTED(EmojiParser.parseToUnicode(":ballot_box_with_check:")),
     CHANGE(EmojiParser.parseToUnicode(":memo:")),
     PROFILE(EmojiParser.parseToUnicode(":necktie:")),
@@ -28,6 +27,7 @@ public enum Emojis {
     HISTORY(EmojiParser.parseToUnicode(":page_with_curl:")),
     WARNING(EmojiParser.parseToUnicode(":warning:")),
     RIGHT(EmojiParser.parseToUnicode(":arrow_right:")),
+    LEFT(EmojiParser.parseToUnicode(":arrow_left:")),
     BANGBANG(EmojiParser.parseToUnicode(":bangbang:")),
     HAMMER_WRENCH(":hammer_and_wrench:"),
     RED_CIRCLE("\uD83D\uDD34"),

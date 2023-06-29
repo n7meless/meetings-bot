@@ -7,7 +7,10 @@ import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.keyboard.MeetingKeyboardMaker;
-import com.ufanet.meetingsbot.model.*;
+import com.ufanet.meetingsbot.mapper.AccountMapper;
+import com.ufanet.meetingsbot.model.Account;
+import com.ufanet.meetingsbot.model.AccountTime;
+import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.MeetingService;
 import com.ufanet.meetingsbot.utils.CustomFormatter;
@@ -30,6 +33,7 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
     private final MeetingService meetingService;
     private final AccountService accountService;
     private final MeetingKeyboardMaker meetingKeyboard;
+    private final AccountMapper accountMapper;
 
     public void sendUpcomingMeetings(long userId, List<Meeting> meetings) {
         Account account = accountService.getByUserId(userId).orElseThrow();
@@ -242,11 +246,11 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
         executeSendMessage(sendMessage);
     }
 
-    public void sendConfirmedComingMeeting(Meeting meeting) {
-        Set<Account> accounts = meeting.getParticipants();
-        ZonedDateTime zonedDateTime = meeting.getDate();
-        for (Account account : accounts) {
-            String zoneId = account.getZoneId();
+    public void sendConfirmedComingMeeting(MeetingDto meetingDto) {
+        Set<AccountDto> accounts = meetingDto.getParticipants();
+        ZonedDateTime zonedDateTime = meetingDto.getDate();
+        for (AccountDto account : accounts) {
+            String zoneId = account.getTimeZone();
             ZonedDateTime accountZoneTime = zonedDateTime.withZoneSameInstant(ZoneId.of(zoneId));
             SendMessage sendMessage = messageUtils.generateSendMessageHtml(account.getId(),
                     localeMessageService.getMessage("upcoming.meeting.confirmed.coming",
@@ -258,7 +262,6 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
     public void sendPassedMeetings(long userId) {
         List<Meeting> passedMeetings =
                 meetingService.getMeetingsByUserIdAndStateIn(userId, List.of(MeetingState.PASSED));
-
     }
 
     public void sendCommentNotificationParticipants(MeetingDto meetingDto) {
@@ -267,12 +270,51 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
         String text = localeMessageService.getMessage("upcoming.meeting.notification.comment", ownerLink);
 
         InlineKeyboardButton skip = meetingKeyboard.defaultInlineButton("Пропустить", " ");
-
         for (AccountDto participant : participants) {
             SendMessage sendMessage = messageUtils.generateSendMessageHtml(participant.getId(), text,
                     meetingKeyboard.buildInlineMarkup(List.of(List.of(skip))));
             executeSendMessage(sendMessage);
         }
+    }
+
+    public void sendParticipantSelectionForPing(long userId, MeetingDto meetingDto) {
+        Set<AccountDto> participants = meetingDto.getParticipants();
+        String message = localeMessageService.getMessage("upcoming.meeting.ping.select");
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        for (AccountDto participant : participants) {
+            InlineKeyboardButton button = meetingKeyboard.defaultInlineButton(participant.getFirstname(),
+                    UpcomingState.UPCOMING_SEND_NOTIFICATION_PARTICIPANT + " " + meetingDto.getId() + " " + participant.getId());
+            keyboard.add(List.of(button));
+        }
+
+        InlineKeyboardButton btn5 = meetingKeyboard.defaultInlineButton(Emojis.LEFT.getEmojiSpace() + "Назад",
+                UpcomingState.UPCOMING_SELECTED_MEETING + " " + meetingDto.getId());
+        keyboard.add(List.of(btn5));
+        EditMessageText editMessageText = messageUtils.generateEditMessageHtml(userId, message,
+                meetingKeyboard.buildInlineMarkup(keyboard));
+        executeEditMessage(editMessageText);
+    }
+
+    public void sendPingParticipant(long userId, long participantId, MeetingDto meetingDto) {
+        Account account = accountService.getByUserId(participantId).orElseThrow();
+        AccountDto accountDto = accountMapper.map(account);
+        String zoneId = accountDto.getTimeZone();
+        ZonedDateTime zonedDateTime = meetingDto.getWithZoneIdDate(zoneId);
+
+        String message = localeMessageService.getMessage("upcoming.meeting.ping.notification",
+                zonedDateTime.format(CustomFormatter.DATE_TIME_FORMATTER));
+
+        InlineKeyboardButton btn = meetingKeyboard.defaultInlineButton("Установить статус",
+                UpcomingState.UPCOMING_SELECTED_MEETING + " " + meetingDto.getId());
+
+        SendMessage sendMessage = messageUtils.generateSendMessage(participantId, message,
+                meetingKeyboard.buildInlineMarkup(List.of(List.of(btn))));
+        executeSendMessage(sendMessage);
+
+        String participantLink = messageUtils.generateAccountLink(accountDto, "", "");
+        EditMessageText editMessageText = messageUtils.generateEditMessageHtml(userId,
+                localeMessageService.getMessage("upcoming.meeting.ping.success", participantLink), null);
+        executeMessage(editMessageText);
     }
 
     public void sendReadyMeeting(MeetingDto meetingDto) {

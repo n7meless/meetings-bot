@@ -6,7 +6,6 @@ import com.ufanet.meetingsbot.repository.GroupRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.telegram.telegrambots.meta.api.objects.Chat;
@@ -24,7 +23,6 @@ public class GroupService {
     private final GroupRepository groupRepository;
     private final AccountService accountService;
 
-//    @Cacheable(key = "#groupId", value = "group")
     public Optional<Group> getByGroupId(long groupId) {
         return groupRepository.findById(groupId);
     }

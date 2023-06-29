@@ -5,7 +5,9 @@ import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.EditState;
 import com.ufanet.meetingsbot.dto.MeetingDto;
+import com.ufanet.meetingsbot.dto.SubjectDto;
 import com.ufanet.meetingsbot.mapper.MeetingConstructor;
+import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.repository.AccountTimeRepository;
 import com.ufanet.meetingsbot.repository.MeetingTimeRepository;
@@ -20,8 +22,9 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.DateTimeException;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 @Component
@@ -99,15 +102,28 @@ public class EditEventHandler implements EventHandler {
     protected void handleStep(long userId, EditState state, MeetingDto meetingDto, String callback) {
         try {
             switch (state) {
-                case EDIT_PARTICIPANT -> meetingConstructor.updateParticipants(meetingDto, Long.parseLong(callback));
-                case EDIT_SUBJECT -> meetingDto.setSubjectTitle(callback);
-                case EDIT_SUBJECT_DURATION -> meetingDto.setSubjectDuration(Integer.parseInt(callback));
+                case EDIT_PARTICIPANT -> {
+                    long participantId = Long.parseLong(callback);
+                    Set<Account> accounts =
+                            accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupId(), meetingDto.getOwner().getId());
+                    meetingConstructor.updateParticipants(meetingDto, participantId, accounts);
+                }
+                case EDIT_SUBJECT -> {
+                    SubjectDto subjectDto = meetingDto.getSubjectDto();
+                    subjectDto.setTitle(callback);
+                    meetingDto.setSubjectDto(subjectDto);
+                }
+                case EDIT_SUBJECT_DURATION -> {
+                    SubjectDto subjectDto = meetingDto.getSubjectDto();
+                    subjectDto.setDuration(Integer.parseInt(callback));
+                    meetingDto.setSubjectDto(subjectDto);
+                }
                 case EDIT_QUESTION -> meetingConstructor.updateQuestion(meetingDto, callback);
                 case EDIT_DATE -> meetingConstructor.updateDate(meetingDto, callback);
                 case EDIT_TIME -> meetingConstructor.updateTime(meetingDto, callback);
                 case EDIT_ADDRESS -> meetingDto.setAddress(callback);
             }
-            meetingDto.setUpdatedDt(LocalDateTime.now());
+            meetingDto.setUpdatedDt(ZonedDateTime.now());
 
         } catch (NumberFormatException | DateTimeException ex) {
             log.debug("invalid value entered by user {}", userId);
