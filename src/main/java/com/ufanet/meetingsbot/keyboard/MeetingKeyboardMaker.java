@@ -4,6 +4,7 @@ import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.state.EditState;
 import com.ufanet.meetingsbot.constants.state.UpcomingState;
 import com.ufanet.meetingsbot.dto.AccountDto;
+import com.ufanet.meetingsbot.dto.AccountTimeDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.model.AccountTime;
 import com.ufanet.meetingsbot.model.Group;
@@ -185,7 +186,7 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
 
 
     public InlineKeyboardMarkup getMeetingUpcomingMarkup(long userId, MeetingDto meetingDto,
-                                                         Optional<AccountTime> accountTime) {
+                                                         Optional<AccountTimeDto> accountTime) {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
 
         Long meetingId = meetingDto.getId();
@@ -207,15 +208,15 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
             switch (status) {
                 case AWAITING -> {
                     btn1.setText(Emojis.GREEN_SELECTED.getEmojiSpace() + "Я опаздываю");
-                    btn1.setCallbackData(" ");
-                }
-                case CONFIRMED -> {
-                    btn2.setText(Emojis.GREEN_SELECTED.getEmojiSpace() + "Я готов");
-                    btn2.setCallbackData(" ");
+                    btn1.setCallbackData(UpcomingState.UPCOMING_IAMCONFIRM + " " + meetingId);
                 }
                 case CANCELED -> {
                     btn3.setText(Emojis.GREEN_SELECTED.getEmojiSpace() + "Я не приду");
-                    btn3.setCallbackData(" ");
+                    btn3.setCallbackData(UpcomingState.UPCOMING_IAMCONFIRM + " " + meetingId);
+                }
+                case READY -> {
+                    btn2.setText(Emojis.GREEN_SELECTED.getEmojiSpace() + "Я готов");
+                    btn2.setCallbackData(UpcomingState.UPCOMING_IAMCONFIRM + " " + meetingId);
                 }
             }
             keyboard.add(List.of(btn1, btn2));

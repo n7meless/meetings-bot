@@ -2,7 +2,6 @@ package com.ufanet.meetingsbot.cache.impl;
 
 import com.ufanet.meetingsbot.cache.Cache;
 import com.ufanet.meetingsbot.dto.MeetingDto;
-import com.ufanet.meetingsbot.model.Meeting;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,7 +12,7 @@ import java.util.Map;
 @Getter
 @Service
 @RequiredArgsConstructor
-public class MeetingStateCache implements Cache<MeetingDto> {
+public class MeetingDtoStateCache implements Cache<MeetingDto> {
     private final Map<Long, MeetingDto> meetingStateCache = new HashMap<>();
 
     @Override

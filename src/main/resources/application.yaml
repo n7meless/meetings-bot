@@ -31,6 +31,7 @@ telegram:
 rediscache:
   ttl:
     user: 60
+    groupMembers: 10
 customcache:
   ttl:
     meeting: 30

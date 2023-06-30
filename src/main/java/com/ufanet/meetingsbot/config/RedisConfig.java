@@ -23,6 +23,8 @@ public class RedisConfig {
     private int port;
     @Value("${rediscache.ttl.user}")
     private long userTtl;
+    @Value("${rediscache.ttl.groupMembers}")
+    private long groupMembersTtl;
 
     @Bean
     JedisConnectionFactory jedisConnectionFactory() {
@@ -52,12 +54,6 @@ public class RedisConfig {
                                 .entryTtl(Duration.ofSeconds(userTtl)))
                 .withCacheConfiguration("group_members",
                         RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofSeconds(10)))
-                .withCacheConfiguration("account_times",
-                        RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofSeconds(10)))
-                .withCacheConfiguration("bot_state",
-                        RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofSeconds(60)));
+                                .entryTtl(Duration.ofSeconds(groupMembersTtl)));
     }
 }

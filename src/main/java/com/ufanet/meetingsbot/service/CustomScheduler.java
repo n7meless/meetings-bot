@@ -1,7 +1,7 @@
 package com.ufanet.meetingsbot.service;
 
 import com.ufanet.meetingsbot.cache.impl.BotStateCache;
-import com.ufanet.meetingsbot.cache.impl.MeetingStateCache;
+import com.ufanet.meetingsbot.cache.impl.MeetingDtoStateCache;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.mapper.MeetingMapper;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 @EnableScheduling
 @RequiredArgsConstructor
 public class CustomScheduler {
-    private final MeetingStateCache meetingStateCache;
+    private final MeetingDtoStateCache meetingDtoStateCache;
     private final MeetingRepository meetingRepository;
     private final BotStateCache botStateCache;
     private final BotRepository botRepository;
@@ -47,9 +47,9 @@ public class CustomScheduler {
     private long meetingTtl;
 
     @Async
-    @Scheduled(fixedRate = 5000)
+    @Scheduled(fixedRate = 10000)
     public void saveMeetingsAndBotStatesFromCache() {
-        Map<Long, MeetingDto> meetingDataCache = new HashMap<>(meetingStateCache.getMeetingStateCache());
+        Map<Long, MeetingDto> meetingDataCache = new HashMap<>(meetingDtoStateCache.getMeetingStateCache());
         LocalDateTime now = LocalDateTime.now();
         for (Map.Entry<Long, MeetingDto> entry : meetingDataCache.entrySet()) {
             long userId = entry.getKey();
@@ -60,9 +60,9 @@ public class CustomScheduler {
             if (seconds > meetingTtl) {
                 MeetingState state = meetingDto.getState();
                 switch (state) {
-                    case AWAITING, CONFIRMED, CANCELED, GROUP_SELECT -> meetingStateCache.evict(userId);
+                    case AWAITING, CONFIRMED, CANCELED, GROUP_SELECT -> meetingDtoStateCache.evict(userId);
                     default -> {
-                        meetingStateCache.evict(userId);
+                        meetingDtoStateCache.evict(userId);
                         Meeting meeting = meetingMapper.map(meetingDto);
                         meetingRepository.save(meeting);
                         log.info("meeting {} with user id {} saved in database", meetingDto.getId(), userId);
@@ -78,21 +78,21 @@ public class CustomScheduler {
             BotState botState = entry.getValue();
             LocalDateTime botUpdatedDt = botState.getUpdatedDt();
             long seconds = ChronoUnit.SECONDS.between(botUpdatedDt, now);
-            if (seconds > botTtl){
+            if (seconds > botTtl) {
+                log.info("saving bot state {} into db", botState.getId());
                 botRepository.save(botState);
                 botStateCache.evict(userId);
             }
         }
-
     }
 
     @Scheduled(fixedRate = 60000)
     public void checkMeetings() {
-        processConfirmedMeetings();
-        processExpiredMeetings();
+        checkUpcomingMeetings();
+        checkExpiredMeetings();
     }
 
-    public void processConfirmedMeetings() {
+    private void checkUpcomingMeetings() {
         ZonedDateTime now = ZonedDateTime.now();
         List<Meeting> meetings = meetingRepository.findConfirmedMeetingsWhereDatesBetween(now, 10);
         for (Meeting meeting : meetings) {
@@ -106,8 +106,7 @@ public class CustomScheduler {
         }
     }
 
-    public void processExpiredMeetings() {
-        //TODO найти участников и уведомить
+    private void checkExpiredMeetings() {
         ZonedDateTime now = ZonedDateTime.now();
 //        List<Meeting> expiredMeetings = meetingRepository.findConfirmedMeetingsWhereDatesLaterThan(now, 90);
         List<Meeting> expiredMeetings = meetingRepository.findConfirmedMeetingsWhereDatesLaterThanSubjectDuration(now);
@@ -121,10 +120,10 @@ public class CustomScheduler {
 
     @PreDestroy
     @Transactional
-    public void saveBotStates() {
+    public void saveCacheValuesBeforeDestroy() {
         System.out.println("--------------- SAVING CACHE VALUES BEFORE DESTROY -----------------");
         Map<Long, BotState> botCache = botStateCache.getBotStateCache();
-        Map<Long, MeetingDto> meetingCache = meetingStateCache.getMeetingStateCache();
+        Map<Long, MeetingDto> meetingCache = meetingDtoStateCache.getMeetingStateCache();
         Collection<BotState> botStates = botCache.values();
         List<Meeting> meetings = meetingCache.values().stream()
                 .map(meetingMapper::map).collect(Collectors.toList());

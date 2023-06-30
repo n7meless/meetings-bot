@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.telegram.telegrambots.meta.api.objects.User;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -26,7 +27,7 @@ import java.util.Set;
 @Service
 @EnableCaching
 @RequiredArgsConstructor
-@CacheConfig(cacheNames = {"account", "group_members", "account_times"})
+@CacheConfig(cacheNames = {"account", "group_members"})
 public class AccountService {
     private final AccountRepository accountRepository;
     private final AccountTimeRepository accountTimeRepository;
@@ -85,6 +86,7 @@ public class AccountService {
                 .language("ru-RU").build();
         BotState botState = BotState.builder()
                 .state(AccountState.PROFILE.name())
+                .updatedDt(LocalDateTime.now())
                 .account(account)
                 .build();
 

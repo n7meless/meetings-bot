@@ -4,6 +4,7 @@ import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
+import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
 import com.ufanet.meetingsbot.keyboard.CalendarKeyboardMaker;
 import com.ufanet.meetingsbot.keyboard.MeetingKeyboardMaker;
 import com.ufanet.meetingsbot.mapper.AccountMapper;
@@ -83,7 +84,7 @@ public class MeetingReplyMessageService extends ReplyMessageService {
     }
 
     public void sendDateMessage(long userId, MeetingDto meetingDto, String callback) {
-        Account account = accountService.getByUserId(userId).orElseThrow();
+        Account account = accountService.getByUserId(userId).orElseThrow(()->new AccountNotFoundException(userId));
         String zoneId = account.getZoneId();
         List<List<InlineKeyboardButton>> keyboard = calendarKeyboard.getCalendarInlineMarkup(meetingDto, callback, zoneId);
         keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(meetingDto.getDates().size() > 0));
@@ -95,7 +96,8 @@ public class MeetingReplyMessageService extends ReplyMessageService {
     }
 
     public void sendTimeMessage(long userId, MeetingDto meetingDto) {
-        Account account = accountService.getByUserId(userId).orElseThrow();
+        Account account = accountService.getByUserId(userId)
+                .orElseThrow(() -> new AccountNotFoundException(userId));
         String zoneId = account.getZoneId();
         List<List<InlineKeyboardButton>> keyboard = calendarKeyboard.getTimeInlineMarkup(meetingDto, zoneId);
         boolean hasTime = meetingDto.getDates().stream().anyMatch(t -> t.getMeetingTimes().size() > 0);
@@ -157,9 +159,10 @@ public class MeetingReplyMessageService extends ReplyMessageService {
 
         MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meetingDto);
 
-        Account account = accountService.getByUserId(userId).orElseThrow();
-        String zoneId = account.getZoneId();
-        List<ZonedDateTime> dates = meetingDto.getDatesWithZoneId(zoneId);
+        AccountDto owner = meetingDto.getOwner();
+        String timeZone = owner.getTimeZone();
+
+        List<ZonedDateTime> dates = meetingDto.getDatesWithZoneId(timeZone);
         String timesText = messageUtils.generateDatesText(dates);
 
         String textMeeting =

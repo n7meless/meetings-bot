@@ -1,55 +1,22 @@
 version: "2.17"
 services:
   dbpostgres:
+    container_name: dbpostgres
     image: postgres:15.3
     environment:
       POSTGRES_DB: "meetsdb"
       POSTGRES_USER: "root"
       POSTGRES_PASSWORD: "root"
-    volumes:
-      - /var/lib/postgresql:/var/lib/postgresql
+    restart: on-failure
     ports:
       - "5432:5432"
-  redis_cont:
+    volumes:
+      - /var/lib/postgresql:/var/lib/postgresql
+  rediscache:
+    container_name: rediscache
     image: redis:7.0.11-alpine
+    restart: on-failure
     ports:
       - "6379:6379"
     volumes:
       - /db_data:/var/lib/redis/data
-#    command: ["--notify-keyspace-events", "Ex"]
-#  mongodb:
-#    image: mongo
-#    restart: unless-stopped
-#    ports:
-#      - "27017:27017"
-#    volumes:
-#      - mongo:/data/db
-#    environment:
-#      MONGO_INITDB_ROOT_USERNAME: root
-#      MONGO_INITDB_ROOT_PASSWORD: password
-#      MONGO_INITDB_DATABASE: meetingsdb
-#  mongo-express:
-#    image: mongo-express
-#    restart: unless-stopped
-#    ports:
-#      - "8081:8081"
-#    environment:
-#      ME_CONFIG_MONGODB_ADMINUSERNAME: darik
-#      ME_CONFIG_MONGODB_ADMINPASSWORD: darik
-#      ME_CONFIG_MONGODB_PORT: 27017
-#      ME_CONFIG_MONGODB_URL: "mongodb://darik:darik@mongodb:27017/"
-
-#  rabbitmq:
-#    image: rabbitmq:3.11.0-management
-#    ports:
-#      - "5672:5672"
-#      - "15672:15672"
-#    environment:
-#      RABBITMQ_DEFAULT_USER: root
-#      RABBITMQ_DEFAULT_PASS: root
-#    volumes:
-#      - rabbitmq_data:/var/lib/rabbitmq
-#    restart: unless-stopped
-volumes:
-  rabbitmq_data:
-  mongo:

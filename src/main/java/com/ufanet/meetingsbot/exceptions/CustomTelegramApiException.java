@@ -19,4 +19,8 @@ public abstract class CustomTelegramApiException extends ResponseStatusException
         super(HttpStatus.OK);
         this.message = message;
     }
+    public CustomTelegramApiException(Long chatId){
+        super(HttpStatus.OK);
+        this.chatId = chatId;
+    }
 }

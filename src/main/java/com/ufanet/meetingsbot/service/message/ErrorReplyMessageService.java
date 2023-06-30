@@ -1,6 +1,6 @@
 package com.ufanet.meetingsbot.service.message;
 
-import com.ufanet.meetingsbot.exceptions.UserNotFoundException;
+import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
 import com.ufanet.meetingsbot.utils.Emojis;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -10,7 +10,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 public class ErrorReplyMessageService extends ReplyMessageService {
 
     @ExceptionHandler
-    public void userNotFoundExceptionHandler(UserNotFoundException e) {
+    public void userNotFoundExceptionHandler(AccountNotFoundException e) {
         executeErrorMessage(e.getChatId(), e.getMessage());
     }
     @ExceptionHandler

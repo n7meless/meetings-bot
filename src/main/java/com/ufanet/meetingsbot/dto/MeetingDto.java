@@ -6,10 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -35,11 +32,11 @@ public class MeetingDto {
     }
 
     public void addParticipant(AccountDto accountDto) {
-        if (this.accountMeetings == null){
+        if (this.accountMeetings == null) {
             this.accountMeetings = new HashSet<>();
         }
         AccountMeetingDto accountMeetingDto = AccountMeetingDto.builder()
-               .account(accountDto).build();
+                .account(accountDto).build();
         this.accountMeetings.add(accountMeetingDto);
     }
 
@@ -59,8 +56,9 @@ public class MeetingDto {
 
     public Set<AccountDto> getParticipantsWithoutOwner() {
         return this.getAccountMeetings().stream()
-                .filter(am -> am.getAccount().getId() != this.owner.getId())
-                .map(AccountMeetingDto::getAccount).collect(Collectors.toSet());
+                .map(AccountMeetingDto::getAccount)
+                .filter(account -> !Objects.equals(account.getId(), this.owner.getId()))
+                .collect(Collectors.toSet());
     }
 
     public ZonedDateTime getDate() {
@@ -68,10 +66,9 @@ public class MeetingDto {
                 .map(MeetingDateDto::getMeetingTimes)
                 .get().stream().findFirst().get().getDateTime();
     }
-    public ZonedDateTime getWithZoneIdDate(String zoneId) {
-        return this.dates.stream().findFirst()
-                .map(MeetingDateDto::getMeetingTimes)
-                .get().stream().findFirst().get().getDateTime().withZoneSameInstant(ZoneId.of(zoneId));
+
+    public ZonedDateTime getDateWithZoneId(String zoneId) {
+        return this.getDate().withZoneSameInstant(ZoneId.of(zoneId));
     }
 
     public List<ZonedDateTime> getDatesWithZoneId(String zoneId) {

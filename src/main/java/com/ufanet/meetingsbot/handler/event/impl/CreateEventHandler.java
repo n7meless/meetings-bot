@@ -1,22 +1,23 @@
 package com.ufanet.meetingsbot.handler.event.impl;
 
-import com.ufanet.meetingsbot.cache.impl.MeetingStateCache;
+import com.ufanet.meetingsbot.cache.impl.MeetingDtoStateCache;
 import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.dto.GroupDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.SubjectDto;
-import com.ufanet.meetingsbot.exceptions.UserNotFoundException;
+import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
+import com.ufanet.meetingsbot.exceptions.GroupNotFoundException;
 import com.ufanet.meetingsbot.handler.event.EventHandler;
 import com.ufanet.meetingsbot.mapper.GroupMapper;
 import com.ufanet.meetingsbot.mapper.MeetingMapper;
-import com.ufanet.meetingsbot.service.MeetingConstructor;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Group;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.GroupService;
+import com.ufanet.meetingsbot.service.MeetingConstructor;
 import com.ufanet.meetingsbot.service.MeetingService;
 import com.ufanet.meetingsbot.service.message.MeetingReplyMessageService;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,6 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.Set;
 
@@ -37,7 +37,7 @@ public class CreateEventHandler implements EventHandler {
     private final MeetingService meetingService;
     private final MeetingConstructor meetingConstructor;
     private final MeetingReplyMessageService messageService;
-    private final MeetingStateCache meetingStateCache;
+    private final MeetingDtoStateCache meetingDtoStateCache;
     private final AccountService accountService;
     private final GroupService groupService;
     private final GroupMapper groupMapper;
@@ -48,20 +48,21 @@ public class CreateEventHandler implements EventHandler {
         if (update.hasMessage() || update.hasCallbackQuery()) {
             long userId = getUserIdFromUpdate(update);
 
-            MeetingDto meetingDto = meetingStateCache.get(userId);
+            MeetingDto meetingDto = meetingDtoStateCache.get(userId);
             if (meetingDto == null) {
                 Optional<Meeting> optionalMeeting = meetingService.getLastChangedMeetingByOwnerId(userId);
-                Account account = accountService.getByUserId(userId).orElseThrow(UserNotFoundException::new);
+                Account account = accountService.getByUserId(userId)
+                        .orElseThrow(() -> new AccountNotFoundException(userId));
                 meetingDto = meetingMapper.mapIfPresentOrElseGet(optionalMeeting,
                         () -> meetingConstructor.create(account));
-                meetingStateCache.save(userId, meetingDto);
+                meetingDtoStateCache.save(userId, meetingDto);
             }
 
             if (update.hasMessage()) {
                 String message = update.getMessage().getText();
 
                 if (message.equals(AccountState.CREATE.getButtonName())) {
-                    meetingStateCache.evict(userId);
+                    meetingDtoStateCache.evict(userId);
                 } else handleStep(userId, meetingDto, message);
 
                 sendMessage(userId, meetingDto, message);
@@ -87,7 +88,7 @@ public class CreateEventHandler implements EventHandler {
                 meetingDto.setId(meeting.getId());
                 messageService.sendMeetingToParticipants(meetingDto);
                 messageService.sendMessageSentSuccessfully(userId);
-                meetingStateCache.evict(userId);
+                meetingDtoStateCache.evict(userId);
             }
             case NEXT -> {
                 MeetingState currState = meetingDto.getState();
@@ -96,7 +97,7 @@ public class CreateEventHandler implements EventHandler {
                 sendMessage(userId, meetingDto, message);
             }
             case CANCEL -> {
-                meetingStateCache.evict(userId);
+                meetingDtoStateCache.evict(userId);
                 Meeting meeting = meetingMapper.map(meetingDto);
                 meetingService.deleteById(meeting.getId());
                 messageService.sendCanceledMessage(userId);
@@ -115,7 +116,8 @@ public class CreateEventHandler implements EventHandler {
             switch (meetingState) {
                 case GROUP_SELECT -> {
                     int groupId = Integer.parseInt(callback);
-                    Group group = groupService.getByGroupId(groupId).orElseThrow();
+                    Group group = groupService.getByGroupId(groupId)
+                            .orElseThrow(()-> new GroupNotFoundException(userId));
                     GroupDto groupDto = groupMapper.map(group);
                     meetingDto.setGroupDto(groupDto);
                     meetingDto.setState(MeetingState.PARTICIPANT_SELECT);
@@ -151,7 +153,7 @@ public class CreateEventHandler implements EventHandler {
         } catch (NumberFormatException | DateTimeException ex) {
             log.debug("invalid value entered by user {}", userId);
         } finally {
-            meetingStateCache.save(userId, meetingDto);
+            meetingDtoStateCache.save(userId, meetingDto);
         }
     }
 

@@ -8,7 +8,6 @@ import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.keyboard.CalendarKeyboardMaker;
 import com.ufanet.meetingsbot.keyboard.MeetingKeyboardMaker;
 import com.ufanet.meetingsbot.mapper.AccountMapper;
-import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
@@ -30,9 +29,9 @@ public class EditReplyMessageService extends ReplyMessageService {
     private final AccountService accountService;
     private final AccountMapper accountMapper;
 
-    private String getMainText(long userId, MeetingDto meetingDto) {
-        Account account = accountService.getByUserId(userId).orElseThrow();
-        String zoneId = account.getZoneId();
+    private String getMainText(MeetingDto meetingDto) {
+        AccountDto owner = meetingDto.getOwner();
+        String zoneId = owner.getTimeZone();
         List<ZonedDateTime> dates = meetingDto.getDatesWithZoneId(zoneId);
         MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meetingDto);
         String times = messageUtils.generateDatesText(dates);
@@ -42,7 +41,7 @@ public class EditReplyMessageService extends ReplyMessageService {
     }
 
     public void editAddress(long userId, MeetingDto meetingDto) {
-        String firstText = getMainText(userId, meetingDto);
+        String firstText = getMainText(meetingDto);
         String secondText = messageUtils.buildText("\n\n", Emojis.BANGBANG.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.address"));
 
@@ -56,9 +55,9 @@ public class EditReplyMessageService extends ReplyMessageService {
     }
 
     public void editTime(long userId, MeetingDto meetingDto) {
-        Account account = accountService.getByUserId(userId).orElseThrow();
-        String zoneId = account.getZoneId();
-        String firstText = getMainText(userId, meetingDto);
+        AccountDto owner = meetingDto.getOwner();
+        String zoneId = owner.getTimeZone();
+        String firstText = getMainText(meetingDto);
         String secondText = messageUtils.buildText("\n\n", Emojis.BANGBANG.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.time"));
 
@@ -71,7 +70,7 @@ public class EditReplyMessageService extends ReplyMessageService {
     }
 
     public void editParticipants(long userId, MeetingDto meetingDto) {
-        String firstText = getMainText(userId, meetingDto);
+        String firstText = getMainText(meetingDto);
         String secondText = messageUtils.buildText("\n\n", Emojis.BANGBANG.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.participants"));
 
@@ -89,7 +88,7 @@ public class EditReplyMessageService extends ReplyMessageService {
     }
 
     public void editSubject(long userId, MeetingDto meetingDto) {
-        String firstText = getMainText(userId, meetingDto);
+        String firstText = getMainText(meetingDto);
         String secondText = messageUtils.buildText("\n\n", Emojis.BANGBANG.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.subject"));
 
@@ -103,7 +102,7 @@ public class EditReplyMessageService extends ReplyMessageService {
     }
 
     public void editSubjectDuration(long userId, MeetingDto meetingDto) {
-        String firstText = getMainText(userId, meetingDto);
+        String firstText = getMainText(meetingDto);
         String secondText = messageUtils.buildText("\n\n", Emojis.BANGBANG.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.duration"));
 
@@ -121,7 +120,7 @@ public class EditReplyMessageService extends ReplyMessageService {
     }
 
     public void editQuestion(long userId, MeetingDto meetingDto) {
-        String firstText = getMainText(userId, meetingDto);
+        String firstText = getMainText(meetingDto);
         String secondText = messageUtils.buildText("\n\n", Emojis.BANGBANG.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.questions"));
 

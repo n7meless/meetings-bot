@@ -2,6 +2,7 @@ package com.ufanet.meetingsbot.handler.event.impl;
 
 import com.ufanet.meetingsbot.constants.BotCommands;
 import com.ufanet.meetingsbot.constants.state.AccountState;
+import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
 import com.ufanet.meetingsbot.exceptions.ValidationMeetingException;
 import com.ufanet.meetingsbot.handler.event.EventHandler;
 import com.ufanet.meetingsbot.model.Account;
@@ -45,7 +46,8 @@ public class ProfileEventHandler implements EventHandler {
 
             if (timeZone.startsWith("UTC")) {
                 System.out.println(timeZone);
-                Account account = accountService.getByUserId(userId).orElseThrow();
+                Account account = accountService.getByUserId(userId)
+                        .orElseThrow(()->new AccountNotFoundException(userId));
                 Settings settings = account.getSettings();
                 settings.setTimeZone(timeZone);
                 account.setSettings(settings);

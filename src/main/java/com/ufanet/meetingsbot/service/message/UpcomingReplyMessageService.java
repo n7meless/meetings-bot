@@ -4,8 +4,10 @@ import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.constants.state.UpcomingState;
 import com.ufanet.meetingsbot.dto.AccountDto;
+import com.ufanet.meetingsbot.dto.AccountTimeDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
+import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
 import com.ufanet.meetingsbot.keyboard.MeetingKeyboardMaker;
 import com.ufanet.meetingsbot.mapper.AccountMapper;
 import com.ufanet.meetingsbot.model.Account;
@@ -88,33 +90,31 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
     }
 
     public void sendSelectedUpcomingMeeting(long userId, MeetingDto meetingDto,
-                                            List<AccountTime> accountTimes) {
+                                            List<AccountTimeDto> accountTimes) {
         MeetingMessage message = messageUtils.generateMeetingMessage(meetingDto);
 
         StringBuilder sb = new StringBuilder();
         sb.append(messageUtils.generateAccountLink(meetingDto.getOwner(),
                 Emojis.CROWN.getEmojiSpace(), "")).append("\n");
 
-        for (AccountTime accountTime : accountTimes) {
+        for (AccountTimeDto accountTime : accountTimes) {
             Status status = accountTime.getStatus();
-            Account account = accountTime.getAccount();
-            AccountDto accountDto = accountMapper.map(account);
+            AccountDto account = accountTime.getAccount();
             switch (status) {
-                case AWAITING -> sb.append(messageUtils.generateAccountLink(accountDto,
+                case AWAITING -> sb.append(messageUtils.generateAccountLink(account,
                         Emojis.GREY_SELECTED.getEmojiSpace(), " (Опаздывает)"));
-                case CONFIRMED -> sb.append(messageUtils.generateAccountLink(accountDto,
+                case READY -> sb.append(messageUtils.generateAccountLink(account,
                         Emojis.GREEN_SELECTED.getEmojiSpace(), " (Готов начать)"));
-                case CANCELED -> sb.append(messageUtils.generateAccountLink(accountDto,
+                case CANCELED -> sb.append(messageUtils.generateAccountLink(account,
                         Emojis.GREY_SELECTED.getEmojiSpace(), " (Не придет)"));
-                default -> sb.append(messageUtils.generateAccountLink(accountDto,
+                case CONFIRMED -> sb.append(messageUtils.generateAccountLink(account,
                         Emojis.GREEN_SELECTED.getEmojiSpace(), ""));
-
             }
             sb.append("\n");
         }
         String participants = sb.toString();
 
-        Optional<AccountTime> accountTime = accountTimes.stream().filter(t -> t.getAccount().getId() == userId)
+        Optional<AccountTimeDto> accountTime = accountTimes.stream().filter(t -> t.getAccount().getId() == userId)
                 .findFirst();
 
         String textMessage = localeMessageService.getMessage("upcoming.meeting.confirmed.selected",
@@ -163,7 +163,8 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
 
     public void sendEditMeetingAccountTimes(long userId, MeetingDto meetingDto,
                                             List<AccountTime> accountTimes) {
-        Account account = accountService.getByUserId(userId).orElseThrow();
+        Account account = accountService.getByUserId(userId)
+                .orElseThrow(()->new AccountNotFoundException(userId));
         String zoneId = account.getZoneId();
         List<ZonedDateTime> dates = meetingDto.getDatesWithZoneId(zoneId);
         String timesText = messageUtils.generateDatesText(dates);
@@ -182,7 +183,8 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
     }
 
     public void sendSelectedAwaitingMeeting(long userId, MeetingDto meetingDto) {
-        Account account = accountService.getByUserId(userId).orElseThrow();
+        Account account = accountService.getByUserId(userId)
+                .orElseThrow(()->new AccountNotFoundException(userId));
 
         MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meetingDto);
 
@@ -284,7 +286,7 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
     }
 
     public void sendParticipantSelectionForPing(long userId, MeetingDto meetingDto) {
-        Set<AccountDto> participants = meetingDto.getParticipants();
+        Set<AccountDto> participants = meetingDto.getParticipantsWithoutOwner();
         String message = localeMessageService.getMessage("upcoming.meeting.ping.select");
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         for (AccountDto participant : participants) {
@@ -303,10 +305,11 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
     }
 
     public void sendPingParticipant(long userId, long participantId, MeetingDto meetingDto) {
-        Account account = accountService.getByUserId(participantId).orElseThrow();
+        Account account = accountService.getByUserId(participantId)
+                .orElseThrow(()-> new AccountNotFoundException(userId));
         AccountDto accountDto = accountMapper.map(account);
         String zoneId = accountDto.getTimeZone();
-        ZonedDateTime zonedDateTime = meetingDto.getWithZoneIdDate(zoneId);
+        ZonedDateTime zonedDateTime = meetingDto.getDateWithZoneId(zoneId);
 
         String message = localeMessageService.getMessage("upcoming.meeting.ping.notification",
                 zonedDateTime.format(CustomFormatter.DATE_TIME_FORMATTER));

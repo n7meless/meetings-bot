@@ -13,9 +13,4 @@ public enum BotCommands {
     SETTIMEZONE("/settimezone");
 
     private final String command;
-
-    @Override
-    public String toString() {
-        return this.getCommand();
-    }
 }

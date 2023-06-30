@@ -2,10 +2,7 @@ package com.ufanet.meetingsbot.dto;
 
 import lombok.*;
 
-import java.time.LocalDateTime;
 import java.util.Objects;
-import java.util.Set;
-import java.util.TreeSet;
 
 @Setter
 @Getter

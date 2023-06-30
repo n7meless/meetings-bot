@@ -1,18 +1,19 @@
 package com.ufanet.meetingsbot.handler.event.impl;
 
-import com.ufanet.meetingsbot.cache.impl.MeetingStateCache;
+import com.ufanet.meetingsbot.cache.impl.MeetingDtoStateCache;
 import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.EditState;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.SubjectDto;
+import com.ufanet.meetingsbot.exceptions.MeetingNotFoundException;
 import com.ufanet.meetingsbot.handler.event.EventHandler;
 import com.ufanet.meetingsbot.mapper.MeetingMapper;
-import com.ufanet.meetingsbot.service.MeetingConstructor;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.BotService;
+import com.ufanet.meetingsbot.service.MeetingConstructor;
 import com.ufanet.meetingsbot.service.MeetingService;
 import com.ufanet.meetingsbot.service.message.EditReplyMessageService;
 import lombok.AllArgsConstructor;
@@ -22,7 +23,6 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.Set;
 
@@ -34,7 +34,7 @@ public class EditEventHandler implements EventHandler {
     private final AccountService accountService;
     private final BotService botService;
     private final EditReplyMessageService editReplyMessage;
-    private final MeetingStateCache meetingStateCache;
+    private final MeetingDtoStateCache meetingDtoStateCache;
     private final MeetingConstructor meetingConstructor;
     private final MeetingMapper meetingMapper;
 
@@ -46,11 +46,12 @@ public class EditEventHandler implements EventHandler {
             String data = update.getCallbackQuery().getData();
             EditState editState;
 
-            MeetingDto meetingDto = meetingStateCache.get(userId);
+            MeetingDto meetingDto = meetingDtoStateCache.get(userId);
 
             if (meetingDto == null) {
                 Optional<Meeting> optionalMeeting = meetingService.getLastChangedMeetingByOwnerId(userId);
-                meetingDto = meetingMapper.mapIfPresentOrElseThrow(optionalMeeting, RuntimeException::new);
+                meetingDto = meetingMapper.mapIfPresentOrElseThrow(optionalMeeting,
+                        ()->new MeetingNotFoundException(userId));
             }
 
             if (data.startsWith(AccountState.EDIT.name())) {
@@ -70,11 +71,12 @@ public class EditEventHandler implements EventHandler {
             String botState = botService.getState(userId);
             EditState editState = EditState.valueOf(botState);
 
-            MeetingDto meetingDto = meetingStateCache.get(userId);
+            MeetingDto meetingDto = meetingDtoStateCache.get(userId);
 
             if (meetingDto == null) {
                 Optional<Meeting> optionalMeeting = meetingService.getLastChangedMeetingByOwnerId(userId);
-                meetingDto = meetingMapper.mapIfPresentOrElseThrow(optionalMeeting, RuntimeException::new);
+                meetingDto = meetingMapper.mapIfPresentOrElseThrow(optionalMeeting,
+                        () -> new MeetingNotFoundException(userId));
             }
 
             handleStep(userId, editState, meetingDto, message);
@@ -127,7 +129,7 @@ public class EditEventHandler implements EventHandler {
         } catch (NumberFormatException | DateTimeException ex) {
             log.debug("invalid value entered by user {}", userId);
         } finally {
-            meetingStateCache.save(userId, meetingDto);
+            meetingDtoStateCache.save(userId, meetingDto);
         }
     }
 

@@ -30,7 +30,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 //            "LEFT join meeting_time mt on md.id = mt.meetingDate.id " +
 //            "LEFT join user_times ut on mt.id = ut.meetingTime.id "+
 //            "WHERE m.owner.id =?1 and m.state NOT IN (?2)")
-    @EntityGraph(value = "meeting-entity-graph", attributePaths = "subject")
+    @EntityGraph(value = "meeting-entity-graph", attributePaths = {"owner.settings"})
     Optional<Meeting> findByOwnerIdAndStateIsNotIn(Long ownerId, List<MeetingState> states);
 
     @EntityGraph(value = "meeting-entity-graph")
