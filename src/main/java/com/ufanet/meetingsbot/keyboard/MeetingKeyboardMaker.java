@@ -27,7 +27,6 @@ import static com.ufanet.meetingsbot.utils.CustomFormatter.DATE_WEEK_FORMATTER;
 public class MeetingKeyboardMaker extends KeyboardMaker {
 
     public List<List<InlineKeyboardButton>> getSubjectDurationInlineMarkup(MeetingDto meetingDto) {
-//        Subject subject = meeting.getSubject();
         Integer duration = meetingDto.getSubjectDto().getDuration();
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         List<InlineKeyboardButton> row = new ArrayList<>();
@@ -82,15 +81,15 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
                     String.valueOf(group.getId()));
             keyboard.add(List.of(button));
         }
-        return InlineKeyboardMarkup.builder().keyboard(keyboard).build();
+        return buildInlineMarkup(keyboard);
     }
 
     public List<List<InlineKeyboardButton>> getQuestionsInlineMarkup(Set<String> questions) {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         for (String question : questions) {
-            InlineKeyboardButton questionButton = InlineKeyboardButton.builder()
-                    .text(Emojis.GREY_SELECTED.getEmojiSpace()
-                            + question).callbackData(question).build();
+            InlineKeyboardButton questionButton = defaultInlineButton(Emojis.GREY_SELECTED.getEmojiSpace() + question,
+                    question);
+
             keyboard.add(List.of(questionButton));
         }
         return keyboard;
@@ -99,22 +98,19 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
     public List<List<InlineKeyboardButton>> getEditingInlineButtons() {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
 
-        InlineKeyboardButton subject = InlineKeyboardButton.builder()
-                .text(Emojis.CLIPBOARD.getEmojiSpace() + "Ред. темы")
-                .callbackData(EditState.EDIT_SUBJECT.name()).build();
+        InlineKeyboardButton subject = defaultInlineButton(Emojis.CLIPBOARD.getEmojiSpace() + "Ред. темы",
+                EditState.EDIT_SUBJECT.name());
 
-        InlineKeyboardButton participants = InlineKeyboardButton.builder()
-                .text(Emojis.PARTICIPANTS.getEmojiSpace() + "Ред. участников")
-                .callbackData(EditState.EDIT_PARTICIPANT.name()).build();
+        InlineKeyboardButton participants = defaultInlineButton(Emojis.PARTICIPANTS.getEmojiSpace() + "Ред. участников",
+                EditState.EDIT_PARTICIPANT.name());
 
         keyboard.add(List.of(subject, participants));
 
-        InlineKeyboardButton time = InlineKeyboardButton.builder()
-                .text(Emojis.DURATION.getEmojiSpace() + "Ред. время")
-                .callbackData(EditState.EDIT_TIME.name()).build();
-        InlineKeyboardButton address = InlineKeyboardButton.builder()
-                .text(Emojis.OFFICE.getEmojiSpace() + "Ред. адрес")
-                .callbackData(EditState.EDIT_ADDRESS.name()).build();
+        InlineKeyboardButton time = defaultInlineButton(Emojis.DURATION.getEmojiSpace() + "Ред. время",
+                EditState.EDIT_TIME.name());
+
+        InlineKeyboardButton address = defaultInlineButton(Emojis.OFFICE.getEmojiSpace() + "Ред. адрес",
+                EditState.EDIT_ADDRESS.name());
 
         keyboard.add(List.of(time, address));
         keyboard.add(List.of(cancel));
@@ -123,18 +119,18 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
 
     public InlineKeyboardMarkup getMeetingConfirmKeyboard(long meetingId) {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
-        InlineKeyboardButton change = InlineKeyboardButton.builder()
-                .text(Emojis.CHANGE.getEmojiSpace() + "Изменить указанные интервалы")
-                .callbackData(UpcomingState.UPCOMING_EDIT_MEETING_TIME.name() + " " + meetingId).build();
-        InlineKeyboardButton confirm = InlineKeyboardButton.builder()
-                .text(Emojis.GREEN_SELECTED.getEmojiSpace() + "Подтверждаю")
-                .callbackData(UpcomingState.UPCOMING_CONFIRM_MEETING_TIME.name() + " " + meetingId).build();
-        InlineKeyboardButton cancel = InlineKeyboardButton.builder()
-                .text(Emojis.CANCEL_CIRCLE.getEmojiSpace() + "Не смогу прийти")
-                .callbackData(UpcomingState.UPCOMING_CANCEL_MEETING_TIME.name() + " " + meetingId).build();
+        InlineKeyboardButton change = defaultInlineButton(Emojis.CHANGE.getEmojiSpace() + "Изменить указанные интервалы",
+                UpcomingState.UPCOMING_EDIT_MEETING_TIME.name() + " " + meetingId);
+
+        InlineKeyboardButton confirm = defaultInlineButton(Emojis.GREEN_SELECTED.getEmojiSpace() + "Подтверждаю",
+                UpcomingState.UPCOMING_CONFIRM_MEETING_TIME.name() + " " + meetingId);
+
+        InlineKeyboardButton cancel = defaultInlineButton(Emojis.CANCEL_CIRCLE.getEmojiSpace() + "Не смогу прийти",
+                UpcomingState.UPCOMING_CANCEL_MEETING_TIME.name() + " " + meetingId);
+
         keyboard.add(List.of(change));
         keyboard.add(List.of(cancel, confirm));
-        return InlineKeyboardMarkup.builder().keyboard(keyboard).build();
+        return buildInlineMarkup(keyboard);
     }
 
     //TODO поменять подход
@@ -148,9 +144,10 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
 
         for (Map.Entry<LocalDate, List<AccountTime>> entry : collected.entrySet()) {
             LocalDate dateTime = entry.getKey();
-            InlineKeyboardButton questionButton = InlineKeyboardButton.builder()
-                    .text(Emojis.CALENDAR.getEmojiSpace() + dateTime.format(DATE_WEEK_FORMATTER))
-                    .callbackData(" ").build();
+            InlineKeyboardButton questionButton =
+                    defaultInlineButton(Emojis.CALENDAR.getEmojiSpace() + dateTime.format(DATE_WEEK_FORMATTER),
+                            " ");
+
             keyboard.add(List.of(questionButton));
 
             List<AccountTime> times = entry.getValue();
@@ -161,9 +158,9 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
                 for (int j = 0; j < 4 && i < times.size(); j++, i++) {
                     AccountTime accountTime = times.get(i);
                     ZonedDateTime zonedDateTime = accountTime.getMeetingTime().getTimeWithZoneOffset(zoneId);
-                    InlineKeyboardButton time = InlineKeyboardButton.builder()
-                            .text(Emojis.GREY_SELECTED.getEmojiSpace() + zonedDateTime.toLocalTime().toString())
-                            .callbackData(UpcomingState.UPCOMING_EDIT_MEETING_TIME.name() + " " + meetingId + " " + accountTime.getId()).build();
+                    InlineKeyboardButton time =
+                            defaultInlineButton(Emojis.GREY_SELECTED.getEmojiSpace() + zonedDateTime.toLocalTime(),
+                                    UpcomingState.UPCOMING_EDIT_MEETING_TIME.name() + " " + meetingId + " " + accountTime.getId());
 
                     if (accountTime.getStatus().equals(Status.CANCELED)) {
                         time.setText(zonedDateTime.toLocalTime().toString());
@@ -174,14 +171,14 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
             }
         }
 
-        InlineKeyboardButton confirm = InlineKeyboardButton.builder()
-                .text(Emojis.GREEN_SELECTED.getEmojiSpace() + "Подтверждаю")
-                .callbackData(UpcomingState.UPCOMING_CONFIRM_MEETING_TIME.name() + " " + meetingId).build();
-        InlineKeyboardButton cancel = InlineKeyboardButton.builder()
-                .text(Emojis.CANCEL_CIRCLE.getEmojiSpace() + "Не смогу прийти")
-                .callbackData(UpcomingState.UPCOMING_CANCEL_MEETING_TIME.name() + " " + meetingId).build();
+        InlineKeyboardButton confirm = defaultInlineButton(Emojis.GREEN_SELECTED.getEmojiSpace() + "Подтверждаю",
+                UpcomingState.UPCOMING_CONFIRM_MEETING_TIME.name() + " " + meetingId);
+
+        InlineKeyboardButton cancel = defaultInlineButton(Emojis.CANCEL_CIRCLE.getEmojiSpace() + "Не смогу прийти",
+                UpcomingState.UPCOMING_CANCEL_MEETING_TIME.name() + " " + meetingId);
+
         keyboard.add(List.of(cancel, confirm));
-        return InlineKeyboardMarkup.builder().keyboard(keyboard).build();
+        return buildInlineMarkup(keyboard);
     }
 
 

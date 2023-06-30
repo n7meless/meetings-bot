@@ -35,7 +35,7 @@ public class MainKeyboardMaker extends KeyboardMaker {
 
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         InlineKeyboardButton language =
-                defaultInlineButton(Emojis.RUSSIA.getEmojiSpace() +  "Выбрать язык",
+                defaultInlineButton(Emojis.RUSSIA.getEmojiSpace() +  "Выбрать язык (скоро)",
                         ProfileState.PROFILE_LANGUAGE_SELECT.name());
 
         keyboard.add(List.of(language));
