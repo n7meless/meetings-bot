@@ -44,6 +44,7 @@ public class EditEventHandler implements EventHandler {
         if (update.hasCallbackQuery()) {
             long userId = update.getCallbackQuery().getFrom().getId();
             String data = update.getCallbackQuery().getData();
+
             EditState editState;
 
             MeetingDto meetingDto = meetingDtoStateCache.get(userId);

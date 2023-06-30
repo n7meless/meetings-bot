@@ -14,5 +14,4 @@ public class AccountMeetingDto {
     private AccountDto account;
     private String comment;
     private Integer rate;
-
 }

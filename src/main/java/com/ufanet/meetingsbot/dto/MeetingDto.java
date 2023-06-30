@@ -3,12 +3,15 @@ package com.ufanet.meetingsbot.dto;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 
 @Setter
 @Getter
@@ -51,14 +54,14 @@ public class MeetingDto {
 
     public Set<AccountDto> getParticipants() {
         return this.getAccountMeetings().stream()
-                .map(AccountMeetingDto::getAccount).collect(Collectors.toSet());
+                .map(AccountMeetingDto::getAccount).collect(toSet());
     }
 
     public Set<AccountDto> getParticipantsWithoutOwner() {
         return this.getAccountMeetings().stream()
                 .map(AccountMeetingDto::getAccount)
                 .filter(account -> !Objects.equals(account.getId(), this.owner.getId()))
-                .collect(Collectors.toSet());
+                .collect(toSet());
     }
 
     public ZonedDateTime getDate() {
@@ -77,6 +80,14 @@ public class MeetingDto {
                 .flatMap(Collection::stream)
                 .map(meetingTime -> meetingTime.getTimeWithZoneOffset(zoneId))
                 .sorted().toList();
+    }
+
+    public Map<LocalDate, Set<ZonedDateTime>> getSortedDateMap() {
+        Map<LocalDate, Set<ZonedDateTime>> dateSetMap = this.getDates().stream()
+                .collect(toMap(MeetingDateDto::getDate,
+                        v -> v.getMeetingTimes().stream().map(MeetingTimeDto::getDateTime)
+                                .collect(toSet())));
+        return new TreeMap<>(dateSetMap);
     }
 
     public void removeDateIf(Predicate<? super MeetingDateDto> predicate) {

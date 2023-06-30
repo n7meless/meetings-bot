@@ -2,6 +2,7 @@ package com.ufanet.meetingsbot.handler.chat.impl;
 
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.ProfileState;
+import com.ufanet.meetingsbot.exceptions.NullCallbackException;
 import com.ufanet.meetingsbot.handler.chat.ChatHandler;
 import com.ufanet.meetingsbot.handler.event.EventHandler;
 import com.ufanet.meetingsbot.constants.type.ChatType;
@@ -54,7 +55,7 @@ public class PrivateChatHandler implements ChatHandler {
             long userId = message.getChatId();
             String data = query.getData();
 
-            if (data.isBlank()) return;
+            if (data.isBlank()) throw new NullCallbackException(query.getId());
 
             log.info("received callback query from user {}", userId);
             if (AccountState.startWithState(data)) {

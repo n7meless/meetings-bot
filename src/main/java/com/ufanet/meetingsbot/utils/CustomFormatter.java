@@ -1,6 +1,7 @@
 package com.ufanet.meetingsbot.utils;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 public class CustomFormatter {
     public static final DateTimeFormatter TIME_FORMATTER =
@@ -8,6 +9,8 @@ public class CustomFormatter {
 
     public static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    public static final DateTimeFormatter MONTH_YEAR =
+            DateTimeFormatter.ofPattern("LLLL yyyy", Locale.forLanguageTag("ru"));
 
     public static DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("dd.MM.yyyy H:mm");

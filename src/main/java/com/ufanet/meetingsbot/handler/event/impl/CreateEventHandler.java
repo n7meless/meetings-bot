@@ -9,6 +9,7 @@ import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.SubjectDto;
 import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
 import com.ufanet.meetingsbot.exceptions.GroupNotFoundException;
+import com.ufanet.meetingsbot.exceptions.NullCallbackException;
 import com.ufanet.meetingsbot.handler.event.EventHandler;
 import com.ufanet.meetingsbot.mapper.GroupMapper;
 import com.ufanet.meetingsbot.mapper.MeetingMapper;
@@ -67,8 +68,8 @@ public class CreateEventHandler implements EventHandler {
 
                 sendMessage(userId, meetingDto, message);
             } else {
-                String callback = update.getCallbackQuery().getData();
-                handleCallback(userId, meetingDto, callback);
+                String data = update.getCallbackQuery().getData();
+                handleCallback(userId, meetingDto, data);
             }
         }
     }
