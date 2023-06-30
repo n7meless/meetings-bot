@@ -9,6 +9,7 @@ import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.keyboard.MeetingKeyboardMaker;
 import com.ufanet.meetingsbot.mapper.AccountMapper;
 import com.ufanet.meetingsbot.model.Account;
+import com.ufanet.meetingsbot.model.AccountMeeting;
 import com.ufanet.meetingsbot.model.AccountTime;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.service.AccountService;
@@ -97,7 +98,7 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
         for (AccountTime accountTime : accountTimes) {
             Status status = accountTime.getStatus();
             Account account = accountTime.getAccount();
-            AccountDto accountDto = accountService.mapToDto(account);
+            AccountDto accountDto = accountMapper.map(account);
             switch (status) {
                 case AWAITING -> sb.append(messageUtils.generateAccountLink(accountDto,
                         Emojis.GREY_SELECTED.getEmojiSpace(), " (Опаздывает)"));
@@ -120,7 +121,8 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
                 message.subject(), message.questions(), message.duration(),
                 participants, message.address(), meetingDto.getState().name());
 
-        InlineKeyboardMarkup upcomingMarkup = meetingKeyboard.getMeetingUpcomingMarkup(userId, meetingDto, accountTime);
+        InlineKeyboardMarkup upcomingMarkup =
+                meetingKeyboard.getMeetingUpcomingMarkup(userId, meetingDto, accountTime);
 
         EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId, textMessage,
                 upcomingMarkup);
@@ -159,7 +161,8 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
         }
     }
 
-    public void sendEditMeetingAccountTimes(long userId, MeetingDto meetingDto, List<AccountTime> accountTimes) {
+    public void sendEditMeetingAccountTimes(long userId, MeetingDto meetingDto,
+                                            List<AccountTime> accountTimes) {
         Account account = accountService.getByUserId(userId).orElseThrow();
         String zoneId = account.getZoneId();
         List<ZonedDateTime> dates = meetingDto.getDatesWithZoneId(zoneId);
@@ -246,11 +249,12 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
         executeSendMessage(sendMessage);
     }
 
-    public void sendConfirmedComingMeeting(MeetingDto meetingDto) {
-        Set<AccountDto> accounts = meetingDto.getParticipants();
-        ZonedDateTime zonedDateTime = meetingDto.getDate();
-        for (AccountDto account : accounts) {
-            String zoneId = account.getTimeZone();
+    public void sendConfirmedComingMeeting(Meeting meeting) {
+        Set<AccountMeeting> accountMeetings = meeting.getAccountMeetings();
+        ZonedDateTime zonedDateTime = meeting.getDate();
+        for (AccountMeeting accountMeeting : accountMeetings) {
+            Account account = accountMeeting.getAccount();
+            String zoneId = account.getZoneId();
             ZonedDateTime accountZoneTime = zonedDateTime.withZoneSameInstant(ZoneId.of(zoneId));
             SendMessage sendMessage = messageUtils.generateSendMessageHtml(account.getId(),
                     localeMessageService.getMessage("upcoming.meeting.confirmed.coming",
@@ -264,13 +268,15 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
                 meetingService.getMeetingsByUserIdAndStateIn(userId, List.of(MeetingState.PASSED));
     }
 
-    public void sendCommentNotificationParticipants(MeetingDto meetingDto) {
-        Set<AccountDto> participants = meetingDto.getParticipants();
-        String ownerLink = messageUtils.generateAccountLink(meetingDto.getOwner(), "", "");
+    public void sendCommentNotificationParticipants(Meeting meeting) {
+        Set<AccountMeeting> accountMeetings = meeting.getAccountMeetings();
+        AccountDto accountDto = accountMapper.map(meeting.getOwner());
+        String ownerLink = messageUtils.generateAccountLink(accountDto, "", "");
         String text = localeMessageService.getMessage("upcoming.meeting.notification.comment", ownerLink);
 
         InlineKeyboardButton skip = meetingKeyboard.defaultInlineButton("Пропустить", " ");
-        for (AccountDto participant : participants) {
+        for (AccountMeeting accountMeeting : accountMeetings) {
+            Account participant = accountMeeting.getAccount();
             SendMessage sendMessage = messageUtils.generateSendMessageHtml(participant.getId(), text,
                     meetingKeyboard.buildInlineMarkup(List.of(List.of(skip))));
             executeSendMessage(sendMessage);
@@ -283,7 +289,8 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         for (AccountDto participant : participants) {
             InlineKeyboardButton button = meetingKeyboard.defaultInlineButton(participant.getFirstname(),
-                    UpcomingState.UPCOMING_SEND_NOTIFICATION_PARTICIPANT + " " + meetingDto.getId() + " " + participant.getId());
+                    UpcomingState.UPCOMING_SEND_NOTIFICATION_PARTICIPANT +
+                            " " + meetingDto.getId() + " " + participant.getId());
             keyboard.add(List.of(button));
         }
 

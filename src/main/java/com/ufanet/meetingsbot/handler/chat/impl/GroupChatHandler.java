@@ -1,6 +1,8 @@
-package com.ufanet.meetingsbot.handler.chat;
+package com.ufanet.meetingsbot.handler.chat.impl;
 
 import com.ufanet.meetingsbot.constants.type.ChatType;
+import com.ufanet.meetingsbot.handler.chat.ChatHandler;
+import com.ufanet.meetingsbot.mapper.GroupMapper;
 import com.ufanet.meetingsbot.model.Group;
 import com.ufanet.meetingsbot.service.GroupService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import java.util.Optional;
 public class GroupChatHandler implements ChatHandler {
 
     private final GroupService groupService;
+    private final GroupMapper groupMapper;
 
     @Override
     public void chatUpdate(Update update) {
@@ -26,18 +29,8 @@ public class GroupChatHandler implements ChatHandler {
             Chat chat = message.getChat();
             long chatId = chat.getId();
 
-            //TODO если удаляем то не сохранять
-            if (isChatCreated(message)) {
-                //TODO если в группе людей больше то отправляем сообщение
-//                groupReplyMessageHandler.sendWelcomeChatMessage(chatId);
-                User tgUser = message.getFrom();
-                Group group = groupService.saveTgChat(message.getChat());
-                groupService.saveMembers(group, List.of(tgUser));
-            }
-            if (hasMemberUpdate(message)) {
-                Optional<Group> optionalGroup = groupService.getByGroupId(chatId);
-                Group group = optionalGroup.orElseGet(() -> groupService.saveTgChat(chat));
-                handleMembers(group, message);
+            if (isChatCreated(message) || hasMemberUpdate(message)){
+                handleMembers(message);
             }
         }
     }
@@ -55,8 +48,13 @@ public class GroupChatHandler implements ChatHandler {
         return message.getLeftChatMember() != null || !message.getNewChatMembers().isEmpty();
     }
 
-    protected void handleMembers(Group group, Message message) {
+    protected void handleMembers(Message message) {
         List<User> newMembers = message.getNewChatMembers();
+        if (isChatCreated(message)) newMembers.add(message.getFrom());
+
+        Group group = groupService.getByGroupId(message.getChatId())
+                .orElseGet(() -> groupMapper.map(message.getChat()));
+
         User leftMember = message.getLeftChatMember();
         if (!newMembers.isEmpty()) {
             groupService.saveMembers(group, newMembers);

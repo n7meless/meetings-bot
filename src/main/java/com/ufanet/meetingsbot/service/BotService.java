@@ -4,9 +4,12 @@ import com.ufanet.meetingsbot.cache.impl.BotStateCache;
 import com.ufanet.meetingsbot.model.BotState;
 import com.ufanet.meetingsbot.repository.BotRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BotService {
@@ -16,6 +19,7 @@ public class BotService {
     public BotState getByUserId(long userId) {
         BotState cacheState = botStateCache.get(userId);
         if (cacheState == null) {
+            log.info("getting botState by user {} from db", userId);
             BotState botState = botRepository.findByAccountId(userId)
                     .orElseThrow();
             botStateCache.save(userId, botState);
@@ -27,14 +31,17 @@ public class BotService {
     public void setLastMsgFromUser(long userId, boolean fromUser) {
         BotState botState = getByUserId(userId);
         botState.setMsgFromUser(fromUser);
+        saveCache(userId, botState);
     }
 
     @Transactional
     public void save(BotState botState) {
+        log.info("saving botState {} into db", botState.getId());
         botRepository.save(botState);
     }
 
     public void saveCache(long userId, BotState botState) {
+        botState.setUpdatedDt(LocalDateTime.now());
         botStateCache.save(userId, botState);
     }
 

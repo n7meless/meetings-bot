@@ -1,39 +1,37 @@
 package com.ufanet.meetingsbot;
 
-import com.ufanet.meetingsbot.config.BotConfig;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
-
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @EnableCaching
 @SpringBootApplication
+@RequiredArgsConstructor
 public class MeetingsBotApplication {
+
     public static void main(String[] args) {
         SpringApplication.run(MeetingsBotApplication.class, args);
     }
 
     @Bean
-    public CommandLineRunner commandLineRunner(BotConfig botConfig) {
+    public CommandLineRunner commandLineRunner(@Value("${telegram.bot.authorizePath}") String authorizePath,
+                                               RestTemplate restTemplate) {
         return (c) -> {
-            String url = String.format("https://api.telegram.org/bot%s/setWebhook?url=%s",
-                    botConfig.getBotToken(), botConfig.getWebHookPath());
-            HttpClient httpClient = HttpClient.newHttpClient();
-            HttpRequest request = HttpRequest.newBuilder(URI.create(url)).GET().build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() == 200) {
-                log.info("bot '@{}' authorized successfully", botConfig.getUsername());
+            ResponseEntity<String> responseEntity = restTemplate.getForEntity(authorizePath, String.class);
+            if (responseEntity.getStatusCode() == HttpStatus.OK) {
+                log.info("bot authorized successfully");
             } else {
-                log.error("can not authorize bot '@{}' in telegram", botConfig.getUsername());
+                log.error("can not authorize bot in telegram");
+                throw new RuntimeException();
             }
         };
     }

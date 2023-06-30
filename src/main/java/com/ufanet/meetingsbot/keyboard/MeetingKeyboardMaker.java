@@ -74,23 +74,13 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
         return keyboard;
     }
 
-    public InlineKeyboardMarkup getGroupsInlineMarkup(MeetingDto meeting, List<Group> groups) {
-        long groupId = meeting.getGroupId();
+    public InlineKeyboardMarkup getGroupsInlineMarkup(List<Group> groups) {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
-
         for (Group group : groups) {
-            List<InlineKeyboardButton> button;
-            if (groupId == group.getId()) {
-                button = List.of(defaultInlineButton(Emojis.GREY_SELECTED.getEmojiSpace() +
-                        group.getTitle(), " "));
-            } else {
-                button = List.of(defaultInlineButton(group.getTitle(),
-                        String.valueOf(group.getId())));
-            }
-            keyboard.add(button);
-
+            InlineKeyboardButton button = defaultInlineButton(group.getTitle(),
+                    String.valueOf(group.getId()));
+            keyboard.add(List.of(button));
         }
-//        keyboard.add(defaultRowHelperInlineButtons(hasGroup));
         return InlineKeyboardMarkup.builder().keyboard(keyboard).build();
     }
 

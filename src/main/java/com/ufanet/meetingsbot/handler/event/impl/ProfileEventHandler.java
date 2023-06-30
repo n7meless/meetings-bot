@@ -1,8 +1,9 @@
-package com.ufanet.meetingsbot.handler.event;
+package com.ufanet.meetingsbot.handler.event.impl;
 
 import com.ufanet.meetingsbot.constants.BotCommands;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.exceptions.ValidationMeetingException;
+import com.ufanet.meetingsbot.handler.event.EventHandler;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Settings;
 import com.ufanet.meetingsbot.service.AccountService;

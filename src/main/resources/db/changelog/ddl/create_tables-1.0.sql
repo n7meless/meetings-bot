@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS bot_state
     user_id       BIGINT NOT NULL,
     msg_type      VARCHAR(20),
     msg_from_user BOOLEAN,
+    updated_dt    TIMESTAMP,
     msg_id        INT,
     state         VARCHAR(100),
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE

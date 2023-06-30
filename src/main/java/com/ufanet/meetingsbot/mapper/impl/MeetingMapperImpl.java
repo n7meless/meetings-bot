@@ -1,45 +1,26 @@
-package com.ufanet.meetingsbot.mapper;
+package com.ufanet.meetingsbot.mapper.impl;
 
-import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.dto.*;
+import com.ufanet.meetingsbot.mapper.*;
 import com.ufanet.meetingsbot.model.*;
-import com.ufanet.meetingsbot.service.GroupService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.ZonedDateTime;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static com.ufanet.meetingsbot.constants.ToggleButton.NEXT;
-import static com.ufanet.meetingsbot.constants.ToggleButton.PREV;
-
-@Component
+@Service
 @RequiredArgsConstructor
-public class MeetingConstructor {
+public class MeetingMapperImpl implements MeetingMapper {
     private final AccountMapper accountMapper;
-    private final GroupService groupService;
     private final AccountMeetingMapper accountMeetingMapper;
     private final SubjectMapper subjectMapper;
+    private final GroupMapper groupMapper;
 
-    public MeetingDto create(Account account) {
-        AccountDto accountDto = accountMapper.map(account);
-        MeetingDto meetingDto = MeetingDto.builder().owner(accountDto)
-                .createdDt(ZonedDateTime.now())
-                .updatedDt(ZonedDateTime.now())
-                .dates(new HashSet<>())
-                .state(MeetingState.GROUP_SELECT).build();
-
-        meetingDto.addParticipant(accountDto);
-        return meetingDto;
-    }
-
-    public MeetingDto mapToDto(Meeting meeting) {
+    public MeetingDto map(Meeting meeting) {
 
         AccountDto owner = accountMapper.map(meeting.getOwner());
         Set<MeetingDate> dates = meeting.getDates();
@@ -66,17 +47,18 @@ public class MeetingConstructor {
 
                 Set<AccountTime> accountTimes = time.getAccountTimes();
                 Set<AccountTimeDto> accountTimeDtos = new HashSet<>();
-                for (AccountTime accountTime : accountTimes) {
-                    Account account = accountTime.getAccount();
-                    AccountDto accountDto = accountMapper.map(account);
+                    for (AccountTime accountTime : accountTimes) {
+                        Account account = accountTime.getAccount();
+                        AccountDto accountDto = accountMapper.map(account);
 
-                    AccountTimeDto build = AccountTimeDto.builder()
-                            .id(accountTime.getId())
-                            .meetingTime(meetingTimeDto)
-                            .account(accountDto)
-                            .status(accountTime.getStatus())
-                            .build();
-                    accountTimeDtos.add(build);
+                        AccountTimeDto build = AccountTimeDto.builder()
+                                .id(accountTime.getId())
+                                .meetingTime(meetingTimeDto)
+                                .account(accountDto)
+                                .status(accountTime.getStatus())
+                                .build();
+
+                        accountTimeDtos.add(build);
                 }
                 meetingTimeDto.setAccountTimes(accountTimeDtos);
                 timeDtos.add(meetingTimeDto);
@@ -86,9 +68,10 @@ public class MeetingConstructor {
         }
 
         SubjectDto subjectDto = subjectMapper.map(meeting.getSubject());
+        GroupDto groupDto = groupMapper.map(meeting.getGroup());
         return MeetingDto.builder()
                 .id(meeting.getId())
-                .groupId(meeting.getGroup().getId())
+                .groupDto(groupDto)
                 .state(meeting.getState())
                 .dates(meetingDateDtos)
                 .owner(owner)
@@ -100,8 +83,8 @@ public class MeetingConstructor {
                 .build();
     }
 
-    public Meeting mapToEntity(MeetingDto meetingDto) {
-        Group group = groupService.getById(meetingDto.getGroupId()).orElseThrow();
+    public Meeting map(MeetingDto meetingDto) {
+        Group group = groupMapper.map(meetingDto.getGroupDto());
 
         AccountDto owner = meetingDto.getOwner();
         Account account = accountMapper.map(owner);
@@ -175,7 +158,7 @@ public class MeetingConstructor {
     public MeetingDto mapIfPresentOrElseGet(Optional<Meeting> meeting,
                                             Supplier<? extends MeetingDto> supplier) {
         if (meeting.isPresent()) {
-            return this.mapToDto(meeting.get());
+            return this.map(meeting.get());
         } else {
             return supplier.get();
         }
@@ -184,89 +167,9 @@ public class MeetingConstructor {
     public <X extends Throwable> MeetingDto mapIfPresentOrElseThrow(Optional<Meeting> meeting,
                                                                     Supplier<? extends X> exceptionSupplier) throws X {
         if (meeting.isPresent()) {
-            return this.mapToDto(meeting.get());
+            return this.map(meeting.get());
         } else {
             throw exceptionSupplier.get();
         }
-    }
-
-
-    public void updateParticipants(MeetingDto meetingDto, long participantId, Set<Account> accounts) {
-        Set<AccountMeetingDto> participantIds = meetingDto.getAccountMeetings();
-        boolean removed = participantIds.removeIf(t -> t.getAccount().getId() == participantId);
-        if (!removed) {
-            AccountDto accountDto = accounts.stream()
-                    .filter(account -> account.getId() == participantId)
-                    .map(accountMapper::map).findFirst().orElseThrow();
-            AccountMeetingDto accountMeetingDto = AccountMeetingDto.builder()
-                    .account(accountDto).build();
-            participantIds.add(accountMeetingDto);
-        }
-        meetingDto.setAccountMeetings(participantIds);
-    }
-
-    public void updateQuestion(MeetingDto meetingDto, String question) {
-        SubjectDto subjectDto = meetingDto.getSubjectDto();
-        Set<String> questions = subjectDto.getQuestions();
-        if (questions.contains(question)) {
-            questions.remove(question);
-        } else questions.add(question);
-        subjectDto.setQuestions(questions);
-        meetingDto.setSubjectDto(subjectDto);
-    }
-
-    public void updateDate(MeetingDto meetingDto, String callback) {
-        Set<MeetingDateDto> datesMap = meetingDto.getDates();
-        if (!callback.startsWith(NEXT.name()) && !callback.startsWith(PREV.name())) {
-            LocalDate localDate = LocalDate.parse(callback);
-            Optional<MeetingDateDto> meetingDateDto =
-                    datesMap.stream().filter(dto -> dto.getDate().equals(localDate)).findFirst();
-            if (meetingDateDto.isPresent()) {
-                datesMap.remove(meetingDateDto.get());
-            } else {
-                MeetingDateDto build = MeetingDateDto.builder()
-                        .date(localDate).build();
-                datesMap.add(build);
-            }
-        }
-        meetingDto.setDates(datesMap);
-    }
-
-    public void updateTime(MeetingDto meetingDto, String callback) {
-        ZonedDateTime znd = ZonedDateTime.parse(callback);
-        LocalDate localDate = znd.toLocalDate();
-        Set<MeetingDateDto> datesMap = meetingDto.getDates();
-        Optional<MeetingDateDto> meetingDateDto = datesMap.stream()
-                .filter(dto -> dto.getDate().isEqual(localDate)).findFirst();
-
-        if (meetingDateDto.isPresent()) {
-            MeetingDateDto dateDto = meetingDateDto.get();
-            Set<MeetingTimeDto> meetingTimes = dateDto.getMeetingTimes();
-            boolean removed = meetingTimes.removeIf(mtd -> mtd.getDateTime().isEqual(znd));
-            if (!removed) {
-                MeetingTimeDto meetingTimeDto = MeetingTimeDto.builder().dateTime(znd).build();
-                meetingTimes.add(meetingTimeDto);
-            }
-            dateDto.setMeetingTimes(meetingTimes);
-        }
-    }
-
-    public void updateAccountTimes(MeetingDto meetingDto, MeetingTime meetingTime) {
-        Set<MeetingDateDto> dates = meetingDto.getDates();
-        MeetingDate meetingDate = meetingTime.getMeetingDate();
-
-        dates.removeIf(dto -> !Objects.equals(dto.getId(), meetingDate.getId()));
-        MeetingDateDto dateDto = dates.stream().findFirst().orElseThrow();
-
-        Set<MeetingTimeDto> meetingTimes = dateDto.getMeetingTimes();
-        meetingTimes.removeIf(dto -> !Objects.equals(dto.getId(), meetingTime.getId()));
-        MeetingTimeDto meetingTimeDto = meetingTimes.stream().findFirst().orElseThrow();
-
-        Set<AccountTimeDto> accountTimeDtos = meetingTime.getAccountTimes().stream()
-                .map(at -> AccountTimeDto.builder().status(at.getStatus())
-                        .account(accountMapper.map(at.getAccount()))
-                        .id(at.getId()).meetingTime(meetingTimeDto).build())
-                .collect(Collectors.toSet());
-        meetingTimeDto.setAccountTimes(accountTimeDtos);
     }
 }

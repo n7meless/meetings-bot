@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -18,7 +19,7 @@ import java.util.function.Predicate;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity(name = "meeting_date")
-public class MeetingDate implements Comparable<MeetingDate> {
+public class MeetingDate implements Comparable<MeetingDate>, Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,7 +28,6 @@ public class MeetingDate implements Comparable<MeetingDate> {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "meeting_id", referencedColumnName = "id")
     private Meeting meeting;
-    @Fetch(FetchMode.JOIN)
     @OneToMany(mappedBy = "meetingDate", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<MeetingTime> meetingTimes;
 

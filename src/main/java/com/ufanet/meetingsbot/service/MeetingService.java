@@ -8,6 +8,7 @@ import com.ufanet.meetingsbot.repository.MeetingTimeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
@@ -22,13 +23,15 @@ public class MeetingService {
 
     @Transactional
     public Meeting save(Meeting meeting) {
+        log.info("saving meeting {} with owner {} into db", meeting.getId(), meeting.getOwner().getId());
         return meetingRepository.save(meeting);
     }
 
     @Transactional
     public void createMeeting(Meeting meeting) {
         Account owner = meeting.getOwner();
-        log.info("saving meeting by user {}", owner.getId());
+        log.info("creating meeting by user {}", owner.getId());
+
         Set<AccountMeeting> accountMeetings = meeting.getAccountMeetings()
                 .stream().filter((am) -> !Objects.equals(am.getAccount().getId(), meeting.getOwner().getId()))
                 .collect(Collectors.toSet());
@@ -50,34 +53,34 @@ public class MeetingService {
                 time.setAccountTimes(accountTimes);
             }
         }
-        meetingRepository.save(meeting);
+        save(meeting);
     }
 
     public Optional<Meeting> getLastChangedMeetingByOwnerId(long ownerId) {
+        log.info("getting meeting by user {} from db", ownerId);
         return meetingRepository.findByOwnerIdAndStateIsNotIn(ownerId,
                 List.of(MeetingState.CONFIRMED, MeetingState.PASSED, MeetingState.AWAITING, MeetingState.CANCELED));
     }
 
     @Transactional
-    public Optional<Meeting> getById(long meetingId) {
-        return meetingRepository.findById(meetingId);
-    }
-
-    @Transactional
     public void deleteById(Long meetingId) {
         if (meetingId == null) return;
+        log.info("deleting meeting {} from db", meetingId);
         meetingRepository.deleteById(meetingId);
     }
 
     public Optional<Meeting> getByMeetingId(long meetingId) {
+        log.info("getting meeting {} from db", meetingId);
         return meetingRepository.findById(meetingId);
     }
 
     public Optional<MeetingTime> getByMeetingIdAndConfirmedState(long meetingId) {
+        log.info("getting confirmed meeting {} from db", meetingId);
         return meetingTimeRepository.findByMeetingIdAndConfirmed(meetingId);
     }
 
     public List<Meeting> getMeetingsByUserIdAndStateIn(long userId, List<MeetingState> states) {
+        log.info("getting meetings by user {} with states {} from db", userId, states);
         return meetingRepository.findByAccountMeetingsIdOrOwnerIdAndStateIn(userId, states);
     }
 

@@ -7,6 +7,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
+import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Set;
@@ -19,25 +21,21 @@ import java.util.function.Predicate;
 @NoArgsConstructor
 @Entity(name = "meetings")
 @NamedEntityGraph(name = "meeting-entity-graph", attributeNodes = {
-//        @NamedAttributeNode(value = "dates", subgraph = "dates.meetingTime"),
-//        @NamedAttributeNode(value = "subject", subgraph = "subject.questions"),
+        @NamedAttributeNode(value = "dates", subgraph = "dates.meetingTimes"),
+        @NamedAttributeNode(value = "subject", subgraph = "subject.questions"),
         @NamedAttributeNode(value = "owner"),
-        @NamedAttributeNode(value = "subject"),
         @NamedAttributeNode(value = "group"),
         @NamedAttributeNode(value = "accountMeetings", subgraph = "accountMeetings.account")},
         subgraphs = {
-//                @NamedSubgraph(name = "subject.questions",
-//                        attributeNodes = @NamedAttributeNode(value = "questions")),
-//                @NamedSubgraph(name = "dates.meetingTime",
-//                        attributeNodes = @NamedAttributeNode(value = "meetingTimes",
-//                                subgraph = "meetingTimes.accountTimes")),
-//                @NamedSubgraph(name = "meetingTimes.accountTimes",
-//                        attributeNodes = @NamedAttributeNode(value = "accountTimes")),
+                @NamedSubgraph(name = "subject.questions",
+                        attributeNodes = @NamedAttributeNode(value = "questions")),
+                @NamedSubgraph(name = "dates.meetingTimes",
+                        attributeNodes = @NamedAttributeNode(value = "meetingTimes")),
                 @NamedSubgraph(name = "accountMeetings.account",
                         attributeNodes = @NamedAttributeNode(value = "account", subgraph = "account.settings")),
                 @NamedSubgraph(name = "account.settings", attributeNodes = @NamedAttributeNode(value = "settings"))
         })
-public class Meeting implements Comparable<Meeting> {
+public class Meeting implements Comparable<Meeting>, Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -56,10 +54,10 @@ public class Meeting implements Comparable<Meeting> {
 
     @Column(name = "created_dt")
     @CreationTimestamp
-    private ZonedDateTime createdDt;
+    private LocalDateTime createdDt;
 
     @Column(name = "updated_dt")
-    private ZonedDateTime updatedDt;
+    private LocalDateTime updatedDt;
 
     @OneToOne(mappedBy = "meeting", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Subject subject;
@@ -82,10 +80,6 @@ public class Meeting implements Comparable<Meeting> {
         if (o == null || getClass() != o.getClass()) return false;
         Meeting meeting = (Meeting) o;
         return Objects.equals(id, meeting.id);
-    }
-
-    public void removeDateIf(Predicate<? super MeetingDate> predicate) {
-        this.dates.removeIf(predicate);
     }
 
     @Override

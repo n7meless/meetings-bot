@@ -3,6 +3,7 @@ package com.ufanet.meetingsbot.dto;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Collection;
@@ -22,10 +23,10 @@ public class MeetingDto {
     private AccountDto owner;
     private Set<AccountMeetingDto> accountMeetings;
     private String address;
-    private long groupId;
+    private GroupDto groupDto;
     private SubjectDto subjectDto;
-    private ZonedDateTime createdDt;
-    private ZonedDateTime updatedDt;
+    private LocalDateTime createdDt;
+    private LocalDateTime updatedDt;
     private MeetingState state;
     private Set<MeetingDateDto> dates;
 

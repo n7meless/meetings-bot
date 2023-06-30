@@ -4,13 +4,15 @@ import com.ufanet.meetingsbot.constants.Status;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
+
 @Builder
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity(name = "user_times")
-public class AccountTime implements Comparable<AccountTime>{
+public class AccountTime implements Comparable<AccountTime>, Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

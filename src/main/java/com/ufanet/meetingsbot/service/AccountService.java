@@ -1,8 +1,6 @@
 package com.ufanet.meetingsbot.service;
 
-import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.state.AccountState;
-import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.mapper.AccountMapper;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.AccountTime;
@@ -26,53 +24,57 @@ import java.util.Set;
 
 @Slf4j
 @Service
-@CacheConfig(cacheNames = {"account", "group_members", "account_times"})
 @EnableCaching
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = {"account", "group_members", "account_times"})
 public class AccountService {
     private final AccountRepository accountRepository;
     private final AccountTimeRepository accountTimeRepository;
-    private final AccountMapper mapper;
 
     @Cacheable(key = "#userId", value = "account", unless = "#result == null")
     public Optional<Account> getByUserId(long userId) {
-        log.info("retrieving user {} from database", userId);
+        log.info("getting user {} from db", userId);
         return accountRepository.findById(userId);
     }
 
-    @Cacheable(cacheNames = "account_times", key = "#meetingId", unless = "#result == null")
     public List<AccountTime> getAccountTimesByMeetingId(long meetingId) {
+        log.info("getting account times with meeting {} from db", meetingId);
         return accountTimeRepository.findByMeetingId(meetingId);
     }
 
     @Transactional
     public void saveAccountTime(AccountTime accountTime) {
+        log.info("saving account time {} into db", accountTime.getId());
         accountTimeRepository.save(accountTime);
     }
 
     @Transactional
     public void saveAccountTimes(List<AccountTime> accountTimes) {
+        log.info("saving account times {} into db", accountTimes);
         accountTimeRepository.saveAll(accountTimes);
     }
 
     @Transactional
     @CacheEvict(key = "#account.id", value = "account")
     public void save(Account account) {
-        log.info("saving user {} to database", account.getId());
+        log.info("saving user {} into db", account.getId());
         accountRepository.save(account);
     }
 
     @Cacheable(key = "#groupId", value = "group_members")
     public Set<Account> getAccountsByGroupsIdAndIdNot(long groupId, long userId) {
+        log.info("getting members from group {} without member {}", groupId, userId);
         return accountRepository.findAccountByGroupsIdAndIdNot(groupId, userId);
     }
 
     public List<Account> getAccountsByMeetingId(long meetingId) {
+        log.info("getting accounts from meeting {}", meetingId);
         return accountRepository.findAccountsByMeetingId(meetingId);
     }
 
     @Transactional
     public Account saveTgUser(User user) {
+        log.info("saving telegram user {} into database", user.getId());
         Account account = Account.builder().id(user.getId())
                 .firstname(user.getFirstName())
                 .lastname(user.getLastName())
@@ -94,28 +96,12 @@ public class AccountService {
 
     @Transactional
     public void updateTgUser(Account account, User user) {
+        log.info("updating account from telegram user {}", user.getId());
         account.setLastname(user.getLastName());
         account.setFirstname(user.getFirstName());
         account.setUsername(user.getUserName());
         save(account);
     }
-
-    public AccountDto mapToDto(Account account) {
-        return mapper.map(account);
-    }
-
-    @Transactional
-    public void updateMeetingAccountTime(long accountTimeId, List<AccountTime> accountTimes) {
-        AccountTime accountTime = accountTimes.stream()
-                .filter(at -> at.getId() == accountTimeId).findFirst().orElseThrow();
-
-        Status status = accountTime.getStatus();
-
-        switch (status) {
-            case CONFIRMED, AWAITING -> accountTime.setStatus(Status.CANCELED);
-            case CANCELED -> accountTime.setStatus(Status.CONFIRMED);
-        }
-        saveAccountTime(accountTime);
-    }
-
 }
+
+

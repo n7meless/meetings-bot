@@ -3,14 +3,10 @@ package com.ufanet.meetingsbot.model;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.io.Serial;
 import java.io.Serializable;
-import java.time.ZonedDateTime;
-import java.util.HashSet;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -34,14 +30,14 @@ public class Account implements Serializable {
 
     private String username;
 
-    @Column(name = "created_dt")
     @CreationTimestamp
-    private ZonedDateTime createdDt;
+    @Column(name = "created_dt")
+    private LocalDateTime createdDt;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false, mappedBy = "account", cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, mappedBy = "account", cascade = CascadeType.ALL)
     private Settings settings;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false, mappedBy = "account", cascade =  CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, mappedBy = "account", cascade = CascadeType.ALL)
     private BotState botState;
 
     @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)

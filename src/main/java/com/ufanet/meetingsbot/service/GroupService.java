@@ -12,6 +12,7 @@ import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.User;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -24,6 +25,7 @@ public class GroupService {
     private final AccountService accountService;
 
     public Optional<Group> getByGroupId(long groupId) {
+        log.info("getting group {} from db", groupId);
         return groupRepository.findById(groupId);
     }
 
@@ -36,14 +38,19 @@ public class GroupService {
 
         return save(group);
     }
+    @Transactional
+    public void deleteById(long groupId){
+        groupRepository.deleteById(groupId);
+    }
 
     @Transactional
     public Group save(Group group) {
-        log.info("saving group {} and title '{}'", group.getId(), group.getTitle());
+        log.info("saving group {} and title '{}' into db", group.getId(), group.getTitle());
         return groupRepository.save(group);
     }
 
     public List<Group> getGroupsByMemberId(long userId) {
+        log.info("getting group by member {} from db", userId);
         return groupRepository.findGroupsByMemberId(userId);
     }
 
@@ -69,18 +76,19 @@ public class GroupService {
         groupRepository.save(group);
     }
 
-    public Optional<Group> getById(long groupId) {
-        return groupRepository.findById(groupId);
-    }
-
     @Transactional
     public void removeMember(Group group, User member) {
-//        Set<Account> accounts = group.getMembers();
-//        Account leftMember = accounts.stream()
-//                .filter((account) -> Objects.equals(account.getId(), member.getId()))
-//                .findFirst().orElseThrow();
-//        accounts.remove(leftMember);
-//        group.setMembers(accounts);
-//        save(group);
+        Set<Account> accounts = group.getMembers();
+        Account leftMember = accounts.stream()
+                .filter((account) -> Objects.equals(account.getId(), member.getId()))
+                .findFirst().orElseThrow();
+        accounts.remove(leftMember);
+
+        if (accounts.isEmpty()) {
+            deleteById(group.getId());
+        } else {
+            group.setMembers(accounts);
+            save(group);
+        }
     }
 }

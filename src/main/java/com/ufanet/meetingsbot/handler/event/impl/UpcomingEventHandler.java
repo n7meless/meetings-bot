@@ -1,4 +1,4 @@
-package com.ufanet.meetingsbot.handler.event;
+package com.ufanet.meetingsbot.handler.event.impl;
 
 import com.ufanet.meetingsbot.cache.impl.MeetingStateCache;
 import com.ufanet.meetingsbot.constants.Status;
@@ -6,12 +6,14 @@ import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.constants.state.UpcomingState;
 import com.ufanet.meetingsbot.dto.MeetingDto;
-import com.ufanet.meetingsbot.mapper.MeetingConstructor;
+import com.ufanet.meetingsbot.handler.event.EventHandler;
+import com.ufanet.meetingsbot.mapper.MeetingMapper;
 import com.ufanet.meetingsbot.model.AccountTime;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.model.MeetingTime;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.BotService;
+import com.ufanet.meetingsbot.service.MeetingConstructor;
 import com.ufanet.meetingsbot.service.MeetingService;
 import com.ufanet.meetingsbot.service.message.UpcomingReplyMessageService;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class UpcomingEventHandler implements EventHandler {
     private final BotService botService;
     private final MeetingStateCache meetingStateCache;
     private final MeetingConstructor meetingConstructor;
+    private final MeetingMapper meetingMapper;
 
     @Override
     public void handleUpdate(Update update) {
@@ -80,7 +83,7 @@ public class UpcomingEventHandler implements EventHandler {
 
         if (meetingDto == null) {
             Optional<Meeting> optionalMeeting = meetingService.getByMeetingId(meetingId);
-            meetingDto = meetingConstructor.mapIfPresentOrElseThrow(optionalMeeting,
+            meetingDto = meetingMapper.mapIfPresentOrElseThrow(optionalMeeting,
                     RuntimeException::new);
         }
 
@@ -111,9 +114,19 @@ public class UpcomingEventHandler implements EventHandler {
                         .stream().filter(accountTime -> accountTime.getAccount().getId() == userId).toList();
 
                 if (callback.length > 2) {
+
                     long accountTimeId = Long.parseLong(callback[2]);
-                    accountService.updateMeetingAccountTime(accountTimeId, accountTimes);
-//                    meetingStateCache.evict(userId);
+                    AccountTime accountTime = accountTimes.stream()
+                            .filter(at -> at.getId() == accountTimeId).findFirst().orElseThrow();
+
+                    Status status = accountTime.getStatus();
+
+                    switch (status) {
+                        case CONFIRMED, AWAITING -> accountTime.setStatus(Status.CANCELED);
+                        case CANCELED -> accountTime.setStatus(Status.CONFIRMED);
+                    }
+                    accountService.saveAccountTime(accountTime);
+                    meetingStateCache.evict(userId);
                 }
                 replyMessage.sendEditMeetingAccountTimes(userId, meetingDto, accountTimes);
             }
@@ -157,14 +170,14 @@ public class UpcomingEventHandler implements EventHandler {
             meetingConstructor.updateAccountTimes(meetingDto, meetingTime);
 
             meetingDto.setState(MeetingState.CONFIRMED);
-            Meeting meeting = meetingConstructor.mapToEntity(meetingDto);
+            Meeting meeting = meetingMapper.map(meetingDto);
             meetingService.save(meeting);
 
             replyMessage.sendReadyMeeting(meetingDto);
         } else if (allVoted) {
             //TODO save the meeting for statistics in future?
             meetingDto.setState(MeetingState.CANCELED);
-            Meeting meeting = meetingConstructor.mapToEntity(meetingDto);
+            Meeting meeting = meetingMapper.map(meetingDto);
             meetingService.save(meeting);
 
             replyMessage.sendCanceledMeetingByMatching(meetingDto);
@@ -178,7 +191,7 @@ public class UpcomingEventHandler implements EventHandler {
 
         if (meetingDto == null) {
             Optional<Meeting> optionalMeeting = meetingService.getByMeetingId(meetingId);
-            meetingDto = meetingConstructor.mapIfPresentOrElseThrow(optionalMeeting,
+            meetingDto = meetingMapper.mapIfPresentOrElseThrow(optionalMeeting,
                     RuntimeException::new);
         }
 

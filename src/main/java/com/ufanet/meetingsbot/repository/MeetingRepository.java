@@ -19,11 +19,10 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 //    @EntityGraph(type = EntityGraph.EntityGraphType.FETCH,
 //            attributePaths = {"subject", "subject.questions", "dates",
 //                    "dates.meetingTimes", "accountMeetings", "accountMeetings.account"})
-    @EntityGraph(value = "meeting-entity-graph", type = EntityGraph.EntityGraphType.FETCH,
-            attributePaths = "subject")
+    @EntityGraph(value = "meeting-entity-graph")
     Optional<Meeting> findById(Long aLong);
 
-    @EntityGraph(value = "meeting-entity-graph", type = EntityGraph.EntityGraphType.FETCH)
+    @EntityGraph(value = "meeting-entity-graph")
     Optional<Meeting> findByOwnerId(Long id);
 
     //            @Query(value = "SELECT md, mt, ut, m FROM meetings m " +
@@ -48,7 +47,8 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
             JOIN meeting_time mt ON mt.meetingDate.id = md.id AND m.state = 'CONFIRMED'
             AND DATEDIFF(MINUTE, ?1, mt.dateTime)  BETWEEN 0 AND ?2             
                             """)
-    @EntityGraph(attributePaths = {"dates", "dates.meetingTimes", "accountMeetings", "accountMeetings.account"})
+    @EntityGraph(attributePaths = {"dates", "dates.meetingTimes", "accountMeetings", "accountMeetings.account",
+            "accountMeetings.account.settings"})
     List<Meeting> findConfirmedMeetingsWhereDatesBetween(ZonedDateTime zonedDateTime, Integer endValue);
 
     @Query(value = """
@@ -59,4 +59,15 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
             """)
     @EntityGraph(attributePaths = {"accountMeetings", "accountMeetings.account"})
     List<Meeting> findConfirmedMeetingsWhereDatesLaterThan(ZonedDateTime zonedDateTime, Integer minutes);
+
+    @Query(value = """
+            FROM meetings m
+            JOIN subject sb ON m.id = sb.id
+            JOIN meeting_date md ON m.id = md.meeting.id
+            JOIN meeting_time mt ON mt.meetingDate.id = md.id AND m.state = 'CONFIRMED'
+            AND DATEDIFF(MINUTE, mt.dateTime, ?1)  > sb.duration 
+            """)
+    @EntityGraph(attributePaths = {"accountMeetings", "accountMeetings.account",
+            "accountMeetings.account.settings"})
+    List<Meeting> findConfirmedMeetingsWhereDatesLaterThanSubjectDuration(ZonedDateTime now);
 }

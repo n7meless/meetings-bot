@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @Builder
 @Getter
@@ -35,5 +36,7 @@ public class BotState implements Serializable {
 
     @Column(name = "msg_from_user")
     private boolean msgFromUser;
+
+    private LocalDateTime updatedDt;
 
 }

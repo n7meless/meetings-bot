@@ -1,7 +1,8 @@
-package com.ufanet.meetingsbot.handler.chat;
+package com.ufanet.meetingsbot.handler.chat.impl;
 
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.ProfileState;
+import com.ufanet.meetingsbot.handler.chat.ChatHandler;
 import com.ufanet.meetingsbot.handler.event.EventHandler;
 import com.ufanet.meetingsbot.constants.type.ChatType;
 import com.ufanet.meetingsbot.service.AccountService;
@@ -67,15 +68,15 @@ public class PrivateChatHandler implements ChatHandler {
         Message message = update.getMessage();
         String messageText = message.getText();
 
-        botService.setLastMsgFromUser(userId, true);
         //TODO вынести текст в пропертис
         AccountState pressedButton = fromValue(messageText);
-
         if (pressedButton != null) {
             botService.setState(userId, pressedButton.name());
         } else if (messageText.startsWith("/")) {
             handleCommand(userId, message);
         }
+        botService.setLastMsgFromUser(userId, true);
+
         handleBotState(userId, update);
     }
 

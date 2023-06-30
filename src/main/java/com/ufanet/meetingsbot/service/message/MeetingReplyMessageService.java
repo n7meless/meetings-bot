@@ -6,6 +6,7 @@ import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.keyboard.CalendarKeyboardMaker;
 import com.ufanet.meetingsbot.keyboard.MeetingKeyboardMaker;
+import com.ufanet.meetingsbot.mapper.AccountMapper;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Group;
 import com.ufanet.meetingsbot.service.AccountService;
@@ -31,21 +32,22 @@ public class MeetingReplyMessageService extends ReplyMessageService {
     private final CalendarKeyboardMaker calendarKeyboard;
     private final AccountService accountService;
     private final GroupService groupService;
+    private final AccountMapper accountMapper;
 
-    public void sendGroupMessage(long userId, MeetingDto meeting) {
+    public void sendGroupMessage(long userId) {
         List<Group> groups = groupService.getGroupsByMemberId(userId);
 
         EditMessageText editMessage =
                 messageUtils.generateEditMessageHtml(userId, localeMessageService.getMessage("create.meeting.group"),
-                        meetingKeyboard.getGroupsInlineMarkup(meeting, groups));
+                        meetingKeyboard.getGroupsInlineMarkup(groups));
 
         executeMessage(editMessage);
     }
 
     public void sendParticipantsMessage(long userId, MeetingDto meetingDto) {
         Set<AccountDto> members =
-                accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupId(), userId).stream()
-                        .map(accountService::mapToDto).collect(Collectors.toSet());
+                accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupDto().getId(), userId).stream()
+                        .map(accountMapper::map).collect(Collectors.toSet());
 
         Set<AccountDto> participantIds = meetingDto.getParticipants();
 

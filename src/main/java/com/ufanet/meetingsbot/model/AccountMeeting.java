@@ -2,13 +2,16 @@ package com.ufanet.meetingsbot.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.io.Serializable;
+
 @Builder
 @Setter
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity(name = "user_meetings")
-public class AccountMeeting{
+public class AccountMeeting implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

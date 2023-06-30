@@ -71,6 +71,7 @@ public abstract class ReplyMessageService {
         int messageId = botState.getMessageId();
         message.setMessageId(messageId);
         try {
+            log.info("send edit message to {} with messageId {}", chatId, messageId);
             telegramBot.execute(message);
         } catch (TelegramApiRequestException e) {
             log.warn(e.getMessage());
@@ -89,10 +90,10 @@ public abstract class ReplyMessageService {
             EditMessageReplyMarkup disableMarkup = EditMessageReplyMarkup.builder()
                     .chatId(userId).messageId(messageId)
                     .replyMarkup(null).build();
-            log.info("disable inline markup with message id {}", messageId);
+            log.info("disable inline markup to user {} with message id {}", userId, messageId);
             telegramBot.execute(disableMarkup);
         } catch (TelegramApiException e) {
-            log.warn("can not disable inline markup with message id {}", messageId);
+            log.warn("can not disable inline markup to user {} with message id {}", userId, messageId);
         }
     }
 

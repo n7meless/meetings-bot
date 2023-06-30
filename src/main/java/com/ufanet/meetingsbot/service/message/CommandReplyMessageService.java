@@ -45,5 +45,4 @@ public class CommandReplyMessageService extends ReplyMessageService {
                 "Здесь я вам помогу");
         telegramBot.safeExecute(helpMessage);
     }
-
 }

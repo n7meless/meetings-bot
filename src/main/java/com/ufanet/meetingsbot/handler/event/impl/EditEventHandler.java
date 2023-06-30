@@ -1,4 +1,4 @@
-package com.ufanet.meetingsbot.handler.event;
+package com.ufanet.meetingsbot.handler.event.impl;
 
 import com.ufanet.meetingsbot.cache.impl.MeetingStateCache;
 import com.ufanet.meetingsbot.constants.ToggleButton;
@@ -6,22 +6,22 @@ import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.EditState;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.SubjectDto;
-import com.ufanet.meetingsbot.mapper.MeetingConstructor;
+import com.ufanet.meetingsbot.handler.event.EventHandler;
+import com.ufanet.meetingsbot.mapper.MeetingMapper;
+import com.ufanet.meetingsbot.service.MeetingConstructor;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Meeting;
-import com.ufanet.meetingsbot.repository.AccountTimeRepository;
-import com.ufanet.meetingsbot.repository.MeetingTimeRepository;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.BotService;
 import com.ufanet.meetingsbot.service.MeetingService;
 import com.ufanet.meetingsbot.service.message.EditReplyMessageService;
-import com.ufanet.meetingsbot.service.message.MeetingReplyMessageService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.DateTimeException;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.Set;
@@ -31,14 +31,12 @@ import java.util.Set;
 @AllArgsConstructor
 public class EditEventHandler implements EventHandler {
     private final MeetingService meetingService;
-    private final MeetingReplyMessageService meetingReplyMessage;
     private final AccountService accountService;
-    private final MeetingTimeRepository meetingTimeRepository;
-    private final AccountTimeRepository accountTimeRepository;
     private final BotService botService;
     private final EditReplyMessageService editReplyMessage;
     private final MeetingStateCache meetingStateCache;
     private final MeetingConstructor meetingConstructor;
+    private final MeetingMapper meetingMapper;
 
     @Override
     public void handleUpdate(Update update) {
@@ -52,7 +50,7 @@ public class EditEventHandler implements EventHandler {
 
             if (meetingDto == null) {
                 Optional<Meeting> optionalMeeting = meetingService.getLastChangedMeetingByOwnerId(userId);
-                meetingDto = meetingConstructor.mapIfPresentOrElseThrow(optionalMeeting, RuntimeException::new);
+                meetingDto = meetingMapper.mapIfPresentOrElseThrow(optionalMeeting, RuntimeException::new);
             }
 
             if (data.startsWith(AccountState.EDIT.name())) {
@@ -76,7 +74,7 @@ public class EditEventHandler implements EventHandler {
 
             if (meetingDto == null) {
                 Optional<Meeting> optionalMeeting = meetingService.getLastChangedMeetingByOwnerId(userId);
-                meetingDto = meetingConstructor.mapIfPresentOrElseThrow(optionalMeeting, RuntimeException::new);
+                meetingDto = meetingMapper.mapIfPresentOrElseThrow(optionalMeeting, RuntimeException::new);
             }
 
             handleStep(userId, editState, meetingDto, message);
@@ -105,7 +103,9 @@ public class EditEventHandler implements EventHandler {
                 case EDIT_PARTICIPANT -> {
                     long participantId = Long.parseLong(callback);
                     Set<Account> accounts =
-                            accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupId(), meetingDto.getOwner().getId());
+                            accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupDto().getId(),
+                                    meetingDto.getOwner().getId());
+
                     meetingConstructor.updateParticipants(meetingDto, participantId, accounts);
                 }
                 case EDIT_SUBJECT -> {
@@ -123,12 +123,11 @@ public class EditEventHandler implements EventHandler {
                 case EDIT_TIME -> meetingConstructor.updateTime(meetingDto, callback);
                 case EDIT_ADDRESS -> meetingDto.setAddress(callback);
             }
-            meetingDto.setUpdatedDt(ZonedDateTime.now());
-
+            meetingDto.setUpdatedDt(LocalDateTime.now());
         } catch (NumberFormatException | DateTimeException ex) {
             log.debug("invalid value entered by user {}", userId);
         } finally {
-//            meetingService.saveOnCache(userId, meetingDto);
+            meetingStateCache.save(userId, meetingDto);
         }
     }
 

@@ -30,13 +30,14 @@ public class Group implements Serializable {
 
     private String description;
 
-    @Column(name = "created_dt")
     @CreationTimestamp
-    private ZonedDateTime createdDt;
+    @Column(name = "created_dt")
+    private LocalDateTime createdDt;
 
+    @Builder.Default
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "user_chat",
             joinColumns = @JoinColumn(name = "chat_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"))
-    private Set<Account> members;
+    private Set<Account> members = new HashSet<>();
 }

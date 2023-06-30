@@ -6,6 +6,7 @@ import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.MeetingTimeDto;
 import com.ufanet.meetingsbot.utils.CustomFormatter;
 import com.ufanet.meetingsbot.utils.Emojis;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
@@ -18,19 +19,22 @@ import java.util.stream.Collectors;
 public class CalendarKeyboardMaker extends KeyboardMaker {
     private final String[] dayOfWeek = {"Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"};
 
-    private final int startWorkDay = 9;
-    private final int endWorkDay = 18;
+    @Value("${telegram.meetings.startWorkDay}")
+    private int startWorkDay;
+    @Value("${telegram.meetings.endWorkDay}")
+    private int endWorkDay;
 
-    public List<List<InlineKeyboardButton>> getCalendarInlineMarkup(MeetingDto meetingDto, String callback, String zoneId) {
+    public List<List<InlineKeyboardButton>> getCalendarInlineMarkup(MeetingDto meetingDto,
+                                                                    String callback, String zoneId) {
+
         List<List<InlineKeyboardButton>> rowsInLine = new ArrayList<>();
-
         LocalDate date;
         //TODO поменять подход проверки
         try {
             if (callback.startsWith(ToggleButton.NEXT.name()) || callback.startsWith(ToggleButton.PREV.name())) {
-                date = LocalDate.parse(callback.substring(4), CustomFormatter.DATE_FORMATTER);
+                date = LocalDate.parse(callback.substring(4));
             } else {
-                date = LocalDate.parse(callback, CustomFormatter.DATE_FORMATTER);
+                date = LocalDate.parse(callback);
             }
         } catch (Exception e) {
             date = LocalDate.now(ZoneId.of(zoneId));
@@ -47,15 +51,12 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
 
         LocalDateTime currentDate = LocalDateTime.now(ZoneId.of(zoneId));
 
-        TreeMap<LocalDate, Set<ZonedDateTime>> datesMap = meetingDto.getDates()
+        Map<LocalDate, Set<ZonedDateTime>> datesMap = meetingDto.getDates()
                 .stream().collect(Collectors.toMap(MeetingDateDto::getDate,
                         v -> v.getMeetingTimes().stream().map(MeetingTimeDto::getDateTime)
-                                .collect(Collectors.toSet()),
-                        (v1, v2) -> {
-                            throw new RuntimeException(String.format("Duplicate key for values %s and %s", v1, v2));
-                        },
-                        TreeMap::new));
+                                .collect(Collectors.toSet())));
 
+        datesMap = new TreeMap<>(datesMap);
 
         for (Map.Entry<LocalDate, Set<ZonedDateTime>> entry : datesMap.entrySet()) {
             LocalDate localDate = entry.getKey();

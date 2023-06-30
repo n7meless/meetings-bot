@@ -21,7 +21,7 @@ public class RedisConfig {
     private String host;
     @Value("${spring.data.redis.port}")
     private int port;
-    @Value("${redis.ttl.user}")
+    @Value("${rediscache.ttl.user}")
     private long userTtl;
 
     @Bean
@@ -51,6 +51,9 @@ public class RedisConfig {
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .entryTtl(Duration.ofSeconds(userTtl)))
                 .withCacheConfiguration("group_members",
+                        RedisCacheConfiguration.defaultCacheConfig()
+                                .entryTtl(Duration.ofSeconds(10)))
+                .withCacheConfiguration("account_times",
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .entryTtl(Duration.ofSeconds(10)))
                 .withCacheConfiguration("bot_state",

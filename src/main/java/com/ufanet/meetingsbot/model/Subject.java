@@ -7,6 +7,7 @@ import lombok.*;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -16,7 +17,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity(name = "subject")
-public class Subject{
+public class Subject implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

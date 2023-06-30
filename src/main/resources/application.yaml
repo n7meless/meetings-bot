@@ -4,11 +4,6 @@ spring:
     password: root
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://localhost:5432/meetsdb
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: root
-    password: root
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
   jpa:
@@ -28,9 +23,17 @@ telegram:
   bot:
     username: ${TELEGRAM_USERNAME}
     token: ${TELEGRAM_TOKEN}
-    webHookPath: https://8c32-145-255-2-121.ngrok-free.app
-redis:
+    webHookPath: https://6df1-145-255-2-121.ngrok-free.app
+    authorizePath: https://api.telegram.org/bot${telegram.bot.token}/setWebhook?url=${telegram.bot.webHookPath}
+  meetings:
+    startWorkDay: 9
+    endWorkDay: 18
+rediscache:
   ttl:
     user: 60
+customcache:
+  ttl:
+    meeting: 30
+    bot: 30
 application:
   locale: ru-RU

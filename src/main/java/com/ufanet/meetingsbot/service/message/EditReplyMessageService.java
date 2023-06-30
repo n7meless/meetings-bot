@@ -7,6 +7,7 @@ import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.keyboard.CalendarKeyboardMaker;
 import com.ufanet.meetingsbot.keyboard.MeetingKeyboardMaker;
+import com.ufanet.meetingsbot.mapper.AccountMapper;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.utils.Emojis;
@@ -27,6 +28,7 @@ public class EditReplyMessageService extends ReplyMessageService {
     private final MeetingKeyboardMaker meetingKeyboard;
     private final CalendarKeyboardMaker calendarKeyboard;
     private final AccountService accountService;
+    private final AccountMapper accountMapper;
 
     private String getMainText(long userId, MeetingDto meetingDto) {
         Account account = accountService.getByUserId(userId).orElseThrow();
@@ -73,8 +75,8 @@ public class EditReplyMessageService extends ReplyMessageService {
         String secondText = messageUtils.buildText("\n\n", Emojis.BANGBANG.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.participants"));
 
-        Set<AccountDto> members = accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupId(), userId)
-                .stream().map(accountService::mapToDto).collect(Collectors.toSet());
+        Set<AccountDto> members = accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupDto().getId(), userId)
+                .stream().map(accountMapper::map).collect(Collectors.toSet());
 
         Set<AccountDto> participants = meetingDto.getParticipants();
         List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getParticipantsInlineButtons(members, participants);
@@ -106,9 +108,12 @@ public class EditReplyMessageService extends ReplyMessageService {
                 localeMessageService.getMessage("edit.meeting.duration"));
 
         List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getSubjectDurationInlineMarkup(meetingDto);
-        keyboard.add(List.of(meetingKeyboard.defaultInlineButton(Emojis.QUESTION.getEmojiSpace() + "Выбрать вопросы",
-                EditState.EDIT_QUESTION.name())));
-        keyboard.add(List.of(meetingKeyboard.getReadyInlineButton(AccountState.CREATE.name())));
+        InlineKeyboardButton btn1 = meetingKeyboard.defaultInlineButton(Emojis.QUESTION.getEmojiSpace() + "Выбрать вопросы",
+                EditState.EDIT_QUESTION.name());
+        InlineKeyboardButton btn2 = meetingKeyboard.getReadyInlineButton(AccountState.CREATE.name());
+
+        keyboard.add(List.of(btn1));
+        keyboard.add(List.of(btn2));
 
         EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId, firstText + secondText,
                 meetingKeyboard.buildInlineMarkup(keyboard));

@@ -20,15 +20,12 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class TelegramFacade {
 
     private final Map<ChatType, ChatHandler> chatHandlers = new HashMap<>();
-    private final AccountService accountService;
 
     @Autowired
-    public TelegramFacade(List<ChatHandler> chatHandlers, AccountService accountService) {
-        this.accountService = accountService;
+    public TelegramFacade(List<ChatHandler> chatHandlers) {
         chatHandlers.forEach(handler -> this.chatHandlers.put(handler.getChatType(), handler));
     }
 
