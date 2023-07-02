@@ -1,6 +1,6 @@
-package com.ufanet.meetingsbot.service.message;
+package com.ufanet.meetingsbot.message;
 
-import com.ufanet.meetingsbot.keyboard.MainKeyboardMaker;
+import com.ufanet.meetingsbot.message.keyboard.MainKeyboardMaker;
 import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,7 +13,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class CommandReplyMessageService extends ReplyMessageService {
+public class CommandReplyMessage extends ReplyMessage {
     private final MainKeyboardMaker mainKeyboard;
     private final String[] rainbowEmotions = {Emojis.RED_CIRCLE.getEmoji(), Emojis.ORANGE_CIRCLE.getEmoji(),
             Emojis.YELLOW_CIRCLE.getEmoji(), Emojis.GREEN_CIRCLE.getEmoji(), Emojis.BLUE_CIRCLE.getEmoji(),
@@ -31,18 +31,18 @@ public class CommandReplyMessageService extends ReplyMessageService {
         }
         markup.setKeyboard(List.of(buttons));
         aboutMessage.setReplyMarkup(markup);
-        telegramBot.safeExecute(aboutMessage);
+        executeSendMessage(aboutMessage);
     }
 
-    public void sendLanguageSelectMessage(long userId) {
+    public void sendStartMessage(long userId) {
         SendMessage startMessage = messageUtils.generateSendMessage(userId,
                 "Добро пожаловать!", mainKeyboard.getMainMenuKeyboard());
-        telegramBot.safeExecute(startMessage);
+        executeSendMessage(startMessage);
     }
 
     public void sendHelpMessage(long userId) {
         SendMessage helpMessage = messageUtils.generateSendMessage(userId,
                 "Здесь я вам помогу");
-        telegramBot.safeExecute(helpMessage);
+        executeSendMessage(helpMessage);
     }
 }

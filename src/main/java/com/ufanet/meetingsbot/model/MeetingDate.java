@@ -2,8 +2,6 @@ package com.ufanet.meetingsbot.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -13,14 +11,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
-@Builder
-@Getter
 @Setter
-@AllArgsConstructor
+@Getter
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 @Entity(name = "meeting_date")
 public class MeetingDate implements Comparable<MeetingDate>, Serializable {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

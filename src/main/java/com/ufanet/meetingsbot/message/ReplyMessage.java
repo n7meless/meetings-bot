@@ -1,15 +1,15 @@
-package com.ufanet.meetingsbot.service.message;
+package com.ufanet.meetingsbot.message;
 
 import com.ufanet.meetingsbot.constants.type.MessageType;
 import com.ufanet.meetingsbot.model.BotState;
 import com.ufanet.meetingsbot.service.BotService;
 import com.ufanet.meetingsbot.service.LocaleMessageService;
-import com.ufanet.meetingsbot.service.TelegramBot;
 import com.ufanet.meetingsbot.utils.MessageUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.telegram.telegrambots.bots.DefaultAbsSender;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
@@ -21,12 +21,12 @@ import java.util.concurrent.ExecutorService;
 
 @Slf4j
 @Service
-public abstract class ReplyMessageService {
-    protected TelegramBot telegramBot;
-    protected BotService botService;
+public abstract class ReplyMessage {
+    private BotService botService;
+    private ExecutorService executorService;
+    protected DefaultAbsSender absSender;
     protected MessageUtils messageUtils;
     protected LocaleMessageService localeMessageService;
-    protected ExecutorService executorService;
 
     void executeSendMessage(SendMessage message) {
         executorService.execute(() -> {
@@ -39,11 +39,15 @@ public abstract class ReplyMessageService {
             }
 
             log.info("send message to {}", chatId);
-            Message response = (Message) telegramBot.safeExecute(message);
-
-            if (response != null) {
-                botState.setMessageId(response.getMessageId());
+            try {
+                Message response = (Message) absSender.execute(message);
+                if (response != null) {
+                    botState.setMessageId(response.getMessageId());
+                }
+            } catch (TelegramApiException e) {
+                log.error("an occurred error when sending message to {}", chatId);
             }
+
             botState.setMsgFromUser(false);
             botState.setMessageType(MessageType.SEND_MESSAGE);
             botService.saveCache(chatId, botState);
@@ -72,7 +76,7 @@ public abstract class ReplyMessageService {
         message.setMessageId(messageId);
         try {
             log.info("send edit message to {} with messageId {}", chatId, messageId);
-            telegramBot.execute(message);
+            absSender.execute(message);
         } catch (TelegramApiRequestException e) {
             log.warn(e.getMessage());
             log.warn("message {} in chat {} has not been modified", messageId, chatId);
@@ -91,19 +95,19 @@ public abstract class ReplyMessageService {
                     .chatId(userId).messageId(messageId)
                     .replyMarkup(null).build();
             log.info("disable inline markup to user {} with message id {}", userId, messageId);
-            telegramBot.execute(disableMarkup);
+            absSender.execute(disableMarkup);
         } catch (TelegramApiException e) {
             log.warn("can not disable inline markup to user {} with message id {}", userId, messageId);
         }
     }
 
     @Autowired
-    private void setDependencies(@Lazy TelegramBot telegramBot, BotService botService,
+    private void setDependencies(@Lazy DefaultAbsSender absSender, BotService botService,
                                  MessageUtils messageUtils, LocaleMessageService localeMessageService,
                                  ExecutorService executorService) {
         this.executorService = executorService;
         this.botService = botService;
-        this.telegramBot = telegramBot;
+        this.absSender = absSender;
         this.messageUtils = messageUtils;
         this.localeMessageService = localeMessageService;
     }

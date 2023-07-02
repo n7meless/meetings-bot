@@ -3,23 +3,19 @@ package com.ufanet.meetingsbot.model;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-@Builder
 @Setter
 @Getter
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor
-@Entity(name = "chats")
+@AllArgsConstructor
+@Entity(name = "chat")
 @EqualsAndHashCode(of = {"id"})
 @EntityListeners({AuditingEntityListener.class})
 public class Group implements Serializable {
@@ -36,7 +32,7 @@ public class Group implements Serializable {
 
     @Builder.Default
     @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "user_chat",
+    @JoinTable(name = "user_chats",
             joinColumns = @JoinColumn(name = "chat_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"))
     private Set<Account> members = new HashSet<>();

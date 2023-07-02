@@ -4,22 +4,19 @@ import com.ufanet.meetingsbot.constants.state.MeetingState;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Predicate;
 
-@Builder
 @Setter
 @Getter
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor
-@Entity(name = "meetings")
+@AllArgsConstructor
+@Entity(name = "meeting")
 @NamedEntityGraph(name = "meeting-entity-graph", attributeNodes = {
         @NamedAttributeNode(value = "dates", subgraph = "dates.meetingTimes"),
         @NamedAttributeNode(value = "subject", subgraph = "subject.questions"),
@@ -30,7 +27,9 @@ import java.util.function.Predicate;
                 @NamedSubgraph(name = "subject.questions",
                         attributeNodes = @NamedAttributeNode(value = "questions")),
                 @NamedSubgraph(name = "dates.meetingTimes",
-                        attributeNodes = @NamedAttributeNode(value = "meetingTimes")),
+                        attributeNodes = @NamedAttributeNode(value = "meetingTimes", subgraph = "meetingTimes.accountTimes")),
+                @NamedSubgraph(name = "meetingTimes.accountTimes",
+                        attributeNodes = @NamedAttributeNode(value = "accountTimes")),
                 @NamedSubgraph(name = "accountMeetings.account",
                         attributeNodes = @NamedAttributeNode(value = "account", subgraph = "account.settings")),
                 @NamedSubgraph(name = "account.settings", attributeNodes = @NamedAttributeNode(value = "settings"))
@@ -65,7 +64,7 @@ public class Meeting implements Comparable<Meeting>, Serializable {
     @Enumerated(EnumType.STRING)
     private MeetingState state;
 
-    @OneToMany(mappedBy = "meeting",fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "meeting", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<MeetingDate> dates;
 
     public ZonedDateTime getDate() {

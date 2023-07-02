@@ -1,9 +1,9 @@
 package com.ufanet.meetingsbot.cache;
 
-public interface Cache<C> {
-    void save(Long userId, C state);
+public interface Cache<T> {
+    void save(Long userId, T state);
 
-    C get(Long userId);
+    T get(Long userId);
 
     void evict(Long userId);
 }

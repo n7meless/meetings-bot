@@ -5,11 +5,11 @@ import com.ufanet.meetingsbot.cache.impl.MeetingDtoStateCache;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.mapper.MeetingMapper;
+import com.ufanet.meetingsbot.message.UpcomingReplyMessage;
 import com.ufanet.meetingsbot.model.BotState;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.repository.BotRepository;
 import com.ufanet.meetingsbot.repository.MeetingRepository;
-import com.ufanet.meetingsbot.service.message.UpcomingReplyMessageService;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,12 +38,12 @@ public class CustomScheduler {
     private final MeetingRepository meetingRepository;
     private final BotStateCache botStateCache;
     private final BotRepository botRepository;
-    private final UpcomingReplyMessageService upcomingReplyMessage;
+    private final UpcomingReplyMessage upcomingReplyMessage;
     private final MeetingMapper meetingMapper;
 
-    @Value("${customcache.ttl.bot}")
+    @Value("${cache.custom.ttl.bot}")
     private long botTtl;
-    @Value("${customcache.ttl.meeting}")
+    @Value("${cache.custom.ttl.meeting}")
     private long meetingTtl;
 
     @Async

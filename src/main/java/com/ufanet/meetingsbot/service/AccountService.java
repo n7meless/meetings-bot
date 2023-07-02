@@ -1,7 +1,6 @@
 package com.ufanet.meetingsbot.service;
 
 import com.ufanet.meetingsbot.constants.state.AccountState;
-import com.ufanet.meetingsbot.mapper.AccountMapper;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.AccountTime;
 import com.ufanet.meetingsbot.model.BotState;

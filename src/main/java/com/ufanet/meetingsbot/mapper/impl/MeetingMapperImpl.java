@@ -47,18 +47,18 @@ public class MeetingMapperImpl implements MeetingMapper {
 
                 Set<AccountTime> accountTimes = time.getAccountTimes();
                 Set<AccountTimeDto> accountTimeDtos = new HashSet<>();
-                    for (AccountTime accountTime : accountTimes) {
-                        Account account = accountTime.getAccount();
-                        AccountDto accountDto = accountMapper.map(account);
+                for (AccountTime accountTime : accountTimes) {
+                    Account account = accountTime.getAccount();
+                    AccountDto accountDto = accountMapper.map(account);
 
-                        AccountTimeDto build = AccountTimeDto.builder()
-                                .id(accountTime.getId())
-                                .meetingTime(meetingTimeDto)
-                                .account(accountDto)
-                                .status(accountTime.getStatus())
-                                .build();
+                    AccountTimeDto build = AccountTimeDto.builder()
+                            .id(accountTime.getId())
+                            .meetingTime(meetingTimeDto)
+                            .account(accountDto)
+                            .status(accountTime.getStatus())
+                            .build();
 
-                        accountTimeDtos.add(build);
+                    accountTimeDtos.add(build);
                 }
                 meetingTimeDto.setAccountTimes(accountTimeDtos);
                 timeDtos.add(meetingTimeDto);
@@ -126,7 +126,8 @@ public class MeetingMapperImpl implements MeetingMapper {
             Set<MeetingTimeDto> meetingTimeDtos = dateDto.getMeetingTimes();
             Set<MeetingTime> meetingTimes = new HashSet<>();
             for (MeetingTimeDto meetingTimeDto : meetingTimeDtos) {
-                MeetingTime meetingTime = MeetingTime.builder().dateTime(meetingTimeDto.getDateTime())
+                MeetingTime meetingTime = MeetingTime.builder()
+                        .dateTime(meetingTimeDto.getDateTime())
                         .meetingDate(meetingDate).build();
 
                 Set<AccountTimeDto> accountTimesDtos = meetingTimeDto.getAccountTimes();

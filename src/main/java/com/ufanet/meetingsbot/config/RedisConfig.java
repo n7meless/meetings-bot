@@ -21,9 +21,9 @@ public class RedisConfig {
     private String host;
     @Value("${spring.data.redis.port}")
     private int port;
-    @Value("${rediscache.ttl.user}")
+    @Value("${cache.redis.ttl.user}")
     private long userTtl;
-    @Value("${rediscache.ttl.groupMembers}")
+    @Value("${cache.redis.ttl.groupMembers}")
     private long groupMembersTtl;
 
     @Bean

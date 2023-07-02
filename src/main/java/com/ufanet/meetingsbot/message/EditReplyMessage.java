@@ -1,13 +1,13 @@
-package com.ufanet.meetingsbot.service.message;
+package com.ufanet.meetingsbot.message;
 
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.EditState;
 import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
-import com.ufanet.meetingsbot.keyboard.CalendarKeyboardMaker;
-import com.ufanet.meetingsbot.keyboard.MeetingKeyboardMaker;
 import com.ufanet.meetingsbot.mapper.AccountMapper;
+import com.ufanet.meetingsbot.message.keyboard.CalendarKeyboardMaker;
+import com.ufanet.meetingsbot.message.keyboard.MeetingKeyboardMaker;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class EditReplyMessageService extends ReplyMessageService {
+public class EditReplyMessage extends ReplyMessage {
     private final MeetingKeyboardMaker meetingKeyboard;
     private final CalendarKeyboardMaker calendarKeyboard;
     private final AccountService accountService;

@@ -1,9 +1,7 @@
 package com.ufanet.meetingsbot.mapper;
 
 import com.ufanet.meetingsbot.dto.AccountMeetingDto;
-import com.ufanet.meetingsbot.dto.SubjectDto;
 import com.ufanet.meetingsbot.model.AccountMeeting;
-import com.ufanet.meetingsbot.model.Subject;
 import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;

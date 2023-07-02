@@ -1,9 +1,8 @@
-package com.ufanet.meetingsbot.keyboard;
+package com.ufanet.meetingsbot.message.keyboard;
 
 import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.dto.MeetingDateDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
-import com.ufanet.meetingsbot.dto.MeetingTimeDto;
 import com.ufanet.meetingsbot.utils.CustomFormatter;
 import com.ufanet.meetingsbot.utils.Emojis;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,7 +10,10 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.time.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -151,10 +153,14 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
 
     private void setMonthHeaderCalendar(List<List<InlineKeyboardButton>> rowsInLine, LocalDate chosenDate, String zoneId) {
         LocalDate currentDate = LocalDate.now(ZoneId.of(zoneId));
+        int month = currentDate.getMonthValue();
+        int year = currentDate.getYear();
 
+        int chosenMonth = chosenDate.getMonthValue();
+        int chosenYear = chosenDate.getYear();
         List<InlineKeyboardButton> buttons = new ArrayList<>();
 
-        if (currentDate.isBefore(chosenDate)) {
+        if (month < chosenMonth || year < chosenYear) {
             InlineKeyboardButton leftBtn =
                     defaultInlineButton("<<", ToggleButton.PREV.name() + chosenDate.minusMonths(1));
             buttons.add(leftBtn);

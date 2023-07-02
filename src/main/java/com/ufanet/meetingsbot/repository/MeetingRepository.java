@@ -35,14 +35,14 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
     @EntityGraph(value = "meeting-entity-graph")
     @Query(value = """
-            FROM meetings m
+            FROM meeting m
                         JOIN user_meetings um ON m.id=um.meeting.id 
                         AND um.account.id = ?1 AND m.state IN (?2)
             """)
-    List<Meeting> findByAccountMeetingsIdOrOwnerIdAndStateIn(Long accountId, List<MeetingState> states);
+    List<Meeting> findMeetingsByUserIdAndStateIn(Long accountId, List<MeetingState> states);
 
     @Query(value = """
-            FROM meetings m
+            FROM meeting m
             JOIN meeting_date md ON m.id = md.meeting.id
             JOIN meeting_time mt ON mt.meetingDate.id = md.id AND m.state = 'CONFIRMED'
             AND DATEDIFF(MINUTE, ?1, mt.dateTime)  BETWEEN 0 AND ?2             
@@ -52,7 +52,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     List<Meeting> findConfirmedMeetingsWhereDatesBetween(ZonedDateTime zonedDateTime, Integer endValue);
 
     @Query(value = """
-            FROM meetings m
+            FROM meeting m
             JOIN meeting_date md ON m.id = md.meeting.id
             JOIN meeting_time mt ON mt.meetingDate.id = md.id AND m.state = 'CONFIRMED'
             AND DATEDIFF(MINUTE, mt.dateTime, ?1)  > ?2  
@@ -61,7 +61,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     List<Meeting> findConfirmedMeetingsWhereDatesLaterThan(ZonedDateTime zonedDateTime, Integer minutes);
 
     @Query(value = """
-            FROM meetings m
+            FROM meeting m
             JOIN subject sb ON m.id = sb.id
             JOIN meeting_date md ON m.id = md.meeting.id
             JOIN meeting_time mt ON mt.meetingDate.id = md.id AND m.state = 'CONFIRMED'

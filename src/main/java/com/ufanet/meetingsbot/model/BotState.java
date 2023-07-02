@@ -7,14 +7,13 @@ import lombok.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-@Builder
-@Getter
 @Setter
-@Entity(name = "bot_state")
-@AllArgsConstructor
+@Getter
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
+@Entity(name = "bot_state")
 public class BotState implements Serializable {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

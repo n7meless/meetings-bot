@@ -1,4 +1,8 @@
+server:
+  port: 8888
 spring:
+  profiles:
+    active: polling
   datasource:
     username: root
     password: root
@@ -23,18 +27,19 @@ telegram:
   bot:
     username: ${TELEGRAM_USERNAME}
     token: ${TELEGRAM_TOKEN}
-    webHookPath: https://b3b7-145-255-2-121.ngrok-free.app
+    webHookPath: https://0fd9-2a00-1fa1-82f3-a006-3916-3d82-f1a1-ecc6.ngrok-free.app
     authorizePath: https://api.telegram.org/bot${telegram.bot.token}/setWebhook?url=${telegram.bot.webHookPath}
   meetings:
     startWorkDay: 9
     endWorkDay: 18
-rediscache:
-  ttl:
-    user: 60
-    groupMembers: 10
-customcache:
-  ttl:
-    meeting: 30
-    bot: 30
+cache:
+  redis:
+    ttl:
+      user: 30
+      groupMembers: 10
+  custom:
+    ttl:
+      meeting: 30
+      bot: 30
 application:
   locale: ru-RU

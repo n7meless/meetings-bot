@@ -10,5 +10,6 @@ public interface GroupMapper {
     Group map(GroupDto dto);
 
     GroupDto map(Group entity);
+
     Group map(Chat chat);
 }

@@ -1,11 +1,8 @@
-package com.ufanet.meetingsbot.config;
+package com.ufanet.meetingsbot.service;
 
-import com.ufanet.meetingsbot.handler.chat.ChatHandler;
 import com.ufanet.meetingsbot.constants.type.ChatType;
-import com.ufanet.meetingsbot.service.AccountService;
-import lombok.AccessLevel;
+import com.ufanet.meetingsbot.handler.chat.ChatHandler;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

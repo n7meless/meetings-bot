@@ -9,16 +9,18 @@ import com.ufanet.meetingsbot.dto.SubjectDto;
 import com.ufanet.meetingsbot.exceptions.MeetingNotFoundException;
 import com.ufanet.meetingsbot.handler.event.EventHandler;
 import com.ufanet.meetingsbot.mapper.MeetingMapper;
+import com.ufanet.meetingsbot.message.EditReplyMessage;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.BotService;
 import com.ufanet.meetingsbot.service.MeetingConstructor;
 import com.ufanet.meetingsbot.service.MeetingService;
-import com.ufanet.meetingsbot.service.message.EditReplyMessageService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.DateTimeException;
@@ -33,45 +35,15 @@ public class EditEventHandler implements EventHandler {
     private final MeetingService meetingService;
     private final AccountService accountService;
     private final BotService botService;
-    private final EditReplyMessageService editReplyMessage;
+    private final EditReplyMessage editReplyMessage;
     private final MeetingDtoStateCache meetingDtoStateCache;
     private final MeetingConstructor meetingConstructor;
     private final MeetingMapper meetingMapper;
 
     @Override
     public void handleUpdate(Update update) {
-
-        if (update.hasCallbackQuery()) {
-            long userId = update.getCallbackQuery().getFrom().getId();
-            String data = update.getCallbackQuery().getData();
-
-            EditState editState;
-
-            MeetingDto meetingDto = meetingDtoStateCache.get(userId);
-
-            if (meetingDto == null) {
-                Optional<Meeting> optionalMeeting = meetingService.getLastChangedMeetingByOwnerId(userId);
-                meetingDto = meetingMapper.mapIfPresentOrElseThrow(optionalMeeting,
-                        ()->new MeetingNotFoundException(userId));
-            }
-
-            if (data.startsWith(AccountState.EDIT.name())) {
-                editState = EditState.valueOf(data);
-                botService.setState(userId, data);
-            } else {
-                String state = botService.getState(userId);
-                editState = EditState.valueOf(state);
-                handleStep(userId, editState, meetingDto, data);
-            }
-            handleToggleButton(userId, editState, meetingDto, data);
-
-        } else if (update.hasMessage()) {
-            long userId = update.getMessage().getChatId();
-            String message = update.getMessage().getText();
-
-            String botState = botService.getState(userId);
-            EditState editState = EditState.valueOf(botState);
-
+        if (update.hasMessage() || update.hasCallbackQuery()) {
+            long userId = getUserIdFromUpdate(update);
             MeetingDto meetingDto = meetingDtoStateCache.get(userId);
 
             if (meetingDto == null) {
@@ -80,9 +52,44 @@ public class EditEventHandler implements EventHandler {
                         () -> new MeetingNotFoundException(userId));
             }
 
-            handleStep(userId, editState, meetingDto, message);
-            handleToggleButton(userId, editState, meetingDto, message);
+            if (update.hasMessage()) {
+                handleMessage(userId, update.getMessage(), meetingDto);
+            } else {
+                handleCallback(userId, update.getCallbackQuery(), meetingDto);
+            }
         }
+    }
+
+    private long getUserIdFromUpdate(Update update) {
+        if (update.hasMessage()) {
+            return update.getMessage().getChatId();
+        } else return update.getCallbackQuery().getFrom().getId();
+    }
+
+    private void handleCallback(long userId, CallbackQuery query, MeetingDto meetingDto) {
+        String data = query.getData();
+
+        EditState editState;
+
+        if (data.startsWith(AccountState.EDIT.name())) {
+            editState = EditState.valueOf(data);
+            botService.setState(userId, data);
+        } else {
+            String state = botService.getState(userId);
+            editState = EditState.valueOf(state);
+            handleStep(userId, editState, meetingDto, data);
+        }
+        handleToggleButton(userId, editState, meetingDto, data);
+    }
+
+    private void handleMessage(long userId, Message message, MeetingDto meetingDto) {
+        String messageText = message.getText();
+
+        String botState = botService.getState(userId);
+        EditState editState = EditState.valueOf(botState);
+
+        handleStep(userId, editState, meetingDto, messageText);
+        handleToggleButton(userId, editState, meetingDto, messageText);
     }
 
     protected void handleToggleButton(long userId, EditState state, MeetingDto meetingDto, String message) {

@@ -22,7 +22,8 @@ public enum AccountState {
         }
         return null;
     }
-    public static boolean startWithState(String text){
+
+    public static boolean startWithState(String text) {
         if (text.startsWith(CREATE.name())) {
             return true;
         } else if (text.startsWith(UPCOMING.name())) {

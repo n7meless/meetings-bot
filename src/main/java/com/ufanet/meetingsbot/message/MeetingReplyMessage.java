@@ -1,13 +1,13 @@
-package com.ufanet.meetingsbot.service.message;
+package com.ufanet.meetingsbot.message;
 
 import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
-import com.ufanet.meetingsbot.keyboard.CalendarKeyboardMaker;
-import com.ufanet.meetingsbot.keyboard.MeetingKeyboardMaker;
 import com.ufanet.meetingsbot.mapper.AccountMapper;
+import com.ufanet.meetingsbot.message.keyboard.CalendarKeyboardMaker;
+import com.ufanet.meetingsbot.message.keyboard.MeetingKeyboardMaker;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Group;
 import com.ufanet.meetingsbot.service.AccountService;
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class MeetingReplyMessageService extends ReplyMessageService {
+public class MeetingReplyMessage extends ReplyMessage {
     private final MeetingKeyboardMaker meetingKeyboard;
     private final CalendarKeyboardMaker calendarKeyboard;
     private final AccountService accountService;
@@ -53,7 +53,8 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         Set<AccountDto> participantIds = meetingDto.getParticipants();
 
         List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getParticipantsInlineButtons(members, participantIds);
-        keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(participantIds.size() > 1));
+        List<InlineKeyboardButton> helperRowButtons = meetingKeyboard.defaultRowHelperInlineButtons(participantIds.size() > 1);
+        keyboard.add(helperRowButtons);
 
         EditMessageText message = messageUtils.generateEditMessageHtml(userId,
                 localeMessageService.getMessage("create.meeting.participants"),
@@ -62,12 +63,9 @@ public class MeetingReplyMessageService extends ReplyMessageService {
         executeMessage(message);
     }
 
-    public void sendSubjectMessage(long userId, MeetingDto meetingDto) {
-        InlineKeyboardMarkup keyboardMarkup;
-        keyboardMarkup = InlineKeyboardMarkup.builder()
-                .keyboardRow(meetingKeyboard.defaultRowHelperInlineButtons(false))
-                .build();
-
+    public void sendSubjectMessage(long userId) {
+        List<InlineKeyboardButton> rowHelperButtons = meetingKeyboard.defaultRowHelperInlineButtons(false);
+        InlineKeyboardMarkup keyboardMarkup = meetingKeyboard.buildInlineMarkup(List.of(rowHelperButtons));
         EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId, "Укажите тему встречи",
                 keyboardMarkup);
         executeMessage(editMessage);
@@ -84,14 +82,13 @@ public class MeetingReplyMessageService extends ReplyMessageService {
     }
 
     public void sendDateMessage(long userId, MeetingDto meetingDto, String callback) {
-        Account account = accountService.getByUserId(userId).orElseThrow(()->new AccountNotFoundException(userId));
+        Account account = accountService.getByUserId(userId).orElseThrow(() -> new AccountNotFoundException(userId));
         String zoneId = account.getZoneId();
         List<List<InlineKeyboardButton>> keyboard = calendarKeyboard.getCalendarInlineMarkup(meetingDto, callback, zoneId);
         keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(meetingDto.getDates().size() > 0));
         EditMessageText message =
                 messageUtils.generateEditMessageHtml(userId, localeMessageService.getMessage("create.meeting.date"),
                         meetingKeyboard.buildInlineMarkup(keyboard));
-
         executeMessage(message);
     }
 
@@ -116,7 +113,7 @@ public class MeetingReplyMessageService extends ReplyMessageService {
 
         EditMessageText message = messageUtils.generateEditMessageHtml(userId,
                 localeMessageService.getMessage("create.meeting.address"),
-                InlineKeyboardMarkup.builder().keyboardRow(buttons).build());
+                meetingKeyboard.buildInlineMarkup(List.of(buttons)));
 
         executeMessage(message);
     }
@@ -147,15 +144,14 @@ public class MeetingReplyMessageService extends ReplyMessageService {
     }
 
 
-    public void sendAwaitingMessage(long userId, MeetingDto meetingDto) {
+    public void sendAwaitingMeetingMessage(long userId, MeetingDto meetingDto) {
         InlineKeyboardButton sendButton = InlineKeyboardButton.builder().callbackData(ToggleButton.SEND.name())
                 .text(Emojis.MESSAGE.getEmojiSpace() + "Отправить запрос участникам").build();
 
         List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getEditingInlineButtons();
         keyboard.add(0, List.of(sendButton));
 
-        InlineKeyboardMarkup keyboardMarkup = InlineKeyboardMarkup.builder()
-                .keyboard(keyboard).build();
+        InlineKeyboardMarkup keyboardMarkup = meetingKeyboard.buildInlineMarkup(keyboard);
 
         MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meetingDto);
 

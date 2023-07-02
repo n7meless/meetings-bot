@@ -1,15 +1,16 @@
-package com.ufanet.meetingsbot.service.message;
+package com.ufanet.meetingsbot.message;
 
 import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
+import com.ufanet.meetingsbot.constants.state.PreviousState;
 import com.ufanet.meetingsbot.constants.state.UpcomingState;
 import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.dto.AccountTimeDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
-import com.ufanet.meetingsbot.keyboard.MeetingKeyboardMaker;
 import com.ufanet.meetingsbot.mapper.AccountMapper;
+import com.ufanet.meetingsbot.message.keyboard.MeetingKeyboardMaker;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.AccountMeeting;
 import com.ufanet.meetingsbot.model.AccountTime;
@@ -32,7 +33,7 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class UpcomingReplyMessageService extends ReplyMessageService {
+public class UpcomingReplyMessage extends ReplyMessage {
     private final MeetingService meetingService;
     private final AccountService accountService;
     private final MeetingKeyboardMaker meetingKeyboard;
@@ -164,7 +165,7 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
     public void sendEditMeetingAccountTimes(long userId, MeetingDto meetingDto,
                                             List<AccountTime> accountTimes) {
         Account account = accountService.getByUserId(userId)
-                .orElseThrow(()->new AccountNotFoundException(userId));
+                .orElseThrow(() -> new AccountNotFoundException(userId));
         String zoneId = account.getZoneId();
         List<ZonedDateTime> dates = meetingDto.getDatesWithZoneId(zoneId);
         String timesText = messageUtils.generateDatesText(dates);
@@ -184,7 +185,7 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
 
     public void sendSelectedAwaitingMeeting(long userId, MeetingDto meetingDto) {
         Account account = accountService.getByUserId(userId)
-                .orElseThrow(()->new AccountNotFoundException(userId));
+                .orElseThrow(() -> new AccountNotFoundException(userId));
 
         MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meetingDto);
 
@@ -306,7 +307,7 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
 
     public void sendPingParticipant(long userId, long participantId, MeetingDto meetingDto) {
         Account account = accountService.getByUserId(participantId)
-                .orElseThrow(()-> new AccountNotFoundException(userId));
+                .orElseThrow(() -> new AccountNotFoundException(userId));
         AccountDto accountDto = accountMapper.map(account);
         String zoneId = accountDto.getTimeZone();
         ZonedDateTime zonedDateTime = meetingDto.getDateWithZoneId(zoneId);
@@ -345,5 +346,22 @@ public class UpcomingReplyMessageService extends ReplyMessageService {
 
             executeSendMessage(sendMessage);
         }
+    }
+
+    public void sendPreviousMeetingsList(long userId, List<MeetingDto> meetingDtoList) {
+        Account account = accountService.getByUserId(userId)
+                .orElseThrow(() -> new AccountNotFoundException(userId));
+        String zoneId = account.getZoneId();
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        for (MeetingDto meetingDto : meetingDtoList) {
+            ZonedDateTime dateWithZoneId = meetingDto.getDateWithZoneId(zoneId);
+            String formatted = CustomFormatter.DATE_TIME_WEEK_FORMATTER.format(dateWithZoneId);
+            InlineKeyboardButton btn = meetingKeyboard.defaultInlineButton(formatted,
+                    PreviousState.PREVIOUS_MEETINGS + " " + meetingDto.getId());
+            keyboard.add(List.of(btn));
+        }
+        SendMessage sendMessage = messageUtils.generateSendMessage(userId,
+                "Выберите из списка прошедшую встречу", meetingKeyboard.buildInlineMarkup(keyboard));
+        executeSendMessage(sendMessage);
     }
 }

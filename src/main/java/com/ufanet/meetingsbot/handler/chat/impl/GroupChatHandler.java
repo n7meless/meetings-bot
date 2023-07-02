@@ -13,7 +13,6 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
 
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -29,7 +28,7 @@ public class GroupChatHandler implements ChatHandler {
             Chat chat = message.getChat();
             long chatId = chat.getId();
 
-            if (isChatCreated(message) || hasMemberUpdate(message)){
+            if (isChatCreated(message) || hasMemberUpdate(message)) {
                 handleMembers(message);
             }
         }

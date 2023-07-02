@@ -2,7 +2,6 @@ package com.ufanet.meetingsbot.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serializable;
 import java.time.ZoneId;
@@ -10,14 +9,13 @@ import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Set;
 
-@Getter
 @Setter
+@Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity(name = "meeting_time")
 public class MeetingTime implements Comparable<MeetingTime>, Serializable {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

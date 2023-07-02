@@ -1,4 +1,4 @@
-package com.ufanet.meetingsbot.keyboard;
+package com.ufanet.meetingsbot.message.keyboard;
 
 import com.ufanet.meetingsbot.constants.Language;
 import com.ufanet.meetingsbot.constants.state.ProfileState;
@@ -28,14 +28,14 @@ public class MainKeyboardMaker extends KeyboardMaker {
         return buildInlineMarkup(List.of(List.of(russian, english)));
     }
 
-    public InlineKeyboardMarkup getProfileOptionsMarkup(){
+    public InlineKeyboardMarkup getProfileOptionsMarkup() {
         InlineKeyboardButton timeZone = InlineKeyboardButton.builder()
                 .text(Emojis.ALARM_CLOCK.getEmojiSpace() + "Выбрать часовой пояс")
                 .switchInlineQueryCurrentChat("").build();
 
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         InlineKeyboardButton language =
-                defaultInlineButton(Emojis.RUSSIA.getEmojiSpace() +  "Выбрать язык (скоро)",
+                defaultInlineButton(Emojis.RUSSIA.getEmojiSpace() + "Выбрать язык (скоро)",
                         ProfileState.PROFILE_LANGUAGE_SELECT.name());
 
         keyboard.add(List.of(language));

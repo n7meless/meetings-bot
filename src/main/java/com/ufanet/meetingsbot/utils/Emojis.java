@@ -42,7 +42,8 @@ public enum Emojis {
     public String getEmoji() {
         return emoji;
     }
-    public String getEmojiSpace(){
+
+    public String getEmojiSpace() {
         return emoji + " ";
     }
 }

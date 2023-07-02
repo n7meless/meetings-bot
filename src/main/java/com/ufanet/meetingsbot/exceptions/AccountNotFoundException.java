@@ -5,7 +5,8 @@ public class AccountNotFoundException extends CustomTelegramApiException {
     public AccountNotFoundException(Long chatId) {
         super(chatId, "Пользователь не найден!");
     }
-    public AccountNotFoundException(){
+
+    public AccountNotFoundException() {
         super("Пользователь не найден!");
     }
 }

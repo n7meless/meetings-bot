@@ -8,7 +8,6 @@ import com.ufanet.meetingsbot.repository.MeetingTimeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
@@ -76,12 +75,12 @@ public class MeetingService {
 
     public Optional<MeetingTime> getByMeetingIdAndConfirmedState(long meetingId) {
         log.info("getting confirmed meeting {} from db", meetingId);
-        return meetingTimeRepository.findByMeetingIdAndConfirmed(meetingId);
+        return meetingTimeRepository.findByMeetingIdAndAllInStatus(meetingId, Status.CONFIRMED);
     }
 
     public List<Meeting> getMeetingsByUserIdAndStateIn(long userId, List<MeetingState> states) {
         log.info("getting meetings by user {} with states {} from db", userId, states);
-        return meetingRepository.findByAccountMeetingsIdOrOwnerIdAndStateIn(userId, states);
+        return meetingRepository.findMeetingsByUserIdAndStateIn(userId, states);
     }
 
 }

@@ -3,10 +3,10 @@ package com.ufanet.meetingsbot.service;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.dto.*;
 import com.ufanet.meetingsbot.mapper.AccountMapper;
-import com.ufanet.meetingsbot.model.*;
-import com.ufanet.meetingsbot.service.GroupService;
+import com.ufanet.meetingsbot.model.Account;
+import com.ufanet.meetingsbot.model.MeetingDate;
+import com.ufanet.meetingsbot.model.MeetingTime;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -16,7 +16,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.ufanet.meetingsbot.constants.ToggleButton.NEXT;

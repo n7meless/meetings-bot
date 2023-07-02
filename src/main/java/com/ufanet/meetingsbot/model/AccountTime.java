@@ -6,14 +6,13 @@ import lombok.*;
 
 import java.io.Serializable;
 
-@Builder
-@Getter
 @Setter
+@Getter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity(name = "user_times")
-public class AccountTime implements Comparable<AccountTime>, Serializable {
-
+public class AccountTime implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,16 +21,11 @@ public class AccountTime implements Comparable<AccountTime>, Serializable {
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    @ManyToOne( fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private Account account;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "meeting_time_id", referencedColumnName = "id")
     private MeetingTime meetingTime;
-
-    @Override
-    public int compareTo(AccountTime accountTime) {
-        return this.getMeetingTime().compareTo(accountTime.getMeetingTime());
-    }
 }

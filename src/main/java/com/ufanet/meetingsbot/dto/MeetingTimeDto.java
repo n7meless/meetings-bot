@@ -1,16 +1,13 @@
 package com.ufanet.meetingsbot.dto;
 
-import com.ufanet.meetingsbot.model.AccountTime;
-import com.ufanet.meetingsbot.model.MeetingDate;
-import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+
 @Setter
 @Getter
 @Builder

@@ -2,13 +2,13 @@ package com.ufanet.meetingsbot.handler.chat.impl;
 
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.ProfileState;
+import com.ufanet.meetingsbot.constants.type.ChatType;
 import com.ufanet.meetingsbot.exceptions.NullCallbackException;
 import com.ufanet.meetingsbot.handler.chat.ChatHandler;
 import com.ufanet.meetingsbot.handler.event.EventHandler;
-import com.ufanet.meetingsbot.constants.type.ChatType;
+import com.ufanet.meetingsbot.message.CommandReplyMessage;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.BotService;
-import com.ufanet.meetingsbot.service.message.CommandReplyMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +30,7 @@ import static com.ufanet.meetingsbot.constants.state.AccountState.*;
 public class PrivateChatHandler implements ChatHandler {
     private final Map<AccountState, EventHandler> queryHandlers = new HashMap<>();
     private final AccountService accountService;
-    private final CommandReplyMessageService commandHandler;
+    private final CommandReplyMessage commandHandler;
     private final BotService botService;
 
     @Override
@@ -41,15 +41,13 @@ public class PrivateChatHandler implements ChatHandler {
 
             log.info("received message from user {}", userId);
             handleMessage(userId, update);
-        }
-        else if (update.hasInlineQuery()) {
+        } else if (update.hasInlineQuery()) {
             long userId = update.getInlineQuery().getFrom().getId();
 
             log.info("received inline query from user {}", userId);
             botService.setState(userId, ProfileState.PROFILE_TIMEZONE_SELECT.name());
             handleBotState(userId, update);
-        }
-        else if (update.hasCallbackQuery()) {
+        } else if (update.hasCallbackQuery()) {
             CallbackQuery query = update.getCallbackQuery();
             Message message = query.getMessage();
             long userId = message.getChatId();
@@ -70,15 +68,16 @@ public class PrivateChatHandler implements ChatHandler {
         String messageText = message.getText();
 
         //TODO вынести текст в пропертис
-        AccountState pressedButton = fromValue(messageText);
-        if (pressedButton != null) {
-            botService.setState(userId, pressedButton.name());
-        } else if (messageText.startsWith("/")) {
+        if (messageText.startsWith("/")) {
             handleCommand(userId, message);
+        } else {
+            botService.setLastMsgFromUser(userId, true);
+            AccountState pressedButton = fromValue(messageText);
+            if (pressedButton != null) {
+                botService.setState(userId, pressedButton.name());
+            }
+            handleBotState(userId, update);
         }
-        botService.setLastMsgFromUser(userId, true);
-
-        handleBotState(userId, update);
     }
 
     protected void handleCommand(long userId, Message message) {
@@ -90,7 +89,7 @@ public class PrivateChatHandler implements ChatHandler {
                 accountService.getByUserId(chatId)
                         .ifPresentOrElse((account) -> accountService.updateTgUser(account, user),
                                 () -> accountService.saveTgUser(user));
-                commandHandler.sendLanguageSelectMessage(userId);
+                commandHandler.sendStartMessage(userId);
             }
             case "/help" -> commandHandler.sendHelpMessage(userId);
             case "/about" -> commandHandler.sendAboutMessage(userId);

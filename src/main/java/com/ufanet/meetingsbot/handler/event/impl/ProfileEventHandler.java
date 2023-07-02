@@ -5,10 +5,10 @@ import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
 import com.ufanet.meetingsbot.exceptions.ValidationMeetingException;
 import com.ufanet.meetingsbot.handler.event.EventHandler;
+import com.ufanet.meetingsbot.message.ProfileReplyMessage;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.Settings;
 import com.ufanet.meetingsbot.service.AccountService;
-import com.ufanet.meetingsbot.service.message.ProfileReplyMessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
@@ -22,7 +22,7 @@ import static com.ufanet.meetingsbot.constants.state.AccountState.PROFILE;
 @Service
 @RequiredArgsConstructor
 public class ProfileEventHandler implements EventHandler {
-    private final ProfileReplyMessageService profileReplyMessage;
+    private final ProfileReplyMessage profileReplyMessage;
     private final AccountService accountService;
 
     @Override
@@ -47,7 +47,7 @@ public class ProfileEventHandler implements EventHandler {
             if (timeZone.startsWith("UTC")) {
                 System.out.println(timeZone);
                 Account account = accountService.getByUserId(userId)
-                        .orElseThrow(()->new AccountNotFoundException(userId));
+                        .orElseThrow(() -> new AccountNotFoundException(userId));
                 Settings settings = account.getSettings();
                 settings.setTimeZone(timeZone);
                 account.setSettings(settings);

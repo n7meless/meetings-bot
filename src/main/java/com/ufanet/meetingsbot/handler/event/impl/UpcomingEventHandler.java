@@ -12,6 +12,7 @@ import com.ufanet.meetingsbot.exceptions.MeetingNotFoundException;
 import com.ufanet.meetingsbot.handler.event.EventHandler;
 import com.ufanet.meetingsbot.mapper.AccountTimeMapper;
 import com.ufanet.meetingsbot.mapper.MeetingMapper;
+import com.ufanet.meetingsbot.message.UpcomingReplyMessage;
 import com.ufanet.meetingsbot.model.AccountTime;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.model.MeetingTime;
@@ -19,7 +20,6 @@ import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.BotService;
 import com.ufanet.meetingsbot.service.MeetingConstructor;
 import com.ufanet.meetingsbot.service.MeetingService;
-import com.ufanet.meetingsbot.service.message.UpcomingReplyMessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -32,7 +32,7 @@ import static com.ufanet.meetingsbot.constants.state.AccountState.UPCOMING;
 @Component
 @RequiredArgsConstructor
 public class UpcomingEventHandler implements EventHandler {
-    private final UpcomingReplyMessageService replyMessage;
+    private final UpcomingReplyMessage replyMessage;
     private final MeetingService meetingService;
     private final AccountService accountService;
     private final BotService botService;
@@ -51,7 +51,7 @@ public class UpcomingEventHandler implements EventHandler {
                 handleCallback(userId, UpcomingState.UPCOMING_MEETINGS.name());
             }
         } else if (update.hasCallbackQuery()) {
-            long userId = update.getCallbackQuery().getMessage().getChatId();
+            long userId = update.getCallbackQuery().getFrom().getId();
             String callback = update.getCallbackQuery().getData();
             handleCallback(userId, callback);
         }
@@ -68,6 +68,7 @@ public class UpcomingEventHandler implements EventHandler {
             handleCallbackWithParams(userId, split, state);
         } else {
             switch (state) {
+                //TODO map to dto
                 case UPCOMING_MEETINGS -> {
                     List<Meeting> meetings = meetingService.getMeetingsByUserIdAndStateIn(userId,
                             List.of(MeetingState.AWAITING, MeetingState.CONFIRMED));
@@ -139,6 +140,7 @@ public class UpcomingEventHandler implements EventHandler {
                 replyMessage.sendEditMeetingAccountTimes(userId, meetingDto, accountTimes);
             }
             case UPCOMING_CANCEL_MEETING_TIME -> {
+                //TODO map and save
                 meetingDto.getDates().clear();
                 replyMessage.sendCanceledAccountTimeMessage(meetingDto);
                 meetingDtoStateCache.evict(userId);

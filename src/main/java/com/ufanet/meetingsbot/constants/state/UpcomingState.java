@@ -1,6 +1,6 @@
 package com.ufanet.meetingsbot.constants.state;
 
-public enum UpcomingState{
+public enum UpcomingState {
     UPCOMING_MEETINGS,
     UPCOMING_SELECTED_MEETING,
     UPCOMING_EDIT_MEETING_TIME,
@@ -14,7 +14,7 @@ public enum UpcomingState{
     UPCOMING_SELECT_PARTICIPANT,
     UPCOMING_SEND_NOTIFICATION_PARTICIPANT;
 
-    public static UpcomingState typeOf(String type){
+    public static UpcomingState typeOf(String type) {
         for (UpcomingState value : UpcomingState.values()) {
             if (value.name().equals(type)) return value;
         }

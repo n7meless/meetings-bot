@@ -38,8 +38,9 @@ public class GroupService {
 
         return save(group);
     }
+
     @Transactional
-    public void deleteById(long groupId){
+    public void deleteById(long groupId) {
         groupRepository.deleteById(groupId);
     }
 
