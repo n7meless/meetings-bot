@@ -39,7 +39,7 @@ cache:
       groupMembers: 10
   custom:
     ttl:
-      meeting: 30
+      meeting: 10
       bot: 30
 application:
   locale: ru-RU
