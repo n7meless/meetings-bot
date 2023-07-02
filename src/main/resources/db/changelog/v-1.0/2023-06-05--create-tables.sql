@@ -1,6 +1,6 @@
 --liquibase formatted sql
 
---changeset aidar:1
+--changeset aidar:create_users_table
 CREATE TABLE IF NOT EXISTS users
 (
     id         BIGSERIAL PRIMARY KEY,
@@ -9,31 +9,34 @@ CREATE TABLE IF NOT EXISTS users
     last_name  VARCHAR(64),
     created_dt TIMESTAMP DEFAULT now()
 );
+--rollback drop table users;
 
---changeset aidar:2
-CREATE TABLE IF NOT EXISTS chats
+--changeset aidar:create_chats_table
+CREATE TABLE IF NOT EXISTS chat
 (
     id          BIGSERIAL PRIMARY KEY,
-    title       VARCHAR(64),
+    title       VARCHAR(64) NOT NULL,
     description VARCHAR(255),
     created_dt  TIMESTAMP DEFAULT now()
 );
+--rollback drop table chat;
 
---changeset aidar:3
-CREATE TABLE IF NOT EXISTS meetings
+--changeset aidar:create_meetings_table
+CREATE TABLE IF NOT EXISTS meeting
 (
     id         BIGSERIAL PRIMARY KEY,
     owner_id   BIGINT NOT NULL,
     address    VARCHAR(255),
     group_id   BIGINT,
     created_dt TIMESTAMP DEFAULT now(),
-    updated_dt TIMESTAMP DEFAULT now(),
+    updated_dt TIMESTAMP,
     state      VARCHAR(100),
-    FOREIGN KEY (group_id) REFERENCES chats (id),
+    FOREIGN KEY (group_id) REFERENCES chat (id),
     FOREIGN KEY (owner_id) REFERENCES users (id)
 );
+--rollback drop table meeting;
 
---changeset aidar:4
+--changeset aidar:create_user_meetings_table
 CREATE TABLE IF NOT EXISTS user_meetings
 (
     id         BIGSERIAL PRIMARY KEY,
@@ -42,35 +45,42 @@ CREATE TABLE IF NOT EXISTS user_meetings
     comment    VARCHAR(255),
     rate       INT,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-    FOREIGN KEY (meeting_id) REFERENCES meetings (id) ON DELETE CASCADE
+    FOREIGN KEY (meeting_id) REFERENCES meeting (id) ON DELETE CASCADE
 );
+--rollback drop table user_meetings;
 
---changeset aidar:5
+--changeset aidar:create_subject_table
 CREATE TABLE IF NOT EXISTS subject
 (
     id         BIGSERIAL PRIMARY KEY,
-    title      VARCHAR(100),
+    title      VARCHAR(100) NOT NULL,
     duration   INT,
     meeting_id BIGINT NOT NULL,
-    FOREIGN KEY (meeting_id) REFERENCES meetings (id) ON DELETE CASCADE
+    FOREIGN KEY (meeting_id) REFERENCES meeting (id) ON DELETE CASCADE
 );
---changeset aidar:6
-CREATE TABLE IF NOT EXISTS questions
+--rollback drop table subject;
+
+--changeset aidar:create_questions_table
+CREATE TABLE IF NOT EXISTS question
 (
     id         BIGSERIAL PRIMARY KEY,
     title      VARCHAR(150) NOT NULL,
     subject_id BIGINT       NOT NULL,
     FOREIGN KEY (subject_id) REFERENCES subject (id) ON DELETE CASCADE
 );
---changeset aidar:7
-CREATE TABLE IF NOT EXISTS user_chat
+--rollback drop table question;
+
+--changeset aidar:create_user_chats_table
+CREATE TABLE IF NOT EXISTS user_chats
 (
     user_id BIGINT NOT NULL,
     chat_id BIGINT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-    FOREIGN KEY (chat_id) REFERENCES chats (id) ON DELETE CASCADE
+    FOREIGN KEY (chat_id) REFERENCES chat (id) ON DELETE CASCADE
 );
---changeset aidar:8
+--rollback drop table user_chats;
+
+--changeset aidar:create_user_settings_table
 CREATE TABLE IF NOT EXISTS user_settings
 (
     id        BIGSERIAL PRIMARY KEY,
@@ -79,15 +89,19 @@ CREATE TABLE IF NOT EXISTS user_settings
     language  VARCHAR(5)  DEFAULT 'ru-RU',
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
---changeset aidar:9
+--rollback drop table user_settings;
+
+--changeset aidar:create_meeting_date_table
 CREATE TABLE IF NOT EXISTS meeting_date
 (
     id         BIGSERIAL PRIMARY KEY,
     meeting_id BIGINT NOT NULL,
     date       DATE   NOT NULL,
-    FOREIGN KEY (meeting_id) REFERENCES meetings (id) ON DELETE CASCADE
+    FOREIGN KEY (meeting_id) REFERENCES meeting (id) ON DELETE CASCADE
 );
---changeset aidar:10
+--rollback drop table meeting_date;
+
+--changeset aidar:create_meeting_time_table
 CREATE TABLE IF NOT EXISTS meeting_time
 (
     id        BIGSERIAL PRIMARY KEY,
@@ -95,7 +109,9 @@ CREATE TABLE IF NOT EXISTS meeting_time
     date_id   BIGINT    NOT NULL,
     FOREIGN KEY (date_id) REFERENCES meeting_date (id) ON DELETE CASCADE
 );
---changeset aidar:11
+--rollback drop table meeting_time;
+
+--changeset aidar:create_user_times_table
 CREATE TABLE IF NOT EXISTS user_times
 (
     id              BIGSERIAL PRIMARY KEY,
@@ -105,15 +121,19 @@ CREATE TABLE IF NOT EXISTS user_times
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (meeting_time_id) REFERENCES meeting_time (id) ON DELETE CASCADE
 );
---changeset aidar:12
+--rollback drop table user_times;
+
+--changeset aidar:create_bot_state_table
 CREATE TABLE IF NOT EXISTS bot_state
 (
     id            BIGSERIAL PRIMARY KEY,
     user_id       BIGINT NOT NULL,
-    msg_type      VARCHAR(20),
+    msg_type      VARCHAR(30),
     msg_from_user BOOLEAN,
     updated_dt    TIMESTAMP,
     msg_id        INT,
     state         VARCHAR(100),
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
+--rollback drop table bot_state;
+
