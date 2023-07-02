@@ -1,5 +1,6 @@
 package com.ufanet.meetingsbot.service;
 
+import com.ufanet.meetingsbot.cache.impl.MeetingStateCache;
 import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.model.*;
@@ -19,11 +20,25 @@ import java.util.stream.Collectors;
 public class MeetingService {
     private final MeetingRepository meetingRepository;
     private final MeetingTimeRepository meetingTimeRepository;
+    private final MeetingStateCache meetingStateCache;
 
     @Transactional
-    public Meeting save(Meeting meeting) {
+    public void save(Meeting meeting) {
         log.info("saving meeting {} with owner {} into db", meeting.getId(), meeting.getOwner().getId());
-        return meetingRepository.save(meeting);
+        meetingRepository.save(meeting);
+    }
+
+    public void saveOnCache(Long userId, Meeting meeting) {
+        meetingStateCache.save(userId, meeting);
+    }
+
+    public Optional<Meeting> getFromCache(Long userId) {
+        Meeting meeting = meetingStateCache.get(userId);
+        return Optional.ofNullable(meeting);
+    }
+
+    public void clearCache(Long userId) {
+        meetingStateCache.evict(userId);
     }
 
     @Transactional

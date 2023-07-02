@@ -40,7 +40,7 @@ public abstract class ReplyMessage {
 
             log.info("send message to {}", chatId);
             try {
-                Message response = (Message) absSender.execute(message);
+                Message response = absSender.execute(message);
                 if (response != null) {
                     botState.setMessageId(response.getMessageId());
                 }

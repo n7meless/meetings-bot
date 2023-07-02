@@ -7,7 +7,6 @@ import com.ufanet.meetingsbot.model.Group;
 import com.ufanet.meetingsbot.service.GroupService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
@@ -25,8 +24,6 @@ public class GroupChatHandler implements ChatHandler {
     public void chatUpdate(Update update) {
         if (update.hasMessage()) {
             Message message = update.getMessage();
-            Chat chat = message.getChat();
-            long chatId = chat.getId();
 
             if (isChatCreated(message) || hasMemberUpdate(message)) {
                 handleMembers(message);
@@ -51,9 +48,11 @@ public class GroupChatHandler implements ChatHandler {
         List<User> newMembers = message.getNewChatMembers();
         if (isChatCreated(message)) newMembers.add(message.getFrom());
 
-        Group group = groupService.getByGroupId(message.getChatId())
-                .orElseGet(() -> groupMapper.map(message.getChat()));
-
+        Group group = groupService.getByGroupId(message.getChatId()).orElseGet(() -> {
+                    Group newGroup = groupMapper.map(message.getChat());
+                    return groupService.save(newGroup);
+                }
+        );
         User leftMember = message.getLeftChatMember();
         if (!newMembers.isEmpty()) {
             groupService.saveMembers(group, newMembers);

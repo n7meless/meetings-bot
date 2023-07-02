@@ -18,7 +18,7 @@ import static java.util.stream.Collectors.toSet;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MeetingDto {
+public class MeetingDto implements Comparable<MeetingDto> {
     private Long id;
     private AccountDto owner;
     private Set<AccountMeetingDto> accountMeetings;
@@ -94,4 +94,8 @@ public class MeetingDto {
         this.dates.removeIf(predicate);
     }
 
+    @Override
+    public int compareTo(MeetingDto meetingDto) {
+        return this.state.compareTo(meetingDto.getState());
+    }
 }

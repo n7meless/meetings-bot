@@ -19,6 +19,7 @@ public class MeetingMapperImpl implements MeetingMapper {
     private final AccountMeetingMapper accountMeetingMapper;
     private final SubjectMapper subjectMapper;
     private final GroupMapper groupMapper;
+    private final AccountTimeMapper accountTimeMapper;
 
     public MeetingDto map(Meeting meeting) {
 
@@ -48,15 +49,8 @@ public class MeetingMapperImpl implements MeetingMapper {
                 Set<AccountTime> accountTimes = time.getAccountTimes();
                 Set<AccountTimeDto> accountTimeDtos = new HashSet<>();
                 for (AccountTime accountTime : accountTimes) {
-                    Account account = accountTime.getAccount();
-                    AccountDto accountDto = accountMapper.map(account);
 
-                    AccountTimeDto build = AccountTimeDto.builder()
-                            .id(accountTime.getId())
-                            .meetingTime(meetingTimeDto)
-                            .account(accountDto)
-                            .status(accountTime.getStatus())
-                            .build();
+                    AccountTimeDto build = accountTimeMapper.map(accountTime);
 
                     accountTimeDtos.add(build);
                 }
@@ -105,6 +99,7 @@ public class MeetingMapperImpl implements MeetingMapper {
 
         Set<AccountMeetingDto> accountMeetingsDto = meetingDto.getAccountMeetings();
         Set<AccountMeeting> accountMeetings = new HashSet<>();
+
         for (AccountMeetingDto accountMeetingDto : accountMeetingsDto) {
             AccountMeeting accountMeeting = accountMeetingMapper.map(accountMeetingDto);
             accountMeeting.setMeeting(meeting);

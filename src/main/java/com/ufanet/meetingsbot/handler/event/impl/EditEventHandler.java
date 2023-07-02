@@ -1,6 +1,5 @@
 package com.ufanet.meetingsbot.handler.event.impl;
 
-import com.ufanet.meetingsbot.cache.impl.MeetingDtoStateCache;
 import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.EditState;
@@ -36,7 +35,6 @@ public class EditEventHandler implements EventHandler {
     private final AccountService accountService;
     private final BotService botService;
     private final EditReplyMessage editReplyMessage;
-    private final MeetingDtoStateCache meetingDtoStateCache;
     private final MeetingConstructor meetingConstructor;
     private final MeetingMapper meetingMapper;
 
@@ -44,13 +42,13 @@ public class EditEventHandler implements EventHandler {
     public void handleUpdate(Update update) {
         if (update.hasMessage() || update.hasCallbackQuery()) {
             long userId = getUserIdFromUpdate(update);
-            MeetingDto meetingDto = meetingDtoStateCache.get(userId);
+            Optional<Meeting> meeting = meetingService.getFromCache(userId);
 
-            if (meetingDto == null) {
-                Optional<Meeting> optionalMeeting = meetingService.getLastChangedMeetingByOwnerId(userId);
-                meetingDto = meetingMapper.mapIfPresentOrElseThrow(optionalMeeting,
-                        () -> new MeetingNotFoundException(userId));
+            if (meeting.isEmpty()) {
+                meeting = meetingService.getLastChangedMeetingByOwnerId(userId);
             }
+            MeetingDto meetingDto = meetingMapper.mapIfPresentOrElseThrow(meeting,
+                    () -> new MeetingNotFoundException(userId));
 
             if (update.hasMessage()) {
                 handleMessage(userId, update.getMessage(), meetingDto);
@@ -95,15 +93,9 @@ public class EditEventHandler implements EventHandler {
     protected void handleToggleButton(long userId, EditState state, MeetingDto meetingDto, String message) {
         ToggleButton toggleButton = ToggleButton.typeOf(message);
         switch (toggleButton) {
-            case READY -> {
-                botService.setState(userId, AccountState.CREATE.name());
-            }
-            case NEXT -> {
-                sendMessage(userId, state.next(), meetingDto);
-            }
-            case CURRENT -> {
-                sendMessage(userId, state, meetingDto);
-            }
+            case READY -> botService.setState(userId, AccountState.CREATE.name());
+            case NEXT -> sendMessage(userId, state.next(), meetingDto);
+            case CURRENT -> sendMessage(userId, state, meetingDto);
         }
     }
 
@@ -137,7 +129,8 @@ public class EditEventHandler implements EventHandler {
         } catch (NumberFormatException | DateTimeException ex) {
             log.debug("invalid value entered by user {}", userId);
         } finally {
-            meetingDtoStateCache.save(userId, meetingDto);
+            Meeting meeting = meetingMapper.map(meetingDto);
+            meetingService.saveOnCache(userId, meeting);
         }
     }
 

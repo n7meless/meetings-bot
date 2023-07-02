@@ -1,6 +1,5 @@
 package com.ufanet.meetingsbot.handler.event.impl;
 
-import com.ufanet.meetingsbot.cache.impl.MeetingDtoStateCache;
 import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
@@ -36,7 +35,6 @@ public class UpcomingEventHandler implements EventHandler {
     private final MeetingService meetingService;
     private final AccountService accountService;
     private final BotService botService;
-    private final MeetingDtoStateCache meetingDtoStateCache;
     private final MeetingConstructor meetingConstructor;
     private final MeetingMapper meetingMapper;
     private final AccountTimeMapper accountTimeMapper;
@@ -47,7 +45,7 @@ public class UpcomingEventHandler implements EventHandler {
             long userId = update.getMessage().getChatId();
             String message = update.getMessage().getText();
             if (message.equals(UPCOMING.getButtonName())) {
-                meetingDtoStateCache.evict(userId);
+                meetingService.clearCache(userId);
                 handleCallback(userId, UpcomingState.UPCOMING_MEETINGS.name());
             }
         } else if (update.hasCallbackQuery()) {
@@ -57,7 +55,7 @@ public class UpcomingEventHandler implements EventHandler {
         }
     }
 
-    protected void handleCallback(long userId, String callback) {
+    private void handleCallback(long userId, String callback) {
         String[] split = callback.split(" ");
         UpcomingState state = UpcomingState.typeOf(split[0]);
         if (state == null) return;
@@ -67,41 +65,43 @@ public class UpcomingEventHandler implements EventHandler {
         if (split.length > 1) {
             handleCallbackWithParams(userId, split, state);
         } else {
-            switch (state) {
-                //TODO map to dto
-                case UPCOMING_MEETINGS -> {
-                    List<Meeting> meetings = meetingService.getMeetingsByUserIdAndStateIn(userId,
-                            List.of(MeetingState.AWAITING, MeetingState.CONFIRMED));
+            //TODO map to dto
+            if (state == UpcomingState.UPCOMING_MEETINGS) {
+                List<MeetingDto> meetings = meetingService.getMeetingsByUserIdAndStateIn(userId,
+                                List.of(MeetingState.AWAITING, MeetingState.CONFIRMED))
+                        .stream().map(meetingMapper::map).toList();
 
-                    if (meetings.isEmpty()) {
-                        replyMessage.sendMeetingsNotExist(userId);
-                    } else {
-                        replyMessage.sendUpcomingMeetings(userId, meetings);
-                    }
+                if (meetings.isEmpty()) {
+                    replyMessage.sendMeetingsNotExist(userId);
+                } else {
+                    replyMessage.sendUpcomingMeetings(userId, meetings);
                 }
             }
         }
     }
 
-    protected void handleCallbackWithParams(long userId, String[] callback, UpcomingState state) {
+    private void handleCallbackWithParams(long userId, String[] callback, UpcomingState state) {
         long meetingId = Long.parseLong(callback[1]);
 
-        MeetingDto meetingDto = meetingDtoStateCache.get(userId);
+        Optional<Meeting> optionalMeeting = meetingService.getFromCache(userId);
 
-        if (meetingDto == null) {
-            Optional<Meeting> optionalMeeting = meetingService.getByMeetingId(meetingId);
-            meetingDto = meetingMapper.mapIfPresentOrElseThrow(optionalMeeting,
-                    () -> new MeetingNotFoundException(userId));
+        if (optionalMeeting.isEmpty()) {
+            optionalMeeting = meetingService.getByMeetingId(meetingId);
         }
+
+        MeetingDto meetingDto = meetingMapper.mapIfPresentOrElseThrow(optionalMeeting,
+                () -> new MeetingNotFoundException(userId));
 
         switch (state) {
             case UPCOMING_CANCEL_BY_OWNER -> {
-                replyMessage.sendCanceledMeetingByOwner(userId, meetingDto);
                 meetingService.deleteById(meetingId);
+                replyMessage.sendCanceledMeetingByOwner(userId, meetingDto);
             }
             case UPCOMING_SELECTED_MEETING -> {
+
                 List<AccountTimeDto> accountTimes = accountService.getAccountTimesByMeetingId(meetingId)
                         .stream().map(accountTimeMapper::map).toList();
+
                 if (meetingDto.getState().equals(MeetingState.AWAITING)) {
                     if (meetingDto.getOwner().getId() == userId) {
                         replyMessage.sendSelectedReadyMeeting(userId, meetingDto);
@@ -110,40 +110,41 @@ public class UpcomingEventHandler implements EventHandler {
                     }
                 } else replyMessage.sendSelectedUpcomingMeeting(userId, meetingDto, accountTimes);
             }
-            case UPCOMING_SELECT_PARTICIPANT -> {
-                replyMessage.sendParticipantSelectionForPing(userId, meetingDto);
-            }
+            case UPCOMING_SELECT_PARTICIPANT -> replyMessage.sendParticipantSelectionForPing(userId, meetingDto);
             case UPCOMING_SEND_NOTIFICATION_PARTICIPANT -> {
                 long participantId = Long.parseLong(callback[2]);
                 replyMessage.sendPingParticipant(userId, participantId, meetingDto);
             }
             case UPCOMING_EDIT_MEETING_TIME -> {
-                List<AccountTime> accountTimes = accountService.getAccountTimesByMeetingId(meetingId)
-                        .stream().filter(accountTime -> accountTime.getAccount().getId() == userId).toList();
+                List<AccountTimeDto> accountTimes = accountService.getAccountTimesByMeetingId(meetingId)
+                        .stream().filter(accountTime -> accountTime.getAccount().getId() == userId)
+                        .map(accountTimeMapper::map).toList();
 
                 if (callback.length > 2) {
 
                     long accountTimeId = Long.parseLong(callback[2]);
-                    AccountTime accountTime = accountTimes.stream()
+                    AccountTimeDto accountTimeDto = accountTimes.stream()
                             .filter(at -> at.getId() == accountTimeId).findFirst()
                             .orElseThrow(() -> new AccountTimeNotFoundException(userId));
 
-                    Status status = accountTime.getStatus();
+                    Status status = accountTimeDto.getStatus();
 
                     switch (status) {
-                        case CONFIRMED, AWAITING -> accountTime.setStatus(Status.CANCELED);
-                        case CANCELED -> accountTime.setStatus(Status.CONFIRMED);
+                        case CONFIRMED, AWAITING -> accountTimeDto.setStatus(Status.CANCELED);
+                        case CANCELED -> accountTimeDto.setStatus(Status.CONFIRMED);
                     }
+                    AccountTime accountTime = accountTimeMapper.map(accountTimeDto);
                     accountService.saveAccountTime(accountTime);
-                    meetingDtoStateCache.evict(userId);
+                    meetingService.clearCache(userId);
                 }
                 replyMessage.sendEditMeetingAccountTimes(userId, meetingDto, accountTimes);
             }
             case UPCOMING_CANCEL_MEETING_TIME -> {
-                //TODO map and save
                 meetingDto.getDates().clear();
+                Meeting meeting = meetingMapper.map(meetingDto);
+                meetingService.save(meeting);
                 replyMessage.sendCanceledAccountTimeMessage(meetingDto);
-                meetingDtoStateCache.evict(userId);
+                meetingService.clearCache(userId);
             }
             case UPCOMING_CONFIRM_MEETING_TIME -> {
                 List<AccountTime> accountTimes = accountService.getAccountTimesByMeetingId(meetingId);
@@ -159,14 +160,13 @@ public class UpcomingEventHandler implements EventHandler {
                 accountService.saveAccountTimes(accountTimes);
                 handleAccountTimeConfirm(userId, meetingDto, accountTimes);
             }
-            case UPCOMING_IWILLNOTCOME, UPCOMING_IAMLATE, UPCOMING_IAMREADY, UPCOMING_IAMCONFIRM -> {
-                handleAccountTimeState(userId, meetingId, state);
-            }
+            case UPCOMING_IWILLNOTCOME, UPCOMING_IAMLATE, UPCOMING_IAMREADY, UPCOMING_IAMCONFIRM ->
+                    handleAccountTimeState(userId, meetingDto, state);
         }
     }
 
-    protected void handleAccountTimeConfirm(long userId, MeetingDto meetingDto,
-                                            List<AccountTime> accountTimes) {
+    private void handleAccountTimeConfirm(long userId, MeetingDto meetingDto,
+                                          List<AccountTime> accountTimes) {
 
         boolean allVoted = accountTimes.stream()
                 .allMatch(at -> at.getStatus().equals(Status.CONFIRMED) ||
@@ -196,14 +196,7 @@ public class UpcomingEventHandler implements EventHandler {
         }
     }
 
-    protected void handleAccountTimeState(long userId, long meetingId, UpcomingState state) {
-        MeetingDto meetingDto = meetingDtoStateCache.get(userId);
-
-        if (meetingDto == null) {
-            Optional<Meeting> optionalMeeting = meetingService.getByMeetingId(meetingId);
-            meetingDto = meetingMapper.mapIfPresentOrElseThrow(optionalMeeting,
-                    () -> new MeetingNotFoundException(userId));
-        }
+    private void handleAccountTimeState(long userId, MeetingDto meetingDto, UpcomingState state) {
 
         List<AccountTimeDto> accountTimes = meetingDto.getAccountTimes((a) -> true);
         AccountTimeDto accountTimeDto = accountTimes.stream()
@@ -218,7 +211,8 @@ public class UpcomingEventHandler implements EventHandler {
         AccountTime mapped = accountTimeMapper.map(accountTimeDto);
         accountService.saveAccountTime(mapped);
         replyMessage.sendSelectedUpcomingMeeting(userId, meetingDto, accountTimes);
-        meetingDtoStateCache.save(userId, meetingDto);
+//        Meeting meeting = meetingMapper.map(meetingDto);
+        meetingService.clearCache(userId);
     }
 
     @Override

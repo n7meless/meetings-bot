@@ -105,7 +105,7 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
                                         MeetingDto meetingDto, LocalDate chosenDate, String zoneId) {
         LocalDate currentDate = LocalDate.now(ZoneId.of(zoneId));
 
-        if (currentDate.isBefore(chosenDate)) {
+        if (currentDate.getMonthValue() < chosenDate.getMonthValue() || currentDate.getYear() < chosenDate.getYear()) {
             currentDate = LocalDate.of(chosenDate.getYear(), chosenDate.getMonth(), 1);
         } else if (LocalTime.now(ZoneId.of(zoneId)).isAfter(LocalTime.of(endWorkDay, 0))) {
             currentDate = currentDate.plusDays(1);

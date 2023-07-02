@@ -20,7 +20,7 @@ import java.util.Set;
 @NamedEntityGraph(name = "meeting-entity-graph", attributeNodes = {
         @NamedAttributeNode(value = "dates", subgraph = "dates.meetingTimes"),
         @NamedAttributeNode(value = "subject", subgraph = "subject.questions"),
-        @NamedAttributeNode(value = "owner"),
+//        @NamedAttributeNode(value = "owner"),
         @NamedAttributeNode(value = "group"),
         @NamedAttributeNode(value = "accountMeetings", subgraph = "accountMeetings.account")},
         subgraphs = {
@@ -34,7 +34,7 @@ import java.util.Set;
                         attributeNodes = @NamedAttributeNode(value = "account", subgraph = "account.settings")),
                 @NamedSubgraph(name = "account.settings", attributeNodes = @NamedAttributeNode(value = "settings"))
         })
-public class Meeting implements Comparable<Meeting>, Serializable {
+public class Meeting implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -84,10 +84,5 @@ public class Meeting implements Comparable<Meeting>, Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(id);
-    }
-
-    @Override
-    public int compareTo(Meeting meeting) {
-        return this.state.compareTo(meeting.getState());
     }
 }

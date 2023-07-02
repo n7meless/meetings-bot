@@ -44,7 +44,7 @@ public class Account implements Serializable {
     private Set<AccountMeeting> accountMeetings;
 
     @ManyToMany
-    @JoinTable(name = "user_chat",
+    @JoinTable(name = "user_chats",
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "chat_id", referencedColumnName = "id"))
     private List<Group> groups;

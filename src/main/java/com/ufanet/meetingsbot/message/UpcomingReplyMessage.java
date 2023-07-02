@@ -13,7 +13,6 @@ import com.ufanet.meetingsbot.mapper.AccountMapper;
 import com.ufanet.meetingsbot.message.keyboard.MeetingKeyboardMaker;
 import com.ufanet.meetingsbot.model.Account;
 import com.ufanet.meetingsbot.model.AccountMeeting;
-import com.ufanet.meetingsbot.model.AccountTime;
 import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.MeetingService;
@@ -39,17 +38,18 @@ public class UpcomingReplyMessage extends ReplyMessage {
     private final MeetingKeyboardMaker meetingKeyboard;
     private final AccountMapper accountMapper;
 
-    public void sendUpcomingMeetings(long userId, List<Meeting> meetings) {
+    public void sendUpcomingMeetings(long userId, List<MeetingDto> meetings) {
         Account account = accountService.getByUserId(userId).orElseThrow();
         String zoneId = account.getZoneId();
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
 
-        Map<MeetingState, List<Meeting>> meetingMap =
-                meetings.stream().sorted(Meeting::compareTo).collect(Collectors.groupingBy(Meeting::getState));
+        Map<MeetingState, List<MeetingDto>> meetingMap =
+                meetings.stream().sorted(MeetingDto::compareTo).collect(Collectors.groupingBy(MeetingDto::getState));
 
-        for (Map.Entry<MeetingState, List<Meeting>> entry : meetingMap.entrySet()) {
+        for (Map.Entry<MeetingState, List<MeetingDto>> entry : meetingMap.entrySet()) {
             MeetingState entryState = entry.getKey();
-            List<Meeting> entryValue = entry.getValue();
+            List<MeetingDto> entryValue = entry.getValue();
+
             if (entryValue.size() > 0) {
                 if (entryState.equals(MeetingState.AWAITING)) {
                     InlineKeyboardButton button = meetingKeyboard.defaultInlineButton(
@@ -60,11 +60,12 @@ public class UpcomingReplyMessage extends ReplyMessage {
                             Emojis.GREEN_CIRCLE.getEmojiSpace() + "Подтвержденные", " ");
                     keyboard.add(List.of(button));
                 }
+
                 int i = 0;
                 while (i < entryValue.size()) {
                     List<InlineKeyboardButton> rowButtons = new ArrayList<>();
                     for (int j = 0; j < 2 && i < entryValue.size(); j++, i++) {
-                        Meeting meeting = entryValue.get(i);
+                        MeetingDto meeting = entryValue.get(i);
                         ZonedDateTime zonedDateTime = meeting.getDate().withZoneSameInstant(ZoneId.of(zoneId));
 
                         String upcomingMeeting = messageUtils.buildText(Emojis.CALENDAR.getEmojiSpace(),
@@ -163,7 +164,7 @@ public class UpcomingReplyMessage extends ReplyMessage {
     }
 
     public void sendEditMeetingAccountTimes(long userId, MeetingDto meetingDto,
-                                            List<AccountTime> accountTimes) {
+                                            List<AccountTimeDto> accountTimes) {
         Account account = accountService.getByUserId(userId)
                 .orElseThrow(() -> new AccountNotFoundException(userId));
         String zoneId = account.getZoneId();
