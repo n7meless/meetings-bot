@@ -4,8 +4,9 @@ import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.model.Account;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface AccountMapper {
     @Mapping(target = "settings.timeZone", source = "dto.timeZone")
     @Mapping(target = "settings.language", source = "dto.language")

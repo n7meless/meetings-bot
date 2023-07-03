@@ -1,0 +1,12 @@
+spring:
+  profiles:
+    default: polling
+  datasource:
+    username: root
+    password: root
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://postgres:5432/meetings
+  data:
+    redis:
+      host: redis_cache
+      port: 6379

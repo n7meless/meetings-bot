@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCust
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -18,25 +19,24 @@ import java.time.Duration;
 @Configuration
 public class RedisConfig {
     @Value("${spring.data.redis.host}")
-    private String host;
+    private String REDIS_HOST;
     @Value("${spring.data.redis.port}")
-    private int port;
+    private Integer REDIS_PORT;
     @Value("${cache.redis.ttl.user}")
     private long userTtl;
     @Value("${cache.redis.ttl.groupMembers}")
     private long groupMembersTtl;
 
     @Bean
-    JedisConnectionFactory jedisConnectionFactory() {
-        RedisStandaloneConfiguration redisStandaloneConfiguration =
-                new RedisStandaloneConfiguration(host, port);
-        return new JedisConnectionFactory(redisStandaloneConfiguration);
+    public JedisConnectionFactory jedisConnectionFactory() {
+        RedisStandaloneConfiguration configuration =
+                new RedisStandaloneConfiguration(REDIS_HOST, REDIS_PORT);
+        return new JedisConnectionFactory(configuration);
     }
 
     @Bean
     public RedisTemplate<String, ?> redisTemplate() {
         RedisTemplate<String, ?> template = new RedisTemplate<>();
-
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());

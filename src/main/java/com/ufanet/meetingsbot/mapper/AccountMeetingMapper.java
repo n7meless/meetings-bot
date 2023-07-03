@@ -2,12 +2,10 @@ package com.ufanet.meetingsbot.mapper;
 
 import com.ufanet.meetingsbot.dto.AccountMeetingDto;
 import com.ufanet.meetingsbot.model.AccountMeeting;
-import org.mapstruct.InheritInverseConfiguration;
-import org.mapstruct.InjectionStrategy;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import org.mapstruct.*;
 
-@Mapper(componentModel = "spring", injectionStrategy = InjectionStrategy.CONSTRUCTOR)
+@Mapper(componentModel = "spring", injectionStrategy = InjectionStrategy.CONSTRUCTOR,
+        unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface AccountMeetingMapper {
     @Mapping(target = "account", source = "entity.account")
     @Mapping(target = "account.timeZone", source = "entity.account.settings.timeZone")
