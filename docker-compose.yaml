@@ -1,22 +1,44 @@
 version: "2.17"
 services:
-  dbpostgres:
-    container_name: dbpostgres
-    image: postgres:15.3
+  postgres:
+    container_name: postgres
+    image: postgres:15.3-alpine
     environment:
-      POSTGRES_DB: "meetsdb"
-      POSTGRES_USER: "root"
-      POSTGRES_PASSWORD: "root"
-    restart: on-failure
+      POSTGRES_DB: meetings
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+    restart: always
     ports:
       - "5432:5432"
     volumes:
       - /var/lib/postgresql:/var/lib/postgresql
-  rediscache:
-    container_name: rediscache
+  redis_cache:
+    container_name: redis_cache
     image: redis:7.0.11-alpine
-    restart: on-failure
+    restart: always
     ports:
       - "6379:6379"
+    depends_on:
+      - postgres
     volumes:
       - /db_data:/var/lib/redis/data
+#  meetingsbot:
+#    build:
+#      dockerfile: Dockerfile
+#      context: ./
+#    container_name: meetings-bot
+##    image: meetings-bot:latest
+#    ports:
+#      - "8080:8080"
+#    env_file:
+#      - prod.env
+#    environment:
+#      TELEGRAM_USERNAME: ${TELEGRAM_USERNAME}
+#      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN}
+#      SPRING_PROFILES_ACTIVE: prod,polling
+#    links:
+#      - postgres
+#      - redis_cache
+#    depends_on:
+#      - postgres
+#      - redis_cache

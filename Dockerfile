@@ -1,10 +1,21 @@
-FROM openjdk:17-alpine
+FROM gradle:7.6.1-jdk-alpine AS build
+
+COPY --chown=gradle:gradle . /home/gradle/src
+WORKDIR /home/gradle/src
+RUN gradle build --no-daemon
+
+FROM openjdk:17-jdk-alpine
 
 ENV APP_FILE meetings-bot-1.0.0-SNAPSHOT.jar
+ENV JAR_FILE meetings-bot-1.0.0.jar
 ENV APP_HOME /app
+ARG TELEGRAM_USERNAME
+ENV TELEGRAM_USERNAME ${TELEGRAM_USERNAME}
+ARG TELRGRAM_TOKEN
+ENV TELRGRAM_TOKEN ${TELRGRAM_TOKEN}
 EXPOSE 8080
-COPY build/libs/$APP_FILE $APP_HOME/meetings-bot-1.0.0.jar
+COPY build/libs/$APP_FILE $APP_HOME/$JAR_FILE
 WORKDIR $APP_HOME
-ENTRYPOINT ["sh", "-c"]
-CMD ["exec java -jar meetings-bot-1.0.0.jar"]
-#ENTRYPOINT ["java","-jar","$APP_HOME/$APP_FILE"]
+#ENTRYPOINT ["sh", "-c"]
+#CMD ["exec java -jar $JAR_FILE"]
+ENTRYPOINT exec java -jar -DTELEGRAM_USERNAME=${TELEGRAM_USERNAME} -DTELEGRAM_TOKEN=${TELRGRAM_TOKEN} $JAR_FILE

@@ -23,7 +23,7 @@ public class MeetingNotifierScheduler {
     private final MeetingService meetingService;
 
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(initialDelay = 60000, fixedRate = 60000)
     public void checkMeetings() {
         checkUpcomingMeetings();
         checkExpiredMeetings();
