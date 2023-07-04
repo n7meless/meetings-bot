@@ -1,11 +1,11 @@
 package com.ufanet.meetingsbot.exceptions;
 
 public class ValidationMeetingException extends CustomTelegramApiException {
-    public ValidationMeetingException(Long chatId, String message) {
-        super(chatId, message);
+    public ValidationMeetingException(Long chatId, String messageProperty) {
+        super(chatId, messageProperty);
     }
 
-    public ValidationMeetingException(String message) {
-        super(message);
+    public ValidationMeetingException(String messageProperty) {
+        super(messageProperty);
     }
 }

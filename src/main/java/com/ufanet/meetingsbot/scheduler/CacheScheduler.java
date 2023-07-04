@@ -1,13 +1,12 @@
 package com.ufanet.meetingsbot.scheduler;
 
 import com.ufanet.meetingsbot.cache.impl.BotStateCache;
-import com.ufanet.meetingsbot.cache.impl.MeetingStateCache;
+import com.ufanet.meetingsbot.cache.impl.MeetingCache;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
-import com.ufanet.meetingsbot.mapper.MeetingMapper;
-import com.ufanet.meetingsbot.model.BotState;
-import com.ufanet.meetingsbot.model.Meeting;
-import com.ufanet.meetingsbot.repository.BotRepository;
-import com.ufanet.meetingsbot.repository.MeetingRepository;
+import com.ufanet.meetingsbot.entity.BotState;
+import com.ufanet.meetingsbot.entity.Meeting;
+import com.ufanet.meetingsbot.service.BotService;
+import com.ufanet.meetingsbot.service.MeetingService;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,11 +26,10 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class CacheScheduler {
-    private final MeetingRepository meetingRepository;
-    private final MeetingStateCache meetingStateCache;
+    private final MeetingService meetingService;
+    private final MeetingCache meetingCache;
     private final BotStateCache botStateCache;
-    private final BotRepository botRepository;
-    private final MeetingMapper meetingMapper;
+    private final BotService botService;
     @Value("${cache.custom.ttl.bot}")
     private long botTtl;
     @Value("${cache.custom.ttl.meeting}")
@@ -40,7 +38,7 @@ public class CacheScheduler {
     @Async
     @Scheduled(fixedRate = 10000)
     public void saveMeetingsAndBotStatesFromCache() {
-        Map<Long, Meeting> meetingDataCache = new HashMap<>(meetingStateCache.getMeetingStateCache());
+        Map<Long, Meeting> meetingDataCache = new HashMap<>(meetingCache.getMeetingStateCache());
         LocalDateTime now = LocalDateTime.now();
         for (Map.Entry<Long, Meeting> entry : meetingDataCache.entrySet()) {
             long userId = entry.getKey();
@@ -51,28 +49,38 @@ public class CacheScheduler {
             if (seconds > meetingTtl) {
                 MeetingState state = meeting.getState();
                 switch (state) {
-                    case AWAITING, CONFIRMED, CANCELED, GROUP_SELECT -> meetingStateCache.evict(userId);
+                    case AWAITING, CONFIRMED, CANCELED, GROUP_SELECT -> meetingCache.evict(userId);
                     default -> {
-                        meetingStateCache.evict(userId);
-                        meetingRepository.save(meeting);
+                        meetingCache.evict(userId);
+                        meetingService.save(meeting);
                         log.info("meeting {} with user id {} saved in database", meeting.getId(), userId);
                     }
                 }
-                log.info("meetingDto {} with user id {} was evicted from cache", meeting.getId(), userId);
+                log.info("meeting {} with user id {} was evicted from meeting cache", meeting.getId(), userId);
+            }
+        }
+        Map<Long, BotState> botDataCache = new HashMap<>(botStateCache.getBotStateCache());
+        for (Map.Entry<Long, BotState> entry : botDataCache.entrySet()) {
+            long userId = entry.getKey();
+            BotState botState = entry.getValue();
+            LocalDateTime updatedDt = botState.getUpdatedDt();
+            long seconds = ChronoUnit.SECONDS.between(updatedDt, now);
+
+            if (seconds > botTtl) {
+                botStateCache.evict(userId);
+                botService.save(botState);
+                log.info("bot state {} with user id {} was evicted from bot cache", botState.getId(), userId);
             }
         }
     }
 
     @PreDestroy
     @Transactional
-    public void saveCacheValuesBeforeDestroy() {
-        System.out.println("--------------- SAVING CACHE VALUES BEFORE DESTROY -----------------");
+    public void saveCacheBotStateCacheBeforeDestroy() {
+        log.info("saving bot state cache before destroy application");
         Map<Long, BotState> botCache = botStateCache.getBotStateCache();
-        Map<Long, Meeting> meetingCache = meetingStateCache.getMeetingStateCache();
         Collection<BotState> botStates = botCache.values();
-        Collection<Meeting> meetings = meetingCache.values();
 
-        botRepository.saveAll(botStates);
-        meetingRepository.saveAll(meetings);
+        botService.saveAll(botStates);
     }
 }

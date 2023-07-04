@@ -16,7 +16,6 @@ public class AccountDto {
     private String username;
     private String language;
     private String timeZone;
-    private long groupId;
 
     @Override
     public boolean equals(Object o) {

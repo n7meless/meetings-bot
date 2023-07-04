@@ -1,4 +1,4 @@
-package com.ufanet.meetingsbot.model;
+package com.ufanet.meetingsbot.entity;
 
 import com.ufanet.meetingsbot.constants.Status;
 import jakarta.persistence.*;

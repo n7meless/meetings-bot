@@ -42,7 +42,7 @@ public class EditReplyMessage extends ReplyMessage {
 
     public void editAddress(long userId, MeetingDto meetingDto) {
         String firstText = getMainText(meetingDto);
-        String secondText = messageUtils.buildText("\n\n", Emojis.BANGBANG.getEmojiSpace(),
+        String secondText = messageUtils.buildText("\n\n", Emojis.INFORMATION.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.address"));
 
         InlineKeyboardButton readyButton = meetingKeyboard.getReadyInlineButton(AccountState.CREATE.name());
@@ -51,14 +51,14 @@ public class EditReplyMessage extends ReplyMessage {
                 firstText + secondText,
                 meetingKeyboard.buildInlineMarkup(List.of(List.of(readyButton))));
 
-        executeMessage(message);
+        executeEditOrSendMessage(message);
     }
 
     public void editTime(long userId, MeetingDto meetingDto) {
         AccountDto owner = meetingDto.getOwner();
         String zoneId = owner.getTimeZone();
         String firstText = getMainText(meetingDto);
-        String secondText = messageUtils.buildText("\n\n", Emojis.BANGBANG.getEmojiSpace(),
+        String secondText = messageUtils.buildText("\n\n", Emojis.INFORMATION.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.time"));
 
         List<List<InlineKeyboardButton>> keyboard = calendarKeyboard.getTimeInlineMarkup(meetingDto, zoneId);
@@ -66,12 +66,12 @@ public class EditReplyMessage extends ReplyMessage {
         EditMessageText message = messageUtils.generateEditMessageHtml(userId,
                 firstText + secondText,
                 meetingKeyboard.buildInlineMarkup(keyboard));
-        executeMessage(message);
+        executeEditOrSendMessage(message);
     }
 
     public void editParticipants(long userId, MeetingDto meetingDto) {
         String firstText = getMainText(meetingDto);
-        String secondText = messageUtils.buildText("\n\n", Emojis.BANGBANG.getEmojiSpace(),
+        String secondText = messageUtils.buildText("\n\n", Emojis.INFORMATION.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.participants"));
 
         Set<AccountDto> members = accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupDto().getId(), userId)
@@ -84,12 +84,12 @@ public class EditReplyMessage extends ReplyMessage {
         }
         EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId, firstText + secondText,
                 meetingKeyboard.buildInlineMarkup(keyboard));
-        executeMessage(editMessage);
+        executeEditOrSendMessage(editMessage);
     }
 
     public void editSubject(long userId, MeetingDto meetingDto) {
         String firstText = getMainText(meetingDto);
-        String secondText = messageUtils.buildText("\n\n", Emojis.BANGBANG.getEmojiSpace(),
+        String secondText = messageUtils.buildText("\n\n", Emojis.INFORMATION.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.subject"));
 
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
@@ -98,12 +98,12 @@ public class EditReplyMessage extends ReplyMessage {
         keyboard.add(List.of(meetingKeyboard.getReadyInlineButton(AccountState.CREATE.name())));
         EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId, firstText + secondText,
                 meetingKeyboard.buildInlineMarkup(keyboard));
-        executeMessage(editMessage);
+        executeEditOrSendMessage(editMessage);
     }
 
     public void editSubjectDuration(long userId, MeetingDto meetingDto) {
         String firstText = getMainText(meetingDto);
-        String secondText = messageUtils.buildText("\n\n", Emojis.BANGBANG.getEmojiSpace(),
+        String secondText = messageUtils.buildText("\n\n", Emojis.INFORMATION.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.duration"));
 
         List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getSubjectDurationInlineMarkup(meetingDto);
@@ -116,12 +116,12 @@ public class EditReplyMessage extends ReplyMessage {
 
         EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId, firstText + secondText,
                 meetingKeyboard.buildInlineMarkup(keyboard));
-        executeMessage(editMessage);
+        executeEditOrSendMessage(editMessage);
     }
 
     public void editQuestion(long userId, MeetingDto meetingDto) {
         String firstText = getMainText(meetingDto);
-        String secondText = messageUtils.buildText("\n\n", Emojis.BANGBANG.getEmojiSpace(),
+        String secondText = messageUtils.buildText("\n\n", Emojis.INFORMATION.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.questions"));
 
         Set<String> questions = meetingDto.getSubjectDto().getQuestions();
@@ -131,6 +131,6 @@ public class EditReplyMessage extends ReplyMessage {
         }
         EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId, firstText + secondText,
                 meetingKeyboard.buildInlineMarkup(keyboard));
-        executeMessage(editMessage);
+        executeEditOrSendMessage(editMessage);
     }
 }

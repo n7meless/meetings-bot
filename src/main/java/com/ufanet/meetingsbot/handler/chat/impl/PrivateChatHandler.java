@@ -1,5 +1,6 @@
 package com.ufanet.meetingsbot.handler.chat.impl;
 
+import com.ufanet.meetingsbot.constants.BotCommands;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.ProfileState;
 import com.ufanet.meetingsbot.constants.type.ChatType;
@@ -67,9 +68,8 @@ public class PrivateChatHandler implements ChatHandler {
         Message message = update.getMessage();
         String messageText = message.getText();
 
-        //TODO вынести текст в пропертис
         if (messageText.startsWith("/")) {
-            handleCommand(userId, message);
+            handleCommand(update);
         } else {
             botService.setLastMsgFromUser(userId, true);
             AccountState pressedButton = fromValue(messageText);
@@ -77,22 +77,27 @@ public class PrivateChatHandler implements ChatHandler {
                 botService.setState(userId, pressedButton.name());
             }
             handleBotState(userId, update);
+
         }
     }
 
-    protected void handleCommand(long userId, Message message) {
-        Long chatId = message.getChat().getId();
+    protected void handleCommand(Update update) {
+        Message message = update.getMessage();
+        long userId = message.getChat().getId();
         String messageText = message.getText();
         User user = message.getFrom();
-        switch (messageText) {
-            case "/start" -> {
-                accountService.getByUserId(chatId)
-                        .ifPresentOrElse((account) -> accountService.updateTgUser(account, user),
-                                () -> accountService.saveTgUser(user));
-                commandHandler.sendStartMessage(userId);
-            }
-            case "/help" -> commandHandler.sendHelpMessage(userId);
-            case "/about" -> commandHandler.sendAboutMessage(userId);
+        if (messageText.startsWith(BotCommands.START.getCommand())) {
+
+            accountService.getByUserId(userId)
+                    .ifPresentOrElse((account) -> accountService.updateTgUser(account, user),
+                            () -> accountService.saveTgUser(user));
+            commandHandler.sendStartMessage(userId);
+        } else if (messageText.startsWith(BotCommands.HELP.getCommand())) {
+            commandHandler.sendHelpMessage(userId);
+        } else if (messageText.startsWith(BotCommands.ABOUT.getCommand())) {
+            commandHandler.sendAboutMessage(userId);
+        } else if (messageText.startsWith(BotCommands.SETTIMEZONE.getCommand())) {
+            queryHandlers.get(PROFILE).handleUpdate(update);
         }
     }
 

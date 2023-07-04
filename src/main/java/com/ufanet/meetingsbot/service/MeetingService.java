@@ -1,9 +1,9 @@
 package com.ufanet.meetingsbot.service;
 
-import com.ufanet.meetingsbot.cache.impl.MeetingStateCache;
+import com.ufanet.meetingsbot.cache.impl.MeetingCache;
 import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
-import com.ufanet.meetingsbot.model.*;
+import com.ufanet.meetingsbot.entity.*;
 import com.ufanet.meetingsbot.repository.MeetingRepository;
 import com.ufanet.meetingsbot.repository.MeetingTimeRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
 public class MeetingService {
     private final MeetingRepository meetingRepository;
     private final MeetingTimeRepository meetingTimeRepository;
-    private final MeetingStateCache meetingStateCache;
+    private final MeetingCache meetingCache;
 
     @Transactional
     public void save(Meeting meeting) {
@@ -29,16 +30,16 @@ public class MeetingService {
     }
 
     public void saveOnCache(Long userId, Meeting meeting) {
-        meetingStateCache.save(userId, meeting);
+        meetingCache.save(userId, meeting);
     }
 
     public Optional<Meeting> getFromCache(Long userId) {
-        Meeting meeting = meetingStateCache.get(userId);
+        Meeting meeting = meetingCache.get(userId);
         return Optional.ofNullable(meeting);
     }
 
     public void clearCache(Long userId) {
-        meetingStateCache.evict(userId);
+        meetingCache.evict(userId);
     }
 
     @Transactional
@@ -46,8 +47,8 @@ public class MeetingService {
         Account owner = meeting.getOwner();
         log.info("creating meeting by user {}", owner.getId());
 
-        Set<AccountMeeting> accountMeetings = meeting.getAccountMeetings()
-                .stream().filter((am) -> !Objects.equals(am.getAccount().getId(), meeting.getOwner().getId()))
+        Set<Account> accounts = meeting.getParticipants()
+                .stream().filter((am) -> !Objects.equals(am.getId(), meeting.getOwner().getId()))
                 .collect(Collectors.toSet());
 
         Set<MeetingDate> dates = meeting.getDates();
@@ -58,8 +59,7 @@ public class MeetingService {
             Set<MeetingTime> times = date.getMeetingTimes();
             for (MeetingTime time : times) {
                 Set<AccountTime> accountTimes = new HashSet<>();
-                for (AccountMeeting accountMeeting : accountMeetings) {
-                    Account account = accountMeeting.getAccount();
+                for (Account account : accounts) {
                     AccountTime accountTime = AccountTime.builder().account(account)
                             .meetingTime(time).status(Status.AWAITING).build();
                     accountTimes.add(accountTime);
@@ -98,4 +98,18 @@ public class MeetingService {
         return meetingRepository.findMeetingsByUserIdAndStateIn(userId, states);
     }
 
+    public List<Meeting> getConfirmedMeetingsWhereDatesBetween(ZonedDateTime now, int endValue) {
+        log.info("getting confirmed meetings where date times now and meeting between 0 and {} min", endValue);
+        return meetingRepository.findConfirmedMeetingsWhereDatesBetween(now, endValue);
+    }
+
+    public void saveAll(List<Meeting> meetings) {
+        log.info("saving meetings '{}' into db", meetings.stream().map(Meeting::getId).map(String::valueOf)
+                .collect(Collectors.joining(",")));
+        meetingRepository.saveAll(meetings);
+    }
+
+    public List<Meeting> getConfirmedMeetingsWhereDatesLaterThanSubjectDuration(ZonedDateTime now) {
+        return meetingRepository.findConfirmedMeetingsWhereDatesLaterThanSubjectDuration(now);
+    }
 }

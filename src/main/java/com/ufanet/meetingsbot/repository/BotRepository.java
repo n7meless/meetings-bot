@@ -1,6 +1,6 @@
 package com.ufanet.meetingsbot.repository;
 
-import com.ufanet.meetingsbot.model.BotState;
+import com.ufanet.meetingsbot.entity.BotState;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

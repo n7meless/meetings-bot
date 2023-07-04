@@ -1,4 +1,4 @@
-package com.ufanet.meetingsbot.model;
+package com.ufanet.meetingsbot.entity;
 
 import com.ufanet.meetingsbot.constants.type.MessageType;
 import jakarta.persistence.*;
@@ -27,9 +27,8 @@ public class BotState implements Serializable {
 
     private String state;
 
-    @OneToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "user_id", referencedColumnName = "id")
     @MapsId
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private Account account;
 

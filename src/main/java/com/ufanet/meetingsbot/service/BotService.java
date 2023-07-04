@@ -1,7 +1,8 @@
 package com.ufanet.meetingsbot.service;
 
 import com.ufanet.meetingsbot.cache.impl.BotStateCache;
-import com.ufanet.meetingsbot.model.BotState;
+import com.ufanet.meetingsbot.entity.BotState;
+import com.ufanet.meetingsbot.exceptions.CustomTelegramApiException;
 import com.ufanet.meetingsbot.repository.BotRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 
 @Slf4j
 @Service
@@ -21,8 +23,7 @@ public class BotService {
         BotState cacheState = botStateCache.get(userId);
         if (cacheState == null) {
             log.info("getting botState by user {} from db", userId);
-            BotState botState = botRepository.findByAccountId(userId)
-                    .orElseThrow();
+            BotState botState = botRepository.findByAccountId(userId).orElseThrow(() -> new CustomTelegramApiException(userId, "error.internal.exception"));
             botStateCache.save(userId, botState);
             return botState;
         }
@@ -54,5 +55,11 @@ public class BotService {
 
     public String getState(long userId) {
         return getByUserId(userId).getState();
+    }
+
+    @Transactional
+    public Collection<BotState> saveAll(Collection<BotState> botStates) {
+        log.info("saving bot states {} into db", botStates);
+        return botRepository.saveAll(botStates);
     }
 }

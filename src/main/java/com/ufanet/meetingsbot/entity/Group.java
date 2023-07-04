@@ -1,4 +1,4 @@
-package com.ufanet.meetingsbot.model;
+package com.ufanet.meetingsbot.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,4 +36,7 @@ public class Group implements Serializable {
             joinColumns = @JoinColumn(name = "chat_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"))
     private Set<Account> members = new HashSet<>();
+    public void addMember(Account account){
+        this.members.add(account);
+    }
 }

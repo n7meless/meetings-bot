@@ -13,7 +13,7 @@ public abstract class KeyboardMaker {
     }
 
     public InlineKeyboardButton getReadyInlineButton(String callback) {
-        return defaultInlineButton(Emojis.GREEN_SELECTED.getEmojiSpace() + "Готово", callback);
+        return defaultInlineButton(Emojis.ROCKER.getEmojiSpace() + "Готово", callback);
     }
 
     public InlineKeyboardButton getNextInlineButton(String callback) {

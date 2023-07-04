@@ -3,13 +3,14 @@ package com.ufanet.meetingsbot.message.keyboard;
 import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.constants.state.EditState;
+import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.constants.state.UpcomingState;
 import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.dto.AccountTimeDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.SubjectDto;
+import com.ufanet.meetingsbot.entity.Group;
 import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
-import com.ufanet.meetingsbot.model.Group;
 import com.ufanet.meetingsbot.utils.CustomFormatter;
 import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -68,7 +70,7 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
             InlineKeyboardButton participantBtn = defaultInlineButton(member.getFirstname(), Long.toString(member.getId()));
 
             if (participantsIds.contains(member)) {
-                participantBtn.setText(Emojis.GREY_SELECTED.getEmojiSpace() + member.getFirstname());
+                participantBtn.setText(Emojis.GREEN_SELECTED.getEmojiSpace() + member.getFirstname());
             }
 
             keyboard.add(List.of(participantBtn));
@@ -90,7 +92,7 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         for (String question : questions) {
             InlineKeyboardButton questionBtn =
-                    defaultInlineButton(Emojis.GREY_SELECTED.getEmojiSpace() + question,
+                    defaultInlineButton(Emojis.GREEN_SELECTED.getEmojiSpace() + question,
                             question);
 
             keyboard.add(List.of(questionBtn));
@@ -121,14 +123,13 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
         return keyboard;
     }
 
-    //TODO вынести в класс билдер
-    public InlineKeyboardButton googleCalendarButton(long userId, MeetingDto meetingDto) {
+    //TODO move to builder class
+    public InlineKeyboardButton getGoogleCalendarButton(long userId, MeetingDto meetingDto) {
         SubjectDto subjectDto = meetingDto.getSubjectDto();
         Integer duration = subjectDto.getDuration();
         String title = subjectDto.getTitle();
         Set<String> questions = subjectDto.getQuestions();
         String address = meetingDto.getAddress();
-        Set<AccountDto> participants = meetingDto.getParticipants();
         String uriString = "https://calendar.google.com/calendar/render?action=TEMPLATE";
         StringBuilder sb = new StringBuilder(uriString);
         sb.append("&text=").append(title);
@@ -150,12 +151,6 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
             sb.append(i).append(". ").append(question).append("%0A");
             i++;
         }
-//        sb.append("Участники встречи:").append("%0A");
-//        i = 1;
-//        for (AccountDto participant : participants) {
-//            sb.append(i).append(". ").append(participant.getFirstname()).append("%0A");
-//            i++;
-//        }
         InlineKeyboardButton button = defaultInlineButton(Emojis.CALENDAR.getEmojiSpace() + "Добавить в календарь", "Google Calendar");
         String replaceAll = sb.toString().replaceAll("\\s", "%20");
         button.setUrl(replaceAll);
@@ -178,17 +173,16 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
         return buildInlineMarkup(keyboard);
     }
 
-    //TODO поменять подход
     public InlineKeyboardMarkup getChangeMeetingTimeKeyboard(long meetingId, List<AccountTimeDto> accountTimes, String zoneId) {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
 
-        TreeMap<ZonedDateTime, List<AccountTimeDto>> collected =
+        TreeMap<LocalDate, List<AccountTimeDto>> collected =
                 accountTimes.stream().sorted()
-                        .collect(Collectors.groupingBy(t -> t.getMeetingTime().getTimeWithZoneOffset(zoneId),
+                        .collect(Collectors.groupingBy(t -> t.getMeetingTime().getTimeWithZoneOffset(zoneId).toLocalDate(),
                                 TreeMap::new, Collectors.toList()));
 
-        for (Map.Entry<ZonedDateTime, List<AccountTimeDto>> entry : collected.entrySet()) {
-            LocalDate dateTime = entry.getKey().toLocalDate();
+        for (Map.Entry<LocalDate, List<AccountTimeDto>> entry : collected.entrySet()) {
+            LocalDate dateTime = entry.getKey();
             InlineKeyboardButton questionBtn =
                     defaultInlineButton(Emojis.CALENDAR.getEmojiSpace() + dateTime.format(DATE_WEEK_FORMATTER),
                             " ");
@@ -204,7 +198,7 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
                     AccountTimeDto accountTime = times.get(i);
                     ZonedDateTime zonedDateTime = accountTime.getMeetingTime().getTimeWithZoneOffset(zoneId);
                     InlineKeyboardButton timeBtn =
-                            defaultInlineButton(Emojis.GREY_SELECTED.getEmojiSpace() + zonedDateTime.toLocalTime(),
+                            defaultInlineButton(Emojis.GREEN_SELECTED.getEmojiSpace() + zonedDateTime.toLocalTime(),
                                     UpcomingState.UPCOMING_EDIT_MEETING_TIME.name() + " " + meetingId + " " + accountTime.getId());
 
                     if (accountTime.getStatus().equals(Status.CANCELED)) {
@@ -234,7 +228,7 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
         Long meetingId = meetingDto.getId();
         InlineKeyboardButton prevBtn = defaultInlineButton(Emojis.LEFT.getEmojiSpace() + "Назад", UpcomingState.UPCOMING_MEETINGS.name());
 
-        InlineKeyboardButton googleCalendarBtn = googleCalendarButton(userId, meetingDto);
+        InlineKeyboardButton googleCalendarBtn = getGoogleCalendarButton(userId, meetingDto);
         if (meetingDto.getOwner().getId() == userId) {
             InlineKeyboardButton pingBtn = defaultInlineButton(Emojis.PIN.getEmojiSpace() + "Пингануть участника",
                     UpcomingState.UPCOMING_SELECT_PARTICIPANT.name() + " " + meetingDto.getId());
@@ -243,6 +237,7 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
             keyboard.add(List.of(googleCalendarBtn));
             keyboard.add(List.of(pingBtn));
             keyboard.add(List.of(cancelBtn, prevBtn));
+
         } else if (accountTime.isPresent()) {
             InlineKeyboardButton awaitingBtn = defaultInlineButton("Я опаздываю", UpcomingState.UPCOMING_IAMLATE + " " + meetingId);
             InlineKeyboardButton readyBtn = defaultInlineButton("Я готов", UpcomingState.UPCOMING_IAMREADY + " " + meetingId);
@@ -267,5 +262,51 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
             keyboard.add(List.of(prevBtn, cancelBtn));
         }
         return InlineKeyboardMarkup.builder().keyboard(keyboard).build();
+    }
+
+    public InlineKeyboardMarkup getUpcomingMeetingsListMarkup(String zoneId, List<MeetingDto> meetings) {
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+
+        Map<MeetingState, List<MeetingDto>> meetingMap =
+                meetings.stream().sorted(MeetingDto::compareTo)
+                        .collect(Collectors.groupingBy(MeetingDto::getState));
+
+        for (Map.Entry<MeetingState, List<MeetingDto>> entry : meetingMap.entrySet()) {
+            MeetingState entryState = entry.getKey();
+            List<MeetingDto> entryValue = entry.getValue();
+
+            if (entryValue.size() > 0) {
+                if (entryState.equals(MeetingState.AWAITING)) {
+                    InlineKeyboardButton button = defaultInlineButton(
+                            Emojis.ORANGE_CIRCLE.getEmojiSpace() + "В ожидании", " ");
+                    keyboard.add(List.of(button));
+                } else {
+                    InlineKeyboardButton button = defaultInlineButton(
+                            Emojis.GREEN_CIRCLE.getEmojiSpace() + "Подтвержденные", " ");
+                    keyboard.add(List.of(button));
+                }
+
+                int i = 0;
+                while (i < entryValue.size()) {
+                    List<InlineKeyboardButton> rowButtons = new ArrayList<>();
+                    for (int j = 0; j < 2 && i < entryValue.size(); j++, i++) {
+                        MeetingDto meeting = entryValue.get(i);
+                        ZonedDateTime zonedDateTime = meeting.getDate().withZoneSameInstant(ZoneId.of(zoneId));
+
+                        String upcomingMeeting = Emojis.CALENDAR.getEmojiSpace() +
+                                zonedDateTime.format(CustomFormatter.DATE_TIME_FORMATTER);
+
+                        String callback = UpcomingState.UPCOMING_SELECTED_MEETING.name() + " " + meeting.getId();
+
+                        InlineKeyboardButton button =
+                                defaultInlineButton(upcomingMeeting, callback);
+
+                        rowButtons.add(button);
+                    }
+                    keyboard.add(rowButtons);
+                }
+            }
+        }
+        return buildInlineMarkup(keyboard);
     }
 }

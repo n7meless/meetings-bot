@@ -4,8 +4,14 @@ import com.ufanet.meetingsbot.service.TelegramFacade;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.updates.SetWebhook;
@@ -45,5 +51,18 @@ public class WebhookTelegramBot extends SpringWebhookBot {
         } catch (TelegramApiException e) {
             log.error("an occurred error when execute method");
         }
+    }
+    @Bean
+    public CommandLineRunner registerBot(@Value("${telegram.bot.authorizePath}") String authorizePath,
+                                               RestTemplate restTemplate) {
+        return (c) -> {
+            ResponseEntity<String> responseEntity = restTemplate.getForEntity(authorizePath, String.class);
+            if (responseEntity.getStatusCode() == HttpStatus.OK) {
+                log.info("bot authorized successfully");
+            } else {
+                log.error("can not authorize bot in telegram");
+                throw new RuntimeException();
+            }
+        };
     }
 }

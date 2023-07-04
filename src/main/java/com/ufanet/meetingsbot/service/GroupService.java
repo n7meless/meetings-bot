@@ -1,14 +1,13 @@
 package com.ufanet.meetingsbot.service;
 
-import com.ufanet.meetingsbot.model.Account;
-import com.ufanet.meetingsbot.model.Group;
+import com.ufanet.meetingsbot.entity.Account;
+import com.ufanet.meetingsbot.entity.Group;
 import com.ufanet.meetingsbot.repository.GroupRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.User;
 
 import java.util.List;
@@ -17,9 +16,9 @@ import java.util.Optional;
 import java.util.Set;
 
 @Slf4j
-@CacheConfig(cacheNames = {"group"})
 @Service
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = {"group"})
 public class GroupService {
     private final GroupRepository groupRepository;
     private final AccountService accountService;
@@ -30,17 +29,8 @@ public class GroupService {
     }
 
     @Transactional
-    public Group saveTgChat(Chat tgChat) {
-        Group group = Group.builder().id(tgChat.getId())
-                .description(tgChat.getDescription())
-                .title(tgChat.getTitle())
-                .build();
-
-        return save(group);
-    }
-
-    @Transactional
     public void deleteById(long groupId) {
+        log.info("deleting group {} from db", groupId);
         groupRepository.deleteById(groupId);
     }
 
@@ -55,10 +45,9 @@ public class GroupService {
         return groupRepository.findGroupsByMemberId(userId);
     }
 
-    //TODO доделать добавление если пользователь есть
     @Transactional
     public void saveMembers(Group group, List<User> tgUsers) {
-        Set<Account> members = group.getMembers();
+        log.info("saving group {} members {} into db", group.getId(), tgUsers);
         for (User tgUser : tgUsers) {
             if (!tgUser.getIsBot()) {
 
@@ -67,18 +56,18 @@ public class GroupService {
 
                 if (optionalAccount.isEmpty()) {
                     Account account = accountService.saveTgUser(tgUser);
-                    members.add(account);
+                    group.addMember(account);
                 } else {
-                    members.add(optionalAccount.get());
+                    group.addMember(optionalAccount.get());
                 }
             }
         }
-        group.setMembers(members);
         groupRepository.save(group);
     }
 
     @Transactional
     public void removeMember(Group group, User member) {
+        log.info("removing from db group {} member {}", group.getId(), member.getId());
         Set<Account> accounts = group.getMembers();
         Account leftMember = accounts.stream()
                 .filter((account) -> Objects.equals(account.getId(), member.getId()))
@@ -89,7 +78,7 @@ public class GroupService {
             deleteById(group.getId());
         } else {
             group.setMembers(accounts);
-            save(group);
+            groupRepository.save(group);
         }
     }
 }

@@ -25,8 +25,8 @@ public class CommandReplyMessage extends ReplyMessage {
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         List<InlineKeyboardButton> buttons = new ArrayList<>();
         for (String smile : rainbowEmotions) {
-            InlineKeyboardButton build = InlineKeyboardButton.builder()
-                    .text(smile).callbackData(" ").build();
+            InlineKeyboardButton build = mainKeyboard.defaultInlineButton(smile, " ");
+
             buttons.add(build);
         }
         markup.setKeyboard(List.of(buttons));

@@ -1,21 +1,18 @@
 package com.ufanet.meetingsbot.message;
 
 import com.ufanet.meetingsbot.constants.Status;
-import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.constants.state.PreviousState;
 import com.ufanet.meetingsbot.constants.state.UpcomingState;
 import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.dto.AccountTimeDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
+import com.ufanet.meetingsbot.entity.Account;
+import com.ufanet.meetingsbot.entity.Meeting;
 import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
 import com.ufanet.meetingsbot.mapper.AccountMapper;
 import com.ufanet.meetingsbot.message.keyboard.MeetingKeyboardMaker;
-import com.ufanet.meetingsbot.model.Account;
-import com.ufanet.meetingsbot.model.AccountMeeting;
-import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.service.AccountService;
-import com.ufanet.meetingsbot.service.MeetingService;
 import com.ufanet.meetingsbot.utils.CustomFormatter;
 import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
@@ -33,62 +30,20 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class UpcomingReplyMessage extends ReplyMessage {
-    private final MeetingService meetingService;
     private final AccountService accountService;
     private final MeetingKeyboardMaker meetingKeyboard;
-    private final AccountMapper accountMapper;
 
-    public void sendUpcomingMeetings(long userId, List<MeetingDto> meetings) {
-        Account account = accountService.getByUserId(userId).orElseThrow();
-        String zoneId = account.getZoneId();
-        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+    public void sendUpcomingMeetingsList(long userId, List<MeetingDto> meetings) {
+        AccountDto accountDto = accountService.getByUserId(userId).map(AccountMapper.MAPPER::map)
+                .orElseThrow(() -> new AccountNotFoundException(userId));
 
-        Map<MeetingState, List<MeetingDto>> meetingMap =
-                meetings.stream().sorted(MeetingDto::compareTo).collect(Collectors.groupingBy(MeetingDto::getState));
+        String zoneId = accountDto.getTimeZone();
 
-        for (Map.Entry<MeetingState, List<MeetingDto>> entry : meetingMap.entrySet()) {
-            MeetingState entryState = entry.getKey();
-            List<MeetingDto> entryValue = entry.getValue();
-
-            if (entryValue.size() > 0) {
-                if (entryState.equals(MeetingState.AWAITING)) {
-                    InlineKeyboardButton button = meetingKeyboard.defaultInlineButton(
-                            Emojis.ORANGE_CIRCLE.getEmojiSpace() + "В ожидании", " ");
-                    keyboard.add(List.of(button));
-                } else {
-                    InlineKeyboardButton button = meetingKeyboard.defaultInlineButton(
-                            Emojis.GREEN_CIRCLE.getEmojiSpace() + "Подтвержденные", " ");
-                    keyboard.add(List.of(button));
-                }
-
-                int i = 0;
-                while (i < entryValue.size()) {
-                    List<InlineKeyboardButton> rowButtons = new ArrayList<>();
-                    for (int j = 0; j < 2 && i < entryValue.size(); j++, i++) {
-                        MeetingDto meeting = entryValue.get(i);
-                        ZonedDateTime zonedDateTime = meeting.getDate().withZoneSameInstant(ZoneId.of(zoneId));
-
-                        String upcomingMeeting = messageUtils.buildText(Emojis.CALENDAR.getEmojiSpace(),
-                                zonedDateTime.format(CustomFormatter.DATE_TIME_FORMATTER));
-
-                        String callback = messageUtils.buildText(UpcomingState.UPCOMING_SELECTED_MEETING.name(),
-                                " ", Long.toString(meeting.getId()));
-
-                        InlineKeyboardButton button =
-                                meetingKeyboard.defaultInlineButton(upcomingMeeting, callback);
-
-                        rowButtons.add(button);
-                    }
-                    keyboard.add(rowButtons);
-                }
-            }
-        }
-
-        InlineKeyboardMarkup markup = meetingKeyboard.buildInlineMarkup(keyboard);
+        InlineKeyboardMarkup markup =  meetingKeyboard.getUpcomingMeetingsListMarkup(zoneId, meetings);
         EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId,
-                localeMessageService.getMessage("upcoming.meeting.confirmed.all"), markup);
+                localeMessageService.getMessage("upcoming.meetings.list"), markup);
 
-        executeMessage(editMessage);
+        executeEditOrSendMessage(editMessage);
     }
 
     public void sendSelectedUpcomingMeeting(long userId, MeetingDto meetingDto,
@@ -128,7 +83,7 @@ public class UpcomingReplyMessage extends ReplyMessage {
 
         EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId, textMessage,
                 upcomingMarkup);
-        executeMessage(editMessage);
+        executeEditOrSendMessage(editMessage);
     }
 
     public void sendCanceledMeetingByMatching(MeetingDto meetingDto) {
@@ -147,7 +102,7 @@ public class UpcomingReplyMessage extends ReplyMessage {
     public void sendSuccessMeetingConfirm(long userId) {
         EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId,
                 localeMessageService.getMessage("upcoming.meeting.confirmed.message"), null);
-        executeMessage(editMessage);
+        executeEditOrSendMessage(editMessage);
     }
 
     public void sendCanceledAccountTimeMessage(MeetingDto meetingDto) {
@@ -165,9 +120,9 @@ public class UpcomingReplyMessage extends ReplyMessage {
 
     public void sendEditMeetingAccountTimes(long userId, MeetingDto meetingDto,
                                             List<AccountTimeDto> accountTimes) {
-        Account account = accountService.getByUserId(userId)
+        AccountDto accountDto = accountService.getByUserId(userId).map(AccountMapper.MAPPER::map)
                 .orElseThrow(() -> new AccountNotFoundException(userId));
-        String zoneId = account.getZoneId();
+        String zoneId = accountDto.getTimeZone();
         List<ZonedDateTime> dates = meetingDto.getDatesWithZoneId(zoneId);
         String timesText = messageUtils.generateDatesText(dates);
 
@@ -181,11 +136,11 @@ public class UpcomingReplyMessage extends ReplyMessage {
                 meetingKeyboard.getChangeMeetingTimeKeyboard(meetingDto.getId(), accountTimes, zoneId);
         EditMessageText sendMessage = messageUtils.generateEditMessageHtml(userId, textMeeting, keyboard);
 
-        executeMessage(sendMessage);
+        executeEditOrSendMessage(sendMessage);
     }
 
     public void sendSelectedAwaitingMeeting(long userId, MeetingDto meetingDto) {
-        Account account = accountService.getByUserId(userId)
+        AccountDto accountDto = accountService.getByUserId(userId).map(AccountMapper.MAPPER::map)
                 .orElseThrow(() -> new AccountNotFoundException(userId));
 
         MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meetingDto);
@@ -193,7 +148,7 @@ public class UpcomingReplyMessage extends ReplyMessage {
         InlineKeyboardMarkup keyboard =
                 meetingKeyboard.getMeetingConfirmKeyboard(meetingDto.getId());
 
-        String zoneId = account.getZoneId();
+        String zoneId = accountDto.getTimeZone();
         List<ZonedDateTime> dates = meetingDto.getDatesWithZoneId(zoneId);
         String datesText = messageUtils.generateDatesText(dates);
 
@@ -203,7 +158,7 @@ public class UpcomingReplyMessage extends ReplyMessage {
                 meetingMessage.address());
 
         SendMessage sendMessage =
-                messageUtils.generateSendMessageHtml(account.getId(), textMeeting, keyboard);
+                messageUtils.generateSendMessageHtml(accountDto.getId(), textMeeting, keyboard);
 
         executeSendMessage(sendMessage);
     }
@@ -213,18 +168,17 @@ public class UpcomingReplyMessage extends ReplyMessage {
         EditMessageText editMessage =
                 messageUtils.generateEditMessageHtml(userId,
                         localeMessageService.getMessage("upcoming.meeting.notexist"), null);
-        executeMessage(editMessage);
+        executeEditOrSendMessage(editMessage);
     }
 
     public void sendCanceledMeetingByOwner(long userId, MeetingDto meetingDto) {
         ZonedDateTime zonedDateTime = meetingDto.getDate();
         String accountLink = messageUtils.generateAccountLink(meetingDto.getOwner(), "", "");
 
-        List<Account> accounts = accountService.getAccountsByMeetingId(meetingDto.getId());
-        for (Account account : accounts) {
-            if (Objects.equals(account.getId(), meetingDto.getOwner().getId())) continue;
+        Set<AccountDto> accountDtos = meetingDto.getParticipantsWithoutOwner();
+        for (AccountDto accountDto : accountDtos) {
 
-            String zoneId = account.getZoneId();
+            String zoneId = accountDto.getTimeZone();
             String dateWithZone = zonedDateTime.withZoneSameInstant(ZoneId.of(zoneId))
                     .format(CustomFormatter.DATE_TIME_FORMATTER);
 
@@ -232,7 +186,7 @@ public class UpcomingReplyMessage extends ReplyMessage {
                     Emojis.CALENDAR.getEmojiSpace() + dateWithZone,
                     accountLink);
 
-            SendMessage sendMessage = messageUtils.generateSendMessageHtml(account.getId(),
+            SendMessage sendMessage = messageUtils.generateSendMessageHtml(accountDto.getId(),
                     messageToParticipants, null);
             executeSendMessage(sendMessage);
         }
@@ -253,38 +207,32 @@ public class UpcomingReplyMessage extends ReplyMessage {
         executeSendMessage(sendMessage);
     }
 
-    public void sendConfirmedComingMeeting(Meeting meeting) {
-        Set<AccountMeeting> accountMeetings = meeting.getAccountMeetings();
+    public void sendComingMeetingNotifyToParticipants(Meeting meeting, String messageProperty) {
+        List<Account> accounts = accountService.getAccountsByMeetingId(meeting.getId());
         ZonedDateTime zonedDateTime = meeting.getDate();
-        for (AccountMeeting accountMeeting : accountMeetings) {
-            Account account = accountMeeting.getAccount();
-            String zoneId = account.getZoneId();
+        InlineKeyboardButton btn = meetingKeyboard.defaultInlineButton("Установить статус",
+                UpcomingState.UPCOMING_SELECTED_MEETING + " " + meeting.getId());
+        for (Account account : accounts) {
+            String zoneId = account.getSettings().getTimeZone();
             ZonedDateTime accountZoneTime = zonedDateTime.withZoneSameInstant(ZoneId.of(zoneId));
             SendMessage sendMessage = messageUtils.generateSendMessageHtml(account.getId(),
-                    localeMessageService.getMessage("upcoming.meeting.confirmed.coming",
-                            Emojis.ALARM_CLOCK.getEmojiSpace() + accountZoneTime.toLocalTime()), null);
+                    localeMessageService.getMessage(messageProperty,
+                            Emojis.ALARM_CLOCK.getEmojiSpace() + accountZoneTime.toLocalTime()),
+                    meetingKeyboard.buildInlineMarkup(List.of(List.of(btn))));
             executeSendMessage(sendMessage);
         }
     }
 
-    public void sendPassedMeetings(long userId) {
-        List<Meeting> passedMeetings =
-                meetingService.getMeetingsByUserIdAndStateIn(userId, List.of(MeetingState.PASSED));
-    }
-
-    public void sendCommentNotificationParticipants(Meeting meeting) {
-        Set<AccountMeeting> accountMeetings = meeting.getAccountMeetings();
-        AccountDto accountDto = accountMapper.map(meeting.getOwner());
-        String ownerLink = messageUtils.generateAccountLink(accountDto, "", "");
-        String text = localeMessageService.getMessage("upcoming.meeting.notification.comment", ownerLink);
-
-        InlineKeyboardButton skip = meetingKeyboard.defaultInlineButton("Пропустить", " ");
-        for (AccountMeeting accountMeeting : accountMeetings) {
-            Account participant = accountMeeting.getAccount();
-            SendMessage sendMessage = messageUtils.generateSendMessageHtml(participant.getId(), text,
-                    meetingKeyboard.buildInlineMarkup(List.of(List.of(skip))));
-            executeSendMessage(sendMessage);
-        }
+    public void sendPassedMeetings(long userId, MeetingDto meetingDto) {
+        MeetingMessage message = messageUtils.generateMeetingMessage(meetingDto);
+        String participants = messageUtils.generateAccountLink(meetingDto.getParticipants(), Emojis.GREY_SELECTED.getEmojiSpace(), "");
+        String textMessage = localeMessageService.getMessage("upcoming.meeting.confirmed.selected",
+                message.subject(), message.questions(), message.duration(),
+                participants, message.address(), meetingDto.getState().name());
+        InlineKeyboardButton previous = meetingKeyboard.getPreviousInlineButton(PreviousState.PREVIOUS_MEETINGS.name());
+        EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId, textMessage,
+                meetingKeyboard.buildInlineMarkup(List.of(List.of(previous))));
+        executeEditOrSendMessage(editMessage);
     }
 
     public void sendParticipantSelectionForPing(long userId, MeetingDto meetingDto) {
@@ -303,13 +251,12 @@ public class UpcomingReplyMessage extends ReplyMessage {
         keyboard.add(List.of(btn5));
         EditMessageText editMessageText = messageUtils.generateEditMessageHtml(userId, message,
                 meetingKeyboard.buildInlineMarkup(keyboard));
-        executeEditMessage(editMessageText);
+        executeEditOrSendMessage(editMessageText);
     }
 
     public void sendPingParticipant(long userId, long participantId, MeetingDto meetingDto) {
-        Account account = accountService.getByUserId(participantId)
+        AccountDto accountDto = accountService.getByUserId(userId).map(AccountMapper.MAPPER::map)
                 .orElseThrow(() -> new AccountNotFoundException(userId));
-        AccountDto accountDto = accountMapper.map(account);
         String zoneId = accountDto.getTimeZone();
         ZonedDateTime zonedDateTime = meetingDto.getDateWithZoneId(zoneId);
 
@@ -326,7 +273,7 @@ public class UpcomingReplyMessage extends ReplyMessage {
         String participantLink = messageUtils.generateAccountLink(accountDto, "", "");
         EditMessageText editMessageText = messageUtils.generateEditMessageHtml(userId,
                 localeMessageService.getMessage("upcoming.meeting.ping.success", participantLink), null);
-        executeMessage(editMessageText);
+        executeEditOrSendMessage(editMessageText);
     }
 
     public void sendReadyMeeting(MeetingDto meetingDto) {
@@ -350,19 +297,27 @@ public class UpcomingReplyMessage extends ReplyMessage {
     }
 
     public void sendPreviousMeetingsList(long userId, List<MeetingDto> meetingDtoList) {
-        Account account = accountService.getByUserId(userId)
+        AccountDto accountDto = accountService.getByUserId(userId).map(AccountMapper.MAPPER::map)
                 .orElseThrow(() -> new AccountNotFoundException(userId));
-        String zoneId = account.getZoneId();
+        String zoneId = accountDto.getTimeZone();
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+
         for (MeetingDto meetingDto : meetingDtoList) {
             ZonedDateTime dateWithZoneId = meetingDto.getDateWithZoneId(zoneId);
-            String formatted = CustomFormatter.DATE_TIME_WEEK_FORMATTER.format(dateWithZoneId);
-            InlineKeyboardButton btn = meetingKeyboard.defaultInlineButton(formatted,
-                    PreviousState.PREVIOUS_MEETINGS + " " + meetingDto.getId());
+            String formatted = CustomFormatter.DATE_TIME_FORMATTER.format(dateWithZoneId);
+            InlineKeyboardButton btn =
+                    meetingKeyboard.defaultInlineButton(Emojis.CALENDAR.getEmojiSpace() + formatted,
+                            PreviousState.PREVIOUS_MEETINGS + " " + meetingDto.getId());
             keyboard.add(List.of(btn));
         }
-        SendMessage sendMessage = messageUtils.generateSendMessage(userId,
-                "Выберите из списка прошедшую встречу", meetingKeyboard.buildInlineMarkup(keyboard));
-        executeSendMessage(sendMessage);
+        EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId,
+                "previous.meeting.choose", meetingKeyboard.buildInlineMarkup(keyboard));
+        executeEditOrSendMessage(editMessage);
+    }
+
+    public void sendPreviousMeetingsNotExists(long userId, List<MeetingDto> meetingDtoList) {
+        EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId,
+                localeMessageService.getMessage("previous.meeting.notexists"), null);
+        executeEditOrSendMessage(editMessage);
     }
 }

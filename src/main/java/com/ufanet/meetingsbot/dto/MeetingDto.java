@@ -21,7 +21,7 @@ import static java.util.stream.Collectors.toSet;
 public class MeetingDto implements Comparable<MeetingDto> {
     private Long id;
     private AccountDto owner;
-    private Set<AccountMeetingDto> accountMeetings;
+    private Set<AccountDto> participants;
     private String address;
     private GroupDto groupDto;
     private SubjectDto subjectDto;
@@ -35,12 +35,10 @@ public class MeetingDto implements Comparable<MeetingDto> {
     }
 
     public void addParticipant(AccountDto accountDto) {
-        if (this.accountMeetings == null) {
-            this.accountMeetings = new HashSet<>();
+        if (this.participants == null) {
+            this.participants = new HashSet<>();
         }
-        AccountMeetingDto accountMeetingDto = AccountMeetingDto.builder()
-                .account(accountDto).build();
-        this.accountMeetings.add(accountMeetingDto);
+        this.participants.add(accountDto);
     }
 
 
@@ -51,15 +49,8 @@ public class MeetingDto implements Comparable<MeetingDto> {
                 .filter(predicate).toList();
     }
 
-
-    public Set<AccountDto> getParticipants() {
-        return this.getAccountMeetings().stream()
-                .map(AccountMeetingDto::getAccount).collect(toSet());
-    }
-
     public Set<AccountDto> getParticipantsWithoutOwner() {
-        return this.getAccountMeetings().stream()
-                .map(AccountMeetingDto::getAccount)
+        return this.participants.stream()
                 .filter(account -> !Objects.equals(account.getId(), this.owner.getId()))
                 .collect(toSet());
     }

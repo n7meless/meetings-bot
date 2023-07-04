@@ -1,4 +1,4 @@
-package com.ufanet.meetingsbot.model;
+package com.ufanet.meetingsbot.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -40,8 +40,8 @@ public class Account implements Serializable {
     @OneToOne(fetch = FetchType.LAZY, mappedBy = "account", cascade = CascadeType.ALL)
     private BotState botState;
 
-    @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
-    private Set<AccountMeeting> accountMeetings;
+    @ManyToMany(mappedBy = "participants")
+    private List<Meeting> meetings;
 
     @ManyToMany
     @JoinTable(name = "user_chats",
@@ -51,8 +51,4 @@ public class Account implements Serializable {
 
     @OneToMany(mappedBy = "account")
     private List<AccountTime> meetingTimes;
-
-    public String getZoneId() {
-        return this.settings.getTimeZone();
-    }
 }

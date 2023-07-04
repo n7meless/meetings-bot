@@ -49,7 +49,7 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
     public List<List<InlineKeyboardButton>> getTimeInlineMarkup(MeetingDto meetingDto, String zoneId) {
         List<List<InlineKeyboardButton>> rowsInLine = new ArrayList<>();
 
-        LocalDateTime currentDate = LocalDateTime.now(ZoneId.of(zoneId));
+        LocalDateTime currentDateTime = LocalDateTime.now(ZoneId.of(zoneId));
 
         Map<LocalDate, Set<ZonedDateTime>> datesMap = meetingDto.getSortedDateMap();
 
@@ -63,18 +63,18 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
                     .map(t -> t.withZoneSameInstant(ZoneId.of(zoneId))).collect(Collectors.toSet());
 
 
-            int startWorkDay = this.startWorkDay; // начало рабочего дня
-            int endWorkDay = this.endWorkDay; // конец рабочего дня
+            int startWorkDay = this.startWorkDay;
+            int endWorkDay = this.endWorkDay;
 
-            //считаем который час нам подходит
-            while (currentDate.isAfter(LocalDateTime.of(localDate, LocalTime.of(startWorkDay, 0)))
+            //what time is after current date time
+            while (currentDateTime.isAfter(LocalDateTime.of(localDate, LocalTime.of(startWorkDay, 0)))
                     && startWorkDay < endWorkDay) {
 
                 startWorkDay++;
             }
             rowsInLine.add(List.of(dateHeader));
-            //сколько рабочих часов для встречи осталось
-            //определяем длину inline кнопок
+
+            //length of inline buttons
             int buttonLength = endWorkDay - startWorkDay;
 
             int rows = 2;

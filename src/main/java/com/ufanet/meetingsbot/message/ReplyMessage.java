@@ -1,7 +1,7 @@
 package com.ufanet.meetingsbot.message;
 
 import com.ufanet.meetingsbot.constants.type.MessageType;
-import com.ufanet.meetingsbot.model.BotState;
+import com.ufanet.meetingsbot.entity.BotState;
 import com.ufanet.meetingsbot.service.BotService;
 import com.ufanet.meetingsbot.service.LocaleMessageService;
 import com.ufanet.meetingsbot.utils.MessageUtils;
@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.DefaultAbsSender;
+import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
@@ -27,6 +28,7 @@ public abstract class ReplyMessage {
     protected DefaultAbsSender absSender;
     protected MessageUtils messageUtils;
     protected LocaleMessageService localeMessageService;
+
 
     void executeSendMessage(SendMessage message) {
         executorService.execute(() -> {
@@ -54,26 +56,35 @@ public abstract class ReplyMessage {
         });
     }
 
-    void executeMessage(EditMessageText message) {
+    void safeExecute(BotApiMethod<?> method) {
+        try {
+            absSender.execute(method);
+        } catch (TelegramApiException e) {
+            log.error("an occurred error when execute method");
+        }
+    }
+
+    void executeEditOrSendMessage(EditMessageText message) {
         long chatId = Long.parseLong(message.getChatId());
         BotState botState = botService.getByUserId(chatId);
-        boolean fromUser = botState.isMsgFromUser();
-        if (fromUser) {
+        if (botState == null || botState.isMsgFromUser()) {
             SendMessage sendMessage =
                     messageUtils.generateSendMessageHtml(chatId, message.getText(),
                             message.getReplyMarkup());
 
             executeSendMessage(sendMessage);
         } else {
+            int messageId = botState.getMessageId();
+            message.setMessageId(messageId);
             executeEditMessage(message);
+            botState.setMessageType(MessageType.EDIT_MESSAGE);
+            botService.saveCache(chatId, botState);
         }
     }
 
-    protected void executeEditMessage(EditMessageText message) {
+    private void executeEditMessage(EditMessageText message) {
         long chatId = Long.parseLong(message.getChatId());
-        BotState botState = botService.getByUserId(chatId);
-        int messageId = botState.getMessageId();
-        message.setMessageId(messageId);
+        int messageId = message.getMessageId();
         try {
             log.info("send edit message to {} with messageId {}", chatId, messageId);
             absSender.execute(message);
@@ -84,8 +95,6 @@ public abstract class ReplyMessage {
             log.warn(e.getMessage());
             log.error("an occurred error when sending message {} in chat {}", messageId, chatId);
         }
-        botState.setMessageType(MessageType.EDIT_MESSAGE);
-        botService.saveCache(chatId, botState);
     }
 
     protected void disableInlineMessage(Long userId, Integer messageId) {

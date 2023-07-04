@@ -1,4 +1,4 @@
-package com.ufanet.meetingsbot.model;
+package com.ufanet.meetingsbot.entity;
 
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import jakarta.persistence.*;
@@ -17,22 +17,21 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity(name = "meeting")
-@NamedEntityGraph(name = "meeting-entity-graph", attributeNodes = {
+@NamedEntityGraph(name = "meeting-with-children", attributeNodes = {
         @NamedAttributeNode(value = "dates", subgraph = "dates.meetingTimes"),
         @NamedAttributeNode(value = "subject", subgraph = "subject.questions"),
-//        @NamedAttributeNode(value = "owner"),
-        @NamedAttributeNode(value = "group"),
-        @NamedAttributeNode(value = "accountMeetings", subgraph = "accountMeetings.account")},
+        @NamedAttributeNode(value = "participants", subgraph = "participants.settings"),
+        @NamedAttributeNode(value = "group")},
         subgraphs = {
                 @NamedSubgraph(name = "subject.questions",
                         attributeNodes = @NamedAttributeNode(value = "questions")),
                 @NamedSubgraph(name = "dates.meetingTimes",
-                        attributeNodes = @NamedAttributeNode(value = "meetingTimes", subgraph = "meetingTimes.accountTimes")),
+                        attributeNodes = @NamedAttributeNode(value = "meetingTimes",
+                                subgraph = "meetingTimes.accountTimes")),
                 @NamedSubgraph(name = "meetingTimes.accountTimes",
                         attributeNodes = @NamedAttributeNode(value = "accountTimes")),
-                @NamedSubgraph(name = "accountMeetings.account",
-                        attributeNodes = @NamedAttributeNode(value = "account", subgraph = "account.settings")),
-                @NamedSubgraph(name = "account.settings", attributeNodes = @NamedAttributeNode(value = "settings"))
+                @NamedSubgraph(name = "participants.settings",
+                        attributeNodes = @NamedAttributeNode(value = "settings"))
         })
 public class Meeting implements Serializable {
     @Id
@@ -43,8 +42,12 @@ public class Meeting implements Serializable {
     @JoinColumn(name = "owner_id", referencedColumnName = "id")
     private Account owner;
 
-    @OneToMany(mappedBy = "meeting", orphanRemoval = true, cascade = CascadeType.ALL)
-    private Set<AccountMeeting> accountMeetings;
+    @ManyToMany
+    @JoinTable(name = "user_meetings",
+            joinColumns = @JoinColumn(name = "meeting_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"))
+    private Set<Account> participants;
+
     private String address;
 
     @OneToOne(fetch = FetchType.LAZY)
@@ -64,7 +67,7 @@ public class Meeting implements Serializable {
     @Enumerated(EnumType.STRING)
     private MeetingState state;
 
-    @OneToMany(mappedBy = "meeting", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<MeetingDate> dates;
 
     public ZonedDateTime getDate() {

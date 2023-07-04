@@ -1,10 +1,10 @@
 package com.ufanet.meetingsbot.service;
 
 import com.ufanet.meetingsbot.constants.state.AccountState;
-import com.ufanet.meetingsbot.model.Account;
-import com.ufanet.meetingsbot.model.AccountTime;
-import com.ufanet.meetingsbot.model.BotState;
-import com.ufanet.meetingsbot.model.Settings;
+import com.ufanet.meetingsbot.entity.Account;
+import com.ufanet.meetingsbot.entity.AccountTime;
+import com.ufanet.meetingsbot.entity.BotState;
+import com.ufanet.meetingsbot.entity.Settings;
 import com.ufanet.meetingsbot.repository.AccountRepository;
 import com.ufanet.meetingsbot.repository.AccountTimeRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,28 +37,33 @@ public class AccountService {
         return accountRepository.findById(userId);
     }
 
+    public List<AccountTime> getAccountTimesByAccountAndMeetingId(long userId, long meetingId) {
+        log.info("getting account times with user {} and meeting {} from db", userId, meetingId);
+        return accountTimeRepository.findByAccountAndMeetingId(userId, meetingId);
+    }
+
     public List<AccountTime> getAccountTimesByMeetingId(long meetingId) {
         log.info("getting account times with meeting {} from db", meetingId);
         return accountTimeRepository.findByMeetingId(meetingId);
     }
 
     @Transactional
-    public void saveAccountTime(AccountTime accountTime) {
+    public AccountTime saveAccountTime(AccountTime accountTime) {
         log.info("saving account time {} into db", accountTime.getId());
-        accountTimeRepository.save(accountTime);
+        return accountTimeRepository.save(accountTime);
     }
 
     @Transactional
-    public void saveAccountTimes(List<AccountTime> accountTimes) {
+    public List<AccountTime> saveAccountTimes(List<AccountTime> accountTimes) {
         log.info("saving account times {} into db", accountTimes);
-        accountTimeRepository.saveAll(accountTimes);
+        return accountTimeRepository.saveAll(accountTimes);
     }
 
     @Transactional
     @CacheEvict(key = "#account.id", value = "account")
-    public void save(Account account) {
+    public Account save(Account account) {
         log.info("saving user {} into db", account.getId());
-        accountRepository.save(account);
+        return accountRepository.save(account);
     }
 
     @Cacheable(key = "#groupId", value = "group_members")
@@ -91,17 +96,16 @@ public class AccountService {
 
         account.setBotState(botState);
         account.setSettings(settings);
-        save(account);
-        return account;
+        return save(account);
     }
 
     @Transactional
-    public void updateTgUser(Account account, User user) {
-        log.info("updating account from telegram user {}", user.getId());
+    public Account updateTgUser(Account account, User user) {
+        log.info("updating account {} from telegram user", user.getId());
         account.setLastname(user.getLastName());
         account.setFirstname(user.getFirstName());
         account.setUsername(user.getUserName());
-        save(account);
+        return save(account);
     }
 }
 

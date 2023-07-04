@@ -13,5 +13,4 @@ public class MeetingsBotApplication {
     public static void main(String[] args) {
         SpringApplication.run(MeetingsBotApplication.class, args);
     }
-
 }

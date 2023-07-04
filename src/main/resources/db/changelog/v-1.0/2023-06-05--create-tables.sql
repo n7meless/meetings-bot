@@ -39,11 +39,8 @@ CREATE TABLE IF NOT EXISTS meeting
 --changeset aidar:create_user_meetings_table
 CREATE TABLE IF NOT EXISTS user_meetings
 (
-    id         BIGSERIAL PRIMARY KEY,
     user_id    BIGINT NOT NULL,
     meeting_id BIGINT NOT NULL,
-    comment    VARCHAR(255),
-    rate       INT,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (meeting_id) REFERENCES meeting (id) ON DELETE CASCADE
 );

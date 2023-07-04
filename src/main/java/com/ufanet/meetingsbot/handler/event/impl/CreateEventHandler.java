@@ -3,25 +3,27 @@ package com.ufanet.meetingsbot.handler.event.impl;
 import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
+import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.dto.GroupDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.SubjectDto;
+import com.ufanet.meetingsbot.entity.Account;
+import com.ufanet.meetingsbot.entity.Group;
+import com.ufanet.meetingsbot.entity.Meeting;
 import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
 import com.ufanet.meetingsbot.exceptions.GroupNotFoundException;
 import com.ufanet.meetingsbot.handler.event.EventHandler;
+import com.ufanet.meetingsbot.mapper.AccountMapper;
 import com.ufanet.meetingsbot.mapper.GroupMapper;
 import com.ufanet.meetingsbot.mapper.MeetingMapper;
 import com.ufanet.meetingsbot.message.MeetingReplyMessage;
-import com.ufanet.meetingsbot.model.Account;
-import com.ufanet.meetingsbot.model.Group;
-import com.ufanet.meetingsbot.model.Meeting;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.GroupService;
 import com.ufanet.meetingsbot.service.MeetingConstructor;
 import com.ufanet.meetingsbot.service.MeetingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Controller;
+import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -30,9 +32,10 @@ import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
-@Controller
+@Component
 @RequiredArgsConstructor
 public class CreateEventHandler implements EventHandler {
     private final MeetingService meetingService;
@@ -40,8 +43,6 @@ public class CreateEventHandler implements EventHandler {
     private final MeetingReplyMessage replyMessage;
     private final AccountService accountService;
     private final GroupService groupService;
-    private final GroupMapper groupMapper;
-    private final MeetingMapper meetingMapper;
 
     @Override
     public void handleUpdate(Update update) {
@@ -52,7 +53,7 @@ public class CreateEventHandler implements EventHandler {
             if (meeting.isEmpty()) {
                 meeting = meetingService.getLastChangedMeetingByOwnerId(userId);
             }
-            MeetingDto meetingDto = meetingMapper.mapIfPresentOrElseGet(meeting,
+            MeetingDto meetingDto = MeetingMapper.MAPPER.mapIfPresentOrElseGet(meeting,
                     () -> {
                         Account owner = accountService.getByUserId(userId)
                                 .orElseThrow(() -> new AccountNotFoundException(userId));
@@ -72,7 +73,8 @@ public class CreateEventHandler implements EventHandler {
 
         if (messageText.equals(AccountState.CREATE.getButtonName())) {
             meetingService.clearCache(userId);
-        } else handleStep(userId, meetingDto, messageText);
+        } else
+            handleStep(userId, meetingDto, messageText);
 
         sendMessage(userId, meetingDto, messageText);
     }
@@ -88,24 +90,27 @@ public class CreateEventHandler implements EventHandler {
         ToggleButton toggleButton = ToggleButton.typeOf(data);
         switch (toggleButton) {
             case SEND -> {
+                log.info("sending created meeting to participants by user-owner {} ", userId);
                 meetingService.clearCache(userId);
-                Meeting meeting = meetingMapper.map(meetingDto);
+                Meeting meeting = MeetingMapper.MAPPER.mapToFullEntity(meetingDto);
                 meetingService.createMeeting(meeting);
                 meetingDto.setId(meeting.getId());
                 replyMessage.sendMeetingToParticipants(meetingDto);
                 replyMessage.sendMessageSentSuccessfully(userId);
             }
             case NEXT -> {
+                log.info("meeting in state '{}' advances to the next state by user {}", meetingDto.getState(), userId);
                 MeetingState currState = meetingDto.getState();
                 MeetingState newState = MeetingState.setNextState(currState);
                 meetingDto.setState(newState);
-                Meeting meeting = meetingMapper.map(meetingDto);
+                Meeting meeting = MeetingMapper.MAPPER.mapToFullEntity(meetingDto);
                 meetingService.saveOnCache(userId, meeting);
                 sendMessage(userId, meetingDto, data);
             }
             case CANCEL -> {
+                log.info("meeting in the state '{}' was canceled by user {}", meetingDto.getState(), userId);
                 meetingService.clearCache(userId);
-                Meeting meeting = meetingMapper.map(meetingDto);
+                Meeting meeting = MeetingMapper.MAPPER.mapToFullEntity(meetingDto);
                 meetingService.deleteById(meeting.getId());
                 replyMessage.sendCanceledMessage(userId);
             }
@@ -120,21 +125,24 @@ public class CreateEventHandler implements EventHandler {
     protected void handleStep(long userId, MeetingDto meetingDto, String text) {
         try {
             MeetingState meetingState = meetingDto.getState();
+            log.info("updating meeting by user {} on meeting state '{}'", userId, meetingState);
             switch (meetingState) {
                 case GROUP_SELECT -> {
                     int groupId = Integer.parseInt(text);
                     Group group = groupService.getByGroupId(groupId)
                             .orElseThrow(() -> new GroupNotFoundException(userId));
-                    GroupDto groupDto = groupMapper.map(group);
+                    GroupDto groupDto = GroupMapper.MAPPER.map(group);
                     meetingDto.setGroupDto(groupDto);
                     meetingDto.setState(MeetingState.PARTICIPANT_SELECT);
                 }
                 case PARTICIPANT_SELECT -> {
                     long participantId = Long.parseLong(text);
-                    Set<Account> accounts =
+                    Set<AccountDto> groupMembers =
                             accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupDto().getId(),
-                                    meetingDto.getOwner().getId());
-                    meetingConstructor.updateParticipants(meetingDto, participantId, accounts);
+                                            meetingDto.getOwner().getId()).stream().map(AccountMapper.MAPPER::map)
+                                    .collect(Collectors.toSet());
+
+                    meetingConstructor.updateParticipants(meetingDto, participantId, groupMembers);
                 }
                 case SUBJECT_SELECT -> {
                     SubjectDto subjectDto = new SubjectDto();
@@ -158,9 +166,9 @@ public class CreateEventHandler implements EventHandler {
             }
             meetingDto.setUpdatedDt(LocalDateTime.now());
         } catch (NumberFormatException | DateTimeException ex) {
-            log.debug("invalid value entered by user {}", userId);
+            log.debug("invalid value '{}' entered by user {}", text, userId);
         } finally {
-            Meeting meeting = meetingMapper.map(meetingDto);
+            Meeting meeting = MeetingMapper.MAPPER.mapToFullEntity(meetingDto);
             meetingService.saveOnCache(userId, meeting);
         }
     }
@@ -168,6 +176,7 @@ public class CreateEventHandler implements EventHandler {
 
     protected void sendMessage(long userId, MeetingDto meetingDto, String callback) {
         MeetingState state = meetingDto.getState();
+        log.info("sending message to user {} when meeting state is '{}'", userId, state);
         switch (state) {
             case GROUP_SELECT -> replyMessage.sendGroupMessage(userId);
             case PARTICIPANT_SELECT -> replyMessage.sendParticipantsMessage(userId, meetingDto);

@@ -12,20 +12,11 @@ spring:
         format_sql: true
         jdbc:
           time_zone: UTC
-  datasource:
-    username: root
-    password: root
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/meetings
-  data:
-    redis:
-      host: localhost
-      port: 6379
 telegram:
   bot:
     username: ${TELEGRAM_USERNAME}
     token: ${TELEGRAM_TOKEN}
-    webHookPath: https://0fd9-2a00-1fa1-82f3-a006-3916-3d82-f1a1-ecc6.ngrok-free.app
+    webHookPath: https://b38c-145-255-2-48.ngrok-free.app
     authorizePath: https://api.telegram.org/bot${telegram.bot.token}/setWebhook?url=${telegram.bot.webHookPath}
   meetings:
     startWorkDay: 9
