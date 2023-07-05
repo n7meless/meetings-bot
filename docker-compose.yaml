@@ -23,15 +23,12 @@ services:
     volumes:
       - /db_data:/var/lib/redis/data
 #  meetingsbot:
-#    build:
-#      dockerfile: Dockerfile
-#      context: ./
-#    container_name: meetings-bot
-##    image: meetings-bot:latest
+#    container_name: meetingsbot
+#    image: aanailevich/meetings-bot:latest
 #    ports:
 #      - "8080:8080"
 #    env_file:
-#      - prod.env
+#      - docker.env
 #    environment:
 #      TELEGRAM_USERNAME: ${TELEGRAM_USERNAME}
 #      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN}

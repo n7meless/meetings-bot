@@ -1,6 +1,6 @@
 spring:
   profiles:
-    default: dev, polling
+    default: dev,polling
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
   jpa:

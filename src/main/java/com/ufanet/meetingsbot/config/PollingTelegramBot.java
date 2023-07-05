@@ -49,6 +49,7 @@ public class PollingTelegramBot extends TelegramLongPollingBot {
     @EventListener({ContextRefreshedEvent.class})
     public void registerBot() {
         try {
+            log.info("trying register bot @{} on long polling",botUsername);
             TelegramBotsApi telegramBotsApi = new TelegramBotsApi(DefaultBotSession.class);
             telegramBotsApi.registerBot(this);
             log.info("bot authorized successfully");

@@ -56,6 +56,7 @@ public class WebhookTelegramBot extends SpringWebhookBot {
     public CommandLineRunner registerBot(@Value("${telegram.bot.authorizePath}") String authorizePath,
                                                RestTemplate restTemplate) {
         return (c) -> {
+            log.info("trying register bot @{} on webhook", botUsername);
             ResponseEntity<String> responseEntity = restTemplate.getForEntity(authorizePath, String.class);
             if (responseEntity.getStatusCode() == HttpStatus.OK) {
                 log.info("bot authorized successfully");
