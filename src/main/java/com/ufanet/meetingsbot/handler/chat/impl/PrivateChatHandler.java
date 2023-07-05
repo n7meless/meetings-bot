@@ -29,13 +29,14 @@ import static com.ufanet.meetingsbot.constants.state.AccountState.*;
 @Component
 @RequiredArgsConstructor
 public class PrivateChatHandler implements ChatHandler {
+
     private final Map<AccountState, EventHandler> queryHandlers = new HashMap<>();
     private final AccountService accountService;
     private final CommandReplyMessage commandHandler;
     private final BotService botService;
 
     @Override
-    public void chatUpdate(Update update) {
+    public void handleChatUpdate(Update update) {
         if (update.hasMessage()) {
             Message message = update.getMessage();
             long userId = message.getChatId();

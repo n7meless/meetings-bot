@@ -29,7 +29,6 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
 
         List<List<InlineKeyboardButton>> rowsInLine = new ArrayList<>();
         LocalDate date;
-        //TODO поменять подход проверки
         try {
             if (callback.startsWith(ToggleButton.NEXT.name()) || callback.startsWith(ToggleButton.PREV.name())) {
                 date = LocalDate.parse(callback.substring(4));

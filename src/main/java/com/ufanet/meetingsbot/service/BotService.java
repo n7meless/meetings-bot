@@ -23,7 +23,8 @@ public class BotService {
         BotState cacheState = botStateCache.get(userId);
         if (cacheState == null) {
             log.info("getting botState by user {} from db", userId);
-            BotState botState = botRepository.findByAccountId(userId).orElseThrow(() -> new CustomTelegramApiException(userId, "error.internal.exception"));
+            BotState botState = botRepository.findByAccountId(userId)
+                    .orElseThrow(() -> new CustomTelegramApiException(userId, "error.internal.exception"));
             botStateCache.save(userId, botState);
             return botState;
         }

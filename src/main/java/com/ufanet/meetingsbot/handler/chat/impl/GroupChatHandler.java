@@ -8,27 +8,27 @@ import com.ufanet.meetingsbot.message.GroupReplyMessage;
 import com.ufanet.meetingsbot.service.GroupService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
 
 import java.util.List;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class GroupChatHandler implements ChatHandler {
+
     private final GroupReplyMessage groupMessage;
     private final GroupService groupService;
     private final GroupMapper groupMapper;
 
     @Override
-    public void chatUpdate(Update update) {
+    public void handleChatUpdate(Update update) {
         if (update.hasMessage()) {
             Message message = update.getMessage();
-            String text = message.getText();
-            if (text.startsWith("/")) {
+            if (message.hasText() && message.getText().startsWith("/")) {
                 handleCommand(message);
             } else if (isChatCreated(message) || hasMemberUpdate(message)) {
                 handleMembers(message);

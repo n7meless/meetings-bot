@@ -4,7 +4,7 @@ import com.ufanet.meetingsbot.constants.type.ChatType;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 public interface ChatHandler {
-    void chatUpdate(Update update);
+    void handleChatUpdate(Update update);
 
     ChatType getChatType();
 }

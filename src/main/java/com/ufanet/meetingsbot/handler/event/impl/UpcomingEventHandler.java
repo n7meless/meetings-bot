@@ -93,11 +93,7 @@ public class UpcomingEventHandler implements EventHandler {
     private void handleCallbackWithParams(long userId, String[] callback, UpcomingState state) {
         long meetingId = Long.parseLong(callback[1]);
 
-        Optional<Meeting> meeting = meetingService.getFromCache(userId);
-
-        if (meeting.isEmpty()) {
-            meeting = meetingService.getByMeetingId(meetingId);
-        }
+        Optional<Meeting> meeting = meetingService.getByMeetingId(meetingId);
 
         MeetingDto meetingDto = MeetingMapper.MAPPER.mapIfPresentOrElseThrow(meeting,
                 () -> new MeetingNotFoundException(userId));
@@ -145,7 +141,6 @@ public class UpcomingEventHandler implements EventHandler {
                     }
                     AccountTime accountTime = AccountTimeMapper.MAPPER.map(accountTimeDto);
                     accountService.saveAccountTime(accountTime);
-                    meetingService.clearCache(userId);
                 }
                 replyMessage.sendEditMeetingAccountTimes(userId, meetingDto, accountTimeDtos);
             }
@@ -155,7 +150,6 @@ public class UpcomingEventHandler implements EventHandler {
                 Meeting entity = MeetingMapper.MAPPER.mapToFullEntity(meetingDto);
                 meetingService.save(entity);
                 replyMessage.sendCanceledAccountTimeMessage(meetingDto);
-                meetingService.clearCache(userId);
             }
             case UPCOMING_CONFIRM_MEETING_TIME -> {
                 List<AccountTimeDto> accountTimeDtos = accountService.getAccountTimesByMeetingId(meetingId)
@@ -242,8 +236,6 @@ public class UpcomingEventHandler implements EventHandler {
         AccountTime mapped = AccountTimeMapper.MAPPER.map(accountTimeDto);
         accountService.saveAccountTime(mapped);
         replyMessage.sendSelectedUpcomingMeeting(userId, meetingDto, accountTimes);
-//        Meeting meeting = MeetingMapper.Mapper.map(meetingDto);
-        meetingService.clearCache(userId);
     }
 
     @Override

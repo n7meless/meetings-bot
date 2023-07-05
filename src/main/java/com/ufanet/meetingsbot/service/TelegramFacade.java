@@ -32,8 +32,8 @@ public class TelegramFacade {
         if (chat == null) return;
 
         switch (chat) {
-            case PRIVATE, SENDER -> chatHandlers.get(ChatType.PRIVATE).chatUpdate(update);
-            case GROUP, SUPERGROUP -> chatHandlers.get(ChatType.GROUP).chatUpdate(update);
+            case PRIVATE, SENDER -> chatHandlers.get(ChatType.PRIVATE).handleChatUpdate(update);
+            case GROUP, SUPERGROUP -> chatHandlers.get(ChatType.GROUP).handleChatUpdate(update);
         }
     }
 

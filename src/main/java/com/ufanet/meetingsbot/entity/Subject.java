@@ -17,6 +17,7 @@ import java.util.Set;
 public class Subject implements Serializable {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String title;
@@ -27,7 +28,6 @@ public class Subject implements Serializable {
     @CollectionTable(name = "question", joinColumns = @JoinColumn(name = "subject_id"))
     private Set<String> questions = new HashSet<>();
 
-    @MapsId
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "meeting_id", referencedColumnName = "id")
     private Meeting meeting;
