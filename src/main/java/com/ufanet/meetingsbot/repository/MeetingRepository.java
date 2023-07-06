@@ -38,7 +38,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
             AND DATEDIFF(MINUTE, ?1, mt.dateTime)  BETWEEN 0 AND ?2           
                             """)
     @EntityGraph(attributePaths = {"dates", "dates.meetingTimes", "participants", "participants.settings"})
-    List<Meeting> findConfirmedMeetingsWhereDatesBetween(ZonedDateTime zonedDateTime, Integer endValue);
+    List<Meeting> findConfirmedMeetingsWhereDateMinutesBetween(ZonedDateTime zonedDateTime, Integer endValue);
 
     @Query(value = """
             FROM meeting m

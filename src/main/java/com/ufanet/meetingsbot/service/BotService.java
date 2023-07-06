@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -38,9 +39,9 @@ public class BotService {
     }
 
     @Transactional
-    public void save(BotState botState) {
+    public BotState save(BotState botState) {
         log.info("saving botState {} into db", botState.getId());
-        botRepository.save(botState);
+        return botRepository.save(botState);
     }
 
     public void saveCache(long userId, BotState botState) {
@@ -59,7 +60,7 @@ public class BotService {
     }
 
     @Transactional
-    public Collection<BotState> saveAll(Collection<BotState> botStates) {
+    public List<BotState> saveAll(Collection<BotState> botStates) {
         log.info("saving bot states {} into db", botStates);
         return botRepository.saveAll(botStates);
     }

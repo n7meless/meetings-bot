@@ -8,6 +8,7 @@ import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.MeetingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -24,15 +25,15 @@ public class MeetingNotifierScheduler {
     private final AccountService accountService;
 
 
-//    @Scheduled(initialDelay = 60000, fixedRate = 60000)
-//    public void checkMeetings() {
-//        checkUpcomingMeetings();
-//        checkExpiredMeetings();
-//    }
+    @Scheduled(initialDelay = 60000, fixedRate = 60000)
+    public void checkMeetings() {
+        checkUpcomingMeetings();
+        checkExpiredMeetings();
+    }
 
     private void checkUpcomingMeetings() {
         ZonedDateTime now = ZonedDateTime.now();
-        List<Meeting> meetings = meetingService.getConfirmedMeetingsWhereDatesBetween(now, 30);
+        List<Meeting> meetings = meetingService.getConfirmedMeetingsWhereDateMinutesBetween(now, 30);
         for (Meeting meeting : meetings) {
 
             LocalDateTime meetingLastUpdateTime = meeting.getUpdatedDt();

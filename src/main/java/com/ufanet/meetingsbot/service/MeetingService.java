@@ -24,9 +24,9 @@ public class MeetingService {
     private final MeetingCache meetingCache;
 
     @Transactional
-    public void save(Meeting meeting) {
-        log.info("saving meeting {} with owner {} into db", meeting.getId(), meeting.getOwner().getId());
-        meetingRepository.save(meeting);
+    public Meeting save(Meeting meeting) {
+        log.info("saving meeting {} into db", meeting.getId());
+        return meetingRepository.save(meeting);
     }
 
     @Transactional
@@ -85,15 +85,15 @@ public class MeetingService {
         return meetingRepository.findMeetingsByUserIdAndStateIn(userId, states);
     }
 
-    public List<Meeting> getConfirmedMeetingsWhereDatesBetween(ZonedDateTime now, int endValue) {
+    public List<Meeting> getConfirmedMeetingsWhereDateMinutesBetween(ZonedDateTime now, int endValue) {
         log.info("getting confirmed meetings where current date and meeting date between 0 and {} min", endValue);
-        return meetingRepository.findConfirmedMeetingsWhereDatesBetween(now, endValue);
+        return meetingRepository.findConfirmedMeetingsWhereDateMinutesBetween(now, endValue);
     }
 
-    public void saveAll(List<Meeting> meetings) {
+    public List<Meeting> saveAll(List<Meeting> meetings) {
         log.info("saving meetings '{}' into db", meetings.stream().map(Meeting::getId).map(String::valueOf)
                 .collect(Collectors.joining(",")));
-        meetingRepository.saveAll(meetings);
+        return meetingRepository.saveAll(meetings);
     }
 
     public List<Meeting> getConfirmedMeetingsWhereDatesLaterThanSubjectDuration(ZonedDateTime now) {
