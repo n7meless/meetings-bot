@@ -1,8 +1,8 @@
 package com.ufanet.meetingsbot.handler.event.impl;
 
-import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.constants.state.PreviousState;
+import com.ufanet.meetingsbot.constants.type.EventType;
 import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.entity.Meeting;
@@ -86,13 +86,13 @@ public class PreviousEventHandler implements EventHandler {
     private void handleMessage(Message message) {
         String messageText = message.getText();
         long userId = message.getChatId();
-        if (messageText.equals(AccountState.PREVIOUS.getButtonName())) {
+        if (messageText.equals(EventType.PREVIOUS.getButtonName())) {
             handleReplyButton(userId);
         }
     }
 
     @Override
-    public AccountState getAccountStateHandler() {
-        return AccountState.PREVIOUS;
+    public EventType getEventType() {
+        return EventType.PREVIOUS;
     }
 }

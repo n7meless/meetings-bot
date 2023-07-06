@@ -1,7 +1,7 @@
 package com.ufanet.meetingsbot.handler.event.impl;
 
 import com.ufanet.meetingsbot.constants.BotCommands;
-import com.ufanet.meetingsbot.constants.state.AccountState;
+import com.ufanet.meetingsbot.constants.type.EventType;
 import com.ufanet.meetingsbot.entity.Account;
 import com.ufanet.meetingsbot.entity.Settings;
 import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
@@ -17,7 +17,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.api.objects.inlinequery.InlineQuery;
 
-import static com.ufanet.meetingsbot.constants.state.AccountState.PROFILE;
+import static com.ufanet.meetingsbot.constants.type.EventType.PROFILE;
 
 @Service
 @RequiredArgsConstructor
@@ -70,7 +70,7 @@ public class ProfileEventHandler implements EventHandler {
     }
 
     @Override
-    public AccountState getAccountStateHandler() {
+    public EventType getEventType() {
         return PROFILE;
     }
 }

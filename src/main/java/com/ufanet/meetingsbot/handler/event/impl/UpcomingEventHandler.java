@@ -1,9 +1,9 @@
 package com.ufanet.meetingsbot.handler.event.impl;
 
 import com.ufanet.meetingsbot.constants.Status;
-import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.constants.state.UpcomingState;
+import com.ufanet.meetingsbot.constants.type.EventType;
 import com.ufanet.meetingsbot.dto.*;
 import com.ufanet.meetingsbot.entity.AccountTime;
 import com.ufanet.meetingsbot.entity.Meeting;
@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.ufanet.meetingsbot.constants.state.AccountState.UPCOMING;
+import static com.ufanet.meetingsbot.constants.type.EventType.UPCOMING;
 
 @Component
 @RequiredArgsConstructor
@@ -246,7 +246,7 @@ public class UpcomingEventHandler implements EventHandler {
     }
 
     @Override
-    public AccountState getAccountStateHandler() {
+    public EventType getEventType() {
         return UPCOMING;
     }
 }

@@ -1,8 +1,8 @@
 package com.ufanet.meetingsbot.handler.event.impl;
 
 import com.ufanet.meetingsbot.constants.ToggleButton;
-import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
+import com.ufanet.meetingsbot.constants.type.EventType;
 import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.dto.GroupDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
@@ -72,7 +72,7 @@ public class CreateEventHandler implements EventHandler {
     private void handleMessage(long userId, Message message, MeetingDto meetingDto) {
         String messageText = message.getText();
 
-        if (messageText.equals(AccountState.CREATE.getButtonName())) {
+        if (messageText.equals(EventType.CREATE.getButtonName())) {
             meetingService.clearCache(userId);
         } else
             handleStep(userId, meetingDto, messageText);
@@ -201,7 +201,7 @@ public class CreateEventHandler implements EventHandler {
     }
 
     @Override
-    public AccountState getAccountStateHandler() {
-        return AccountState.CREATE;
+    public EventType getEventType() {
+        return EventType.CREATE;
     }
 }

@@ -27,7 +27,6 @@ public class BotConfig {
     private String username;
     @Value("${telegram.bot.token}")
     private String botToken;
-    @Value("${telegram.bot.webHookPath}")
     private String webHookPath;
 
     @Bean
@@ -41,7 +40,9 @@ public class BotConfig {
 
     @Bean
     @Profile("webhook")
-    public SetWebhook setWebhook() {
+    public SetWebhook setWebhook(@Value("${telegram.bot.webHookPath}")
+                                 String webHookPath) {
+        this.webHookPath = webHookPath;
         return SetWebhook.builder().url(webHookPath).build();
     }
 }

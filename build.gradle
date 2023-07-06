@@ -35,7 +35,6 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
     implementation "org.mapstruct:mapstruct:${mapstructVersion}", "org.projectlombok:lombok"
-
     annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
     annotationProcessor 'org.projectlombok:lombok', 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
 

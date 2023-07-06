@@ -1,9 +1,9 @@
 package com.ufanet.meetingsbot.handler.chat.impl;
 
 import com.ufanet.meetingsbot.constants.BotCommands;
-import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.ProfileState;
 import com.ufanet.meetingsbot.constants.type.ChatType;
+import com.ufanet.meetingsbot.constants.type.EventType;
 import com.ufanet.meetingsbot.handler.chat.ChatHandler;
 import com.ufanet.meetingsbot.handler.event.EventHandler;
 import com.ufanet.meetingsbot.message.CommandReplyMessage;
@@ -22,14 +22,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.ufanet.meetingsbot.constants.state.AccountState.*;
+import static com.ufanet.meetingsbot.constants.type.EventType.*;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class PrivateChatHandler implements ChatHandler {
 
-    private final Map<AccountState, EventHandler> queryHandlers = new HashMap<>();
+    private final Map<EventType, EventHandler> queryHandlers = new HashMap<>();
     private final AccountService accountService;
     private final CommandReplyMessage commandMessage;
     private final BotService botService;
@@ -57,7 +57,7 @@ public class PrivateChatHandler implements ChatHandler {
             if (data.isBlank()) commandMessage.executeNullCallback(query.getId());
 
             log.info("received callback query from user {}", userId);
-            if (AccountState.startWithState(data)) {
+            if (EventType.startWithState(data)) {
                 botService.setState(userId, data);
             }
             handleBotState(userId, update);
@@ -72,7 +72,7 @@ public class PrivateChatHandler implements ChatHandler {
             handleCommand(update);
         } else {
             botService.setLastMessageFromBot(userId, false);
-            AccountState pressedButton = fromValue(messageText);
+            EventType pressedButton = fromValue(messageText);
             if (pressedButton != null) {
                 botService.setState(userId, pressedButton.name());
             }
@@ -119,7 +119,7 @@ public class PrivateChatHandler implements ChatHandler {
     @Autowired
     private void setQueryHandlers(List<EventHandler> eventHandlers) {
         eventHandlers.forEach(handler ->
-                this.queryHandlers.put(handler.getAccountStateHandler(), handler));
+                this.queryHandlers.put(handler.getEventType(), handler));
     }
 
     @Override

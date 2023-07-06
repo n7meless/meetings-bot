@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.io.Serializable;
 import java.time.ZonedDateTime;
+import java.util.Objects;
 import java.util.Set;
 
 @Setter
@@ -27,4 +28,17 @@ public class MeetingTime implements Serializable {
 
     @OneToMany(mappedBy = "meetingTime", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Set<AccountTime> accountTimes;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MeetingTime that = (MeetingTime) o;
+        return this.dateTime.isEqual(that.dateTime);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(dateTime);
+    }
 }

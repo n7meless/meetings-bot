@@ -1,8 +1,8 @@
 package com.ufanet.meetingsbot.handler.event.impl;
 
 import com.ufanet.meetingsbot.constants.ToggleButton;
-import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.EditState;
+import com.ufanet.meetingsbot.constants.type.EventType;
 import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.SubjectDto;
@@ -70,7 +70,7 @@ public class EditEventHandler implements EventHandler {
 
         EditState editState;
 
-        if (data.startsWith(AccountState.EDIT.name())) {
+        if (data.startsWith(EventType.EDIT.name())) {
             editState = EditState.valueOf(data);
             botService.setState(userId, data);
         } else {
@@ -94,7 +94,7 @@ public class EditEventHandler implements EventHandler {
     protected void handleToggleButton(long userId, EditState state, MeetingDto meetingDto, String message) {
         ToggleButton toggleButton = ToggleButton.typeOf(message);
         switch (toggleButton) {
-            case READY -> botService.setState(userId, AccountState.CREATE.name());
+            case READY -> botService.setState(userId, EventType.CREATE.name());
             case NEXT -> sendMessage(userId, state.next(), meetingDto);
             case CURRENT -> sendMessage(userId, state, meetingDto);
         }
@@ -154,7 +154,7 @@ public class EditEventHandler implements EventHandler {
     }
 
     @Override
-    public AccountState getAccountStateHandler() {
-        return AccountState.EDIT;
+    public EventType getEventType() {
+        return EventType.EDIT;
     }
 }

@@ -1,4 +1,4 @@
-package com.ufanet.meetingsbot.constants.state;
+package com.ufanet.meetingsbot.constants.type;
 
 import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.AllArgsConstructor;
@@ -6,7 +6,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum AccountState {
+public enum EventType {
     CREATE(Emojis.BELL.getEmojiSpace() + "Создать встречу"),
     UPCOMING(Emojis.CALENDAR.getEmojiSpace() + "Предстоящие встречи"),
     PREVIOUS(Emojis.HISTORY.getEmojiSpace() + "История встреч"),
@@ -15,8 +15,8 @@ public enum AccountState {
 
     private final String buttonName;
 
-    public static AccountState fromValue(String text) {
-        for (AccountState value : AccountState.values()) {
+    public static EventType fromValue(String text) {
+        for (EventType value : EventType.values()) {
             if (value.equals(text))
                 return value;
         }

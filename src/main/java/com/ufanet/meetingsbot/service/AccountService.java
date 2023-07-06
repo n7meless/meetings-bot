@@ -1,6 +1,6 @@
 package com.ufanet.meetingsbot.service;
 
-import com.ufanet.meetingsbot.constants.state.AccountState;
+import com.ufanet.meetingsbot.constants.type.EventType;
 import com.ufanet.meetingsbot.entity.Account;
 import com.ufanet.meetingsbot.entity.AccountTime;
 import com.ufanet.meetingsbot.entity.BotState;
@@ -58,7 +58,7 @@ public class AccountService {
                 .account(account).timeZone("UTC+03:00")
                 .language("ru-RU").build();
         BotState botState = BotState.builder()
-                .state(AccountState.PROFILE.name())
+                .state(EventType.PROFILE.name())
                 .updatedDt(LocalDateTime.now())
                 .account(account)
                 .build();

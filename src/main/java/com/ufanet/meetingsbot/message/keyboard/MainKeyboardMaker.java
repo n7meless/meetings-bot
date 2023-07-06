@@ -13,7 +13,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.ufanet.meetingsbot.constants.state.AccountState.*;
+import static com.ufanet.meetingsbot.constants.type.EventType.*;
 
 @Component
 public class MainKeyboardMaker extends KeyboardMaker {

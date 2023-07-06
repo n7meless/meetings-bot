@@ -16,7 +16,7 @@ telegram:
   bot:
     username: ${TELEGRAM_USERNAME}
     token: ${TELEGRAM_TOKEN}
-    webHookPath: https://b38c-145-255-2-48.ngrok-free.app
+    webHookPath: ${TELEGRAM_WEBHOOKPATH}
     authorizePath: https://api.telegram.org/bot${telegram.bot.token}/setWebhook?url=${telegram.bot.webHookPath}
   meetings:
     startWorkDay: 9

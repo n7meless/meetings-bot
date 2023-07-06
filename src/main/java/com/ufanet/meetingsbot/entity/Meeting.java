@@ -75,17 +75,4 @@ public class Meeting implements Serializable {
                 .map(MeetingDate::getMeetingTimes)
                 .get().stream().findFirst().get().getDateTime();
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Meeting meeting = (Meeting) o;
-        return Objects.equals(id, meeting.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
-    }
 }
