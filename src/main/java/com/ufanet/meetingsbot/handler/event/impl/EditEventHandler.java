@@ -108,7 +108,7 @@ public class EditEventHandler implements EventHandler {
                     long participantId = Long.parseLong(text);
                     Set<AccountDto> groupMembers =
                             accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupDto().getId(),
-                                            meetingDto.getOwner().getId()).stream().map(AccountMapper.MAPPER::map)
+                                            meetingDto.getOwner().getId()).stream().map(AccountMapper.MAPPER::mapWithSettings)
                                     .collect(Collectors.toSet());
 
                     meetingConstructor.updateParticipants(meetingDto, participantId, groupMembers);
@@ -140,12 +140,16 @@ public class EditEventHandler implements EventHandler {
     protected void sendMessage(long userId, EditState state, MeetingDto meetingDto) {
         log.info("sending message to user {} when edit state is '{}'", userId, state);
         switch (state) {
-            case EDIT_PARTICIPANT -> editReplyMessage.editParticipants(userId, meetingDto);
-            case EDIT_SUBJECT -> editReplyMessage.editSubject(userId, meetingDto);
-            case EDIT_SUBJECT_DURATION -> editReplyMessage.editSubjectDuration(userId, meetingDto);
-            case EDIT_QUESTION -> editReplyMessage.editQuestion(userId, meetingDto);
-            case EDIT_TIME -> editReplyMessage.editTime(userId, meetingDto);
-            case EDIT_ADDRESS -> editReplyMessage.editAddress(userId, meetingDto);
+            case EDIT_PARTICIPANT -> {
+                Set<AccountDto> members = accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupDto().getId(), userId)
+                        .stream().map(AccountMapper.MAPPER::mapWithSettings).collect(Collectors.toSet());
+                editReplyMessage.sendEditParticipants(userId, meetingDto, members);
+            }
+            case EDIT_SUBJECT -> editReplyMessage.semdEditSubject(userId, meetingDto);
+            case EDIT_SUBJECT_DURATION -> editReplyMessage.sendEditSubjectDuration(userId, meetingDto);
+            case EDIT_QUESTION -> editReplyMessage.sendEditQuestion(userId, meetingDto);
+            case EDIT_TIME -> editReplyMessage.sendEditTime(userId, meetingDto);
+            case EDIT_ADDRESS -> editReplyMessage.sendEditAddress(userId, meetingDto);
         }
     }
 

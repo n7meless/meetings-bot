@@ -4,15 +4,14 @@ import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.constants.state.UpcomingState;
-import com.ufanet.meetingsbot.dto.AccountTimeDto;
-import com.ufanet.meetingsbot.dto.MeetingDateDto;
-import com.ufanet.meetingsbot.dto.MeetingDto;
-import com.ufanet.meetingsbot.dto.MeetingTimeDto;
+import com.ufanet.meetingsbot.dto.*;
 import com.ufanet.meetingsbot.entity.AccountTime;
 import com.ufanet.meetingsbot.entity.Meeting;
+import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
 import com.ufanet.meetingsbot.exceptions.AccountTimeNotFoundException;
 import com.ufanet.meetingsbot.exceptions.MeetingNotFoundException;
 import com.ufanet.meetingsbot.handler.event.EventHandler;
+import com.ufanet.meetingsbot.mapper.AccountMapper;
 import com.ufanet.meetingsbot.mapper.AccountTimeMapper;
 import com.ufanet.meetingsbot.mapper.MeetingMapper;
 import com.ufanet.meetingsbot.mapper.MeetingTimeMapper;
@@ -29,7 +28,6 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static com.ufanet.meetingsbot.constants.state.AccountState.UPCOMING;
 
@@ -67,7 +65,9 @@ public class UpcomingEventHandler implements EventHandler {
         if (meetings.isEmpty()) {
             replyMessage.sendMeetingsNotExist(userId);
         } else {
-            replyMessage.sendUpcomingMeetingsList(userId, meetings);
+            AccountDto accountDto = accountService.getByUserId(userId).map(AccountMapper.MAPPER::mapWithSettings)
+                    .orElseThrow(() -> new AccountNotFoundException(userId));
+            replyMessage.sendUpcomingMeetingsList(userId, meetings, accountDto);
         }
     }
 
@@ -112,14 +112,19 @@ public class UpcomingEventHandler implements EventHandler {
                     if (meetingDto.getOwner().getId() == userId) {
                         replyMessage.sendSelectedReadyMeeting(userId, meetingDto);
                     } else {
-                        replyMessage.sendSelectedAwaitingMeeting(userId, meetingDto);
+                        AccountDto accountDto = accountService.getByUserId(userId).map(AccountMapper.MAPPER::mapWithSettings)
+                                .orElseThrow(() -> new AccountNotFoundException(userId));
+                        replyMessage.sendSelectedAwaitingMeeting(meetingDto, accountDto);
                     }
                 } else replyMessage.sendSelectedUpcomingMeeting(userId, meetingDto, accountTimes);
             }
             case UPCOMING_SELECT_PARTICIPANT -> replyMessage.sendParticipantSelectionForPing(userId, meetingDto);
             case UPCOMING_SEND_NOTIFICATION_PARTICIPANT -> {
                 long participantId = Long.parseLong(callback[2]);
-                replyMessage.sendPingParticipant(userId, participantId, meetingDto);
+                AccountDto accountDto = accountService.getByUserId(participantId)
+                        .map(AccountMapper.MAPPER::mapWithSettings)
+                        .orElseThrow(() -> new AccountNotFoundException(userId));
+                replyMessage.sendPingParticipant(userId, meetingDto, accountDto);
             }
             case UPCOMING_EDIT_MEETING_TIME -> {
                 List<AccountTimeDto> accountTimeDtos = accountService.getAccountTimesByMeetingId(meetingId)
@@ -142,7 +147,9 @@ public class UpcomingEventHandler implements EventHandler {
                     AccountTime accountTime = AccountTimeMapper.MAPPER.map(accountTimeDto);
                     accountService.saveAccountTime(accountTime);
                 }
-                replyMessage.sendEditMeetingAccountTimes(userId, meetingDto, accountTimeDtos);
+                AccountDto accountDto = accountService.getByUserId(userId).map(AccountMapper.MAPPER::mapWithSettings)
+                        .orElseThrow(() -> new AccountNotFoundException(userId));
+                replyMessage.sendEditMeetingAccountTimes(userId, meetingDto, accountDto, accountTimeDtos);
             }
             case UPCOMING_CANCEL_MEETING_TIME -> {
                 meetingDto.getDates().clear();
@@ -190,10 +197,10 @@ public class UpcomingEventHandler implements EventHandler {
             if (confirmedMeetingTime.isPresent()) {
                 MeetingTimeDto meetingTimeDto = confirmedMeetingTime.get();
 
-                Set<AccountTimeDto> accountTimeDtoSet = accountTimeDtos.stream()
+                List<AccountTimeDto> accountTimeDtoSet = accountTimeDtos.stream()
                         .filter(t -> t.getStatus().equals(Status.CONFIRMED) &&
                                 t.getMeetingTime().getId().equals(meetingTimeDto.getId()))
-                        .collect(Collectors.toSet());
+                        .toList();
 
                 MeetingDateDto meetingDate = meetingTimeDto.getMeetingDate();
 

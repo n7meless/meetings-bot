@@ -4,12 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.io.Serializable;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Predicate;
 
 @Setter
 @Getter

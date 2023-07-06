@@ -4,14 +4,11 @@ import com.ufanet.meetingsbot.cache.Cache;
 import com.ufanet.meetingsbot.entity.BotState;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Slf4j
 @Getter
 @Service
 @RequiredArgsConstructor

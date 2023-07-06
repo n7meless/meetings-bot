@@ -8,6 +8,7 @@ import org.mapstruct.factory.Mappers;
 @Mapper(componentModel = "spring", injectionStrategy = InjectionStrategy.CONSTRUCTOR,
         unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface MeetingTimeMapper {
+
     MeetingTimeMapper MAPPER = Mappers.getMapper(MeetingTimeMapper.class);
 
     @Mapping(target = "meetingDate.id", source = "entity.meetingDate.id")

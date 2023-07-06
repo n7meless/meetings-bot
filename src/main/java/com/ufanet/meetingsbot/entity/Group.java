@@ -36,7 +36,8 @@ public class Group implements Serializable {
             joinColumns = @JoinColumn(name = "chat_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"))
     private Set<Account> members = new HashSet<>();
-    public void addMember(Account account){
+
+    public void addMember(Account account) {
         this.members.add(account);
     }
 }

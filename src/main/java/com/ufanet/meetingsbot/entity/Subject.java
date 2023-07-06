@@ -2,7 +2,6 @@ package com.ufanet.meetingsbot.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.mapstruct.Mapper;
 
 import java.io.Serializable;
 import java.util.HashSet;

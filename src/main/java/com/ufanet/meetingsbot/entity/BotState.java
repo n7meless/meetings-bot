@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 @Entity(name = "bot_state")
 public class BotState implements Serializable {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "msg_id")
@@ -32,9 +31,8 @@ public class BotState implements Serializable {
     @JoinColumn(name = "user_id")
     private Account account;
 
-    @Column(name = "msg_from_user")
-    private boolean msgFromUser;
+    @Column(name = "msg_from_bot")
+    private boolean msgFromBot;
 
     private LocalDateTime updatedDt;
-
 }

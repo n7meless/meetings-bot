@@ -59,7 +59,7 @@ public class AccountServiceTest {
         Mockito.when(accountRepository.save(Mockito.any(Account.class)))
                 .thenReturn(account);
 
-        Account created = accountService.saveTgUser(user);
+        Account created = accountService.createAccount(user);
 
         //then
         assertEquals(created.getId(), user.getId());

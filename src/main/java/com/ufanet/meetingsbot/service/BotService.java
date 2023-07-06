@@ -2,7 +2,7 @@ package com.ufanet.meetingsbot.service;
 
 import com.ufanet.meetingsbot.cache.impl.BotStateCache;
 import com.ufanet.meetingsbot.entity.BotState;
-import com.ufanet.meetingsbot.exceptions.CustomTelegramApiException;
+import com.ufanet.meetingsbot.exceptions.InternalServerException;
 import com.ufanet.meetingsbot.repository.BotRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,16 +24,16 @@ public class BotService {
         if (cacheState == null) {
             log.info("getting botState by user {} from db", userId);
             BotState botState = botRepository.findByAccountId(userId)
-                    .orElseThrow(() -> new CustomTelegramApiException(userId, "error.internal.exception"));
+                    .orElseThrow(() -> new InternalServerException(userId, "error.internal.exception"));
             botStateCache.save(userId, botState);
             return botState;
         }
         return cacheState;
     }
 
-    public void setLastMsgFromUser(long userId, boolean fromUser) {
+    public void setLastMessageFromBot(long userId, boolean fromBot) {
         BotState botState = getByUserId(userId);
-        botState.setMsgFromUser(fromUser);
+        botState.setMsgFromBot(fromBot);
         saveCache(userId, botState);
     }
 

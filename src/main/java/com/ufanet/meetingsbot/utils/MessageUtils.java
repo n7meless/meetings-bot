@@ -28,6 +28,7 @@ public class MessageUtils {
     public SendMessage generateSendMessage(long chatId, String text, ReplyKeyboard markup) {
         return SendMessage.builder()
                 .text(text).chatId(chatId)
+                .disableWebPagePreview(true)
                 .replyMarkup(markup).build();
     }
 
@@ -46,6 +47,14 @@ public class MessageUtils {
                 .replyMarkup(markup).build();
     }
 
+    public EditMessageText generateEditMessageHtml(long chatId, int messageId, String text,
+                                                   InlineKeyboardMarkup markup) {
+        return EditMessageText.builder().chatId(chatId).text(text)
+                .disableWebPagePreview(true)
+                .parseMode("HTML")
+                .messageId(messageId)
+                .replyMarkup(markup).build();
+    }
 
     public MeetingMessage generateMeetingMessage(MeetingDto meetingDto) {
 

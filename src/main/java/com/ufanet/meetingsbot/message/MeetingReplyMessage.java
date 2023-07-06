@@ -5,12 +5,8 @@ import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
 import com.ufanet.meetingsbot.entity.Group;
-import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
-import com.ufanet.meetingsbot.mapper.AccountMapper;
 import com.ufanet.meetingsbot.message.keyboard.CalendarKeyboardMaker;
 import com.ufanet.meetingsbot.message.keyboard.MeetingKeyboardMaker;
-import com.ufanet.meetingsbot.service.AccountService;
-import com.ufanet.meetingsbot.service.GroupService;
 import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,19 +19,14 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class MeetingReplyMessage extends ReplyMessage {
     private final MeetingKeyboardMaker meetingKeyboard;
     private final CalendarKeyboardMaker calendarKeyboard;
-    private final AccountService accountService;
-    private final GroupService groupService;
-    private final AccountMapper accountMapper;
 
-    public void sendGroupMessage(long userId) {
-        List<Group> groups = groupService.getGroupsByMemberId(userId);
+    public void sendGroupMessage(long userId, List<Group> groups) {
         if (groups.isEmpty()) {
             SendMessage sendMessage =
                     messageUtils.generateSendMessage(userId, localeMessageService.getMessage("create.meeting.group.notexists"));
@@ -49,10 +40,7 @@ public class MeetingReplyMessage extends ReplyMessage {
         }
     }
 
-    public void sendParticipantsMessage(long userId, MeetingDto meetingDto) {
-        Set<AccountDto> members =
-                accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupDto().getId(), userId).stream()
-                        .map(accountMapper::map).collect(Collectors.toSet());
+    public void sendParticipantsMessage(long userId, MeetingDto meetingDto, Set<AccountDto> members) {
 
         Set<AccountDto> participantIds = meetingDto.getParticipants();
 
@@ -86,10 +74,9 @@ public class MeetingReplyMessage extends ReplyMessage {
     }
 
     public void sendDateMessage(long userId, MeetingDto meetingDto, String callback) {
-        AccountDto accountDto = accountService.getByUserId(userId).map(AccountMapper.MAPPER::map)
-                .orElseThrow(() -> new AccountNotFoundException(userId));
-        String zoneId = accountDto.getTimeZone();
-        List<List<InlineKeyboardButton>> keyboard = calendarKeyboard.getCalendarInlineMarkup(meetingDto, callback, zoneId);
+        String zoneId = meetingDto.getOwner().getTimeZone();
+        List<List<InlineKeyboardButton>> keyboard =
+                calendarKeyboard.getCalendarInlineMarkup(meetingDto, callback, zoneId);
         keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(meetingDto.getDates().size() > 0));
         EditMessageText message =
                 messageUtils.generateEditMessageHtml(userId, localeMessageService.getMessage("create.meeting.date"),
@@ -98,9 +85,7 @@ public class MeetingReplyMessage extends ReplyMessage {
     }
 
     public void sendTimeMessage(long userId, MeetingDto meetingDto) {
-        AccountDto accountDto = accountService.getByUserId(userId).map(AccountMapper.MAPPER::map)
-                .orElseThrow(() -> new AccountNotFoundException(userId));
-        String zoneId = accountDto.getTimeZone();
+        String zoneId = meetingDto.getOwner().getTimeZone();
         List<List<InlineKeyboardButton>> keyboard = calendarKeyboard.getTimeInlineMarkup(meetingDto, zoneId);
         boolean hasTime = meetingDto.getDates().stream().anyMatch(t -> t.getMeetingTimes().size() > 0);
         keyboard.add(meetingKeyboard.defaultRowHelperInlineButtons(hasTime));
@@ -180,7 +165,6 @@ public class MeetingReplyMessage extends ReplyMessage {
     public void sendMeetingToParticipants(MeetingDto meetingDto) {
         MeetingMessage meetingMessage = messageUtils.generateMeetingMessage(meetingDto);
 
-//        List<Account> participants = accountService.getAccountByMeetingId(meetingDto.getId());
         Set<AccountDto> accountDtos = meetingDto.getParticipants();
 
         InlineKeyboardMarkup keyboard =

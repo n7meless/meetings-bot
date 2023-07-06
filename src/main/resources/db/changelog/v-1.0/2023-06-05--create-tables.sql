@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS subject
     id         BIGSERIAL PRIMARY KEY,
     title      VARCHAR(100) NOT NULL,
     duration   INT,
-    meeting_id BIGINT NOT NULL,
+    meeting_id BIGINT       NOT NULL,
     FOREIGN KEY (meeting_id) REFERENCES meeting (id) ON DELETE CASCADE
 );
 --rollback drop table subject;
@@ -123,13 +123,13 @@ CREATE TABLE IF NOT EXISTS user_times
 --changeset aidar:create_bot_state_table
 CREATE TABLE IF NOT EXISTS bot_state
 (
-    id            BIGSERIAL PRIMARY KEY,
-    user_id       BIGINT NOT NULL,
-    msg_type      VARCHAR(30),
-    msg_from_user BOOLEAN,
-    updated_dt    TIMESTAMP,
-    msg_id        INT,
-    state         VARCHAR(100),
+    id           BIGSERIAL PRIMARY KEY,
+    user_id      BIGINT NOT NULL,
+    msg_type     VARCHAR(30),
+    msg_from_bot BOOLEAN,
+    updated_dt   TIMESTAMP,
+    msg_id       INT,
+    state        VARCHAR(100),
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 --rollback drop table bot_state;

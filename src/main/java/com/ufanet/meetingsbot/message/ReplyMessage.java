@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.DefaultAbsSender;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
@@ -30,7 +31,7 @@ public abstract class ReplyMessage {
     protected LocaleMessageService localeMessageService;
 
 
-    void executeSendMessage(SendMessage message) {
+    protected void executeSendMessage(SendMessage message) {
         executorService.execute(() -> {
             long chatId = Long.parseLong(message.getChatId());
             BotState botState = botService.getByUserId(chatId);
@@ -50,24 +51,24 @@ public abstract class ReplyMessage {
                 log.error("an occurred error when sending message to {}", chatId);
             }
 
-            botState.setMsgFromUser(false);
+            botState.setMsgFromBot(true);
             botState.setMessageType(MessageType.SEND_MESSAGE);
             botService.saveCache(chatId, botState);
         });
     }
 
-    void safeExecute(BotApiMethod<?> method) {
+    protected void safeExecute(BotApiMethod<?> method) {
         try {
             absSender.execute(method);
         } catch (TelegramApiException e) {
-            log.error("an occurred error when execute method");
+            log.error("an occurred error when execute method: {}", e.getMessage());
         }
     }
 
-    void executeEditOrSendMessage(EditMessageText message) {
+    protected void executeEditOrSendMessage(EditMessageText message) {
         long chatId = Long.parseLong(message.getChatId());
         BotState botState = botService.getByUserId(chatId);
-        if (botState == null || botState.isMsgFromUser()) {
+        if (botState == null || !botState.isMsgFromBot()) {
             SendMessage sendMessage =
                     messageUtils.generateSendMessageHtml(chatId, message.getText(),
                             message.getReplyMarkup());
@@ -82,7 +83,7 @@ public abstract class ReplyMessage {
         }
     }
 
-    private void executeEditMessage(EditMessageText message) {
+    protected void executeEditMessage(EditMessageText message) {
         long chatId = Long.parseLong(message.getChatId());
         int messageId = message.getMessageId();
         try {
@@ -94,6 +95,17 @@ public abstract class ReplyMessage {
         } catch (TelegramApiException e) {
             log.warn(e.getMessage());
             log.error("an occurred error when sending message {} in chat {}", messageId, chatId);
+        }
+    }
+
+    public void executeNullCallback(String callbackId) {
+        AnswerCallbackQuery nullCallback = AnswerCallbackQuery.builder()
+                .callbackQueryId(callbackId).build();
+        try {
+            log.info("execute null callback {}", callbackId);
+            absSender.execute(nullCallback);
+        } catch (TelegramApiException ex) {
+            log.error("an occurred error when answer callback {}", callbackId);
         }
     }
 

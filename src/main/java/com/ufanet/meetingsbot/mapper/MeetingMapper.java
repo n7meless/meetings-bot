@@ -9,6 +9,7 @@ import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -16,13 +17,14 @@ import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface MeetingMapper {
+
     MeetingMapper MAPPER = Mappers.getMapper(MeetingMapper.class);
 
     default MeetingDto mapToFullDto(Meeting meeting) {
 
-        AccountDto owner = AccountMapper.MAPPER.map(meeting.getOwner());
+        AccountDto owner = AccountMapper.MAPPER.mapWithSettings(meeting.getOwner());
         Set<AccountDto> participants =
-                meeting.getParticipants().stream().map(AccountMapper.MAPPER::map)
+                meeting.getParticipants().stream().map(AccountMapper.MAPPER::mapWithSettings)
                         .collect(Collectors.toSet());
 
         Set<MeetingDate> dates = meeting.getDates();
@@ -40,8 +42,8 @@ public interface MeetingMapper {
 
             for (MeetingTime time : times) {
                 MeetingTimeDto meetingTimeDto = MeetingTimeMapper.MAPPER.map(time);
-                Set<AccountTimeDto> accountTimeDtos = time.getAccountTimes().stream()
-                        .map(AccountTimeMapper.MAPPER::map).collect(Collectors.toSet());
+                List<AccountTimeDto> accountTimeDtos = time.getAccountTimes().stream()
+                        .map(AccountTimeMapper.MAPPER::map).toList();
 
                 meetingTimeDto.setMeetingDate(meetingDateDto);
                 meetingTimeDto.setAccountTimes(accountTimeDtos);
@@ -71,8 +73,8 @@ public interface MeetingMapper {
     default Meeting mapToFullEntity(MeetingDto meetingDto) {
         Group group = GroupMapper.MAPPER.map(meetingDto.getGroupDto());
 
-        AccountDto ownerDto= meetingDto.getOwner();
-        Account owner = AccountMapper.MAPPER.map(ownerDto);
+        AccountDto ownerDto = meetingDto.getOwner();
+        Account owner = AccountMapper.MAPPER.mapWithSettings(ownerDto);
 
         Meeting meeting = Meeting.builder().group(group)
                 .id(meetingDto.getId())
@@ -89,7 +91,7 @@ public interface MeetingMapper {
         meeting.setSubject(subject);
 
         Set<Account> participants =
-                meetingDto.getParticipants().stream().map(AccountMapper.MAPPER::map)
+                meetingDto.getParticipants().stream().map(AccountMapper.MAPPER::mapWithSettings)
                         .collect(Collectors.toSet());
         meeting.setParticipants(participants);
 
@@ -107,11 +109,11 @@ public interface MeetingMapper {
                         .dateTime(meetingTimeDto.getDateTime())
                         .meetingDate(meetingDate).build();
 
-                Set<AccountTimeDto> accountTimesDtos = meetingTimeDto.getAccountTimes();
+                List<AccountTimeDto> accountTimesDtos = meetingTimeDto.getAccountTimes();
                 Set<AccountTime> accountTimes = new HashSet<>();
 
                 for (AccountTimeDto timeDto : accountTimesDtos) {
-                    AccountTime accountTime = AccountTimeMapper.MAPPER.map(timeDto);;
+                    AccountTime accountTime = AccountTimeMapper.MAPPER.map(timeDto);
 
                     Account account = AccountMapper.MAPPER.map(timeDto.getAccount());
 
@@ -130,10 +132,12 @@ public interface MeetingMapper {
         meeting.setDates(dates);
         return meeting;
     }
+
     @Mapping(target = "dates", ignore = true)
     @Mapping(target = "owner", ignore = true)
     @Mapping(target = "participants", ignore = true)
     MeetingDto map(Meeting entity);
+
     @InheritInverseConfiguration
     @Mapping(target = "dates", ignore = true)
     @Mapping(target = "owner", ignore = true)
@@ -155,13 +159,6 @@ public interface MeetingMapper {
         meetingDto.setDates(dateDtos);
         return meetingDto;
     }
-    default MeetingDto mapWithMeetingDateAndTimesAndParticipants(Meeting entity) {
-        MeetingDto meetingDto = mapWithMeetingDateAndTimes(entity);
-        Set<AccountDto> accountDtos = entity.getParticipants().stream().map(AccountMapper.MAPPER::map).collect(Collectors.toSet());
-        meetingDto.setParticipants(accountDtos);
-        return meetingDto;
-    }
-
 
     default MeetingDto mapIfPresentOrElseGet(Optional<Meeting> meeting,
                                              Supplier<? extends MeetingDto> supplier) {

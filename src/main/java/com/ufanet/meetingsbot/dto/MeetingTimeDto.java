@@ -1,25 +1,24 @@
 package com.ufanet.meetingsbot.dto;
 
-import com.ufanet.meetingsbot.entity.MeetingTime;
 import lombok.*;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 @Setter
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MeetingTimeDto implements Comparable<MeetingTimeDto>{
+public class MeetingTimeDto implements Comparable<MeetingTimeDto> {
     private Long id;
     private ZonedDateTime dateTime;
     private MeetingDateDto meetingDate;
     @Builder.Default
-    private Set<AccountTimeDto> accountTimes = new HashSet<>();
+    private List<AccountTimeDto> accountTimes = new ArrayList<>();
 
     public ZonedDateTime getTimeWithZoneOffset(String zoneId) {
         return this.dateTime.withZoneSameInstant(ZoneId.of(zoneId));

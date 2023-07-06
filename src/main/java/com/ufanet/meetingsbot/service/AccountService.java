@@ -5,6 +5,7 @@ import com.ufanet.meetingsbot.entity.Account;
 import com.ufanet.meetingsbot.entity.AccountTime;
 import com.ufanet.meetingsbot.entity.BotState;
 import com.ufanet.meetingsbot.entity.Settings;
+import com.ufanet.meetingsbot.mapper.AccountMapper;
 import com.ufanet.meetingsbot.repository.AccountRepository;
 import com.ufanet.meetingsbot.repository.AccountTimeRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,11 +38,6 @@ public class AccountService {
         return accountRepository.findById(userId);
     }
 
-    public List<AccountTime> getAccountTimesByAccountAndMeetingId(long userId, long meetingId) {
-        log.info("getting account times with user {} and meeting {} from db", userId, meetingId);
-        return accountTimeRepository.findByAccountAndMeetingId(userId, meetingId);
-    }
-
     public List<AccountTime> getAccountTimesByMeetingId(long meetingId) {
         log.info("getting account times with meeting {} from db", meetingId);
         return accountTimeRepository.findByMeetingId(meetingId);
@@ -51,6 +47,34 @@ public class AccountService {
     public AccountTime saveAccountTime(AccountTime accountTime) {
         log.info("saving account time {} into db", accountTime.getId());
         return accountTimeRepository.save(accountTime);
+    }
+
+    @Transactional
+    public Account createAccount(User user) {
+        log.info("saving telegram user {} into database", user.getId());
+        Account account = AccountMapper.MAPPER.mapToEntityFromTgUser(user);
+
+        Settings settings = Settings.builder()
+                .account(account).timeZone("UTC+03:00")
+                .language("ru-RU").build();
+        BotState botState = BotState.builder()
+                .state(AccountState.PROFILE.name())
+                .updatedDt(LocalDateTime.now())
+                .account(account)
+                .build();
+
+        account.setBotState(botState);
+        account.setSettings(settings);
+        return save(account);
+    }
+
+    @Transactional
+    public Account updateTgUser(Account account, User user) {
+        log.info("updating account {} from telegram user", user.getId());
+        account.setLastname(user.getLastName());
+        account.setFirstname(user.getFirstName());
+        account.setUsername(user.getUserName());
+        return save(account);
     }
 
     @Transactional
@@ -77,35 +101,9 @@ public class AccountService {
         return accountRepository.findAccountsByMeetingId(meetingId);
     }
 
-    @Transactional
-    public Account saveTgUser(User user) {
-        log.info("saving telegram user {} into database", user.getId());
-        Account account = Account.builder().id(user.getId())
-                .firstname(user.getFirstName())
-                .lastname(user.getLastName())
-                .username(user.getUserName())
-                .build();
-        Settings settings = Settings.builder()
-                .account(account).timeZone("UTC+03:00")
-                .language("ru-RU").build();
-        BotState botState = BotState.builder()
-                .state(AccountState.PROFILE.name())
-                .updatedDt(LocalDateTime.now())
-                .account(account)
-                .build();
-
-        account.setBotState(botState);
-        account.setSettings(settings);
-        return save(account);
-    }
-
-    @Transactional
-    public Account updateTgUser(Account account, User user) {
-        log.info("updating account {} from telegram user", user.getId());
-        account.setLastname(user.getLastName());
-        account.setFirstname(user.getFirstName());
-        account.setUsername(user.getUserName());
-        return save(account);
+    public List<AccountTime> getAccountTimesByAccountAndMeetingId(long userId, long meetingId) {
+        log.info("getting account times with user {} and meeting {} from db", userId, meetingId);
+        return accountTimeRepository.findByAccountAndMeetingId(userId, meetingId);
     }
 }
 

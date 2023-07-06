@@ -25,6 +25,8 @@ public class RedisConfig {
     private long userTtl;
     @Value("${cache.redis.ttl.groupMembers}")
     private long groupMembersTtl;
+    @Value("${cache.redis.ttl.group}")
+    private long groupTtl;
 
     @Bean
     JedisConnectionFactory jedisConnectionFactory() {
@@ -51,6 +53,9 @@ public class RedisConfig {
                 .withCacheConfiguration("account",
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .entryTtl(Duration.ofSeconds(userTtl)))
+                .withCacheConfiguration("group",
+                        RedisCacheConfiguration.defaultCacheConfig()
+                                .entryTtl(Duration.ofSeconds(groupTtl)))
                 .withCacheConfiguration("group_members",
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .entryTtl(Duration.ofSeconds(groupMembersTtl)));

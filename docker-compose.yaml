@@ -22,20 +22,23 @@ services:
       - postgres
     volumes:
       - /db_data:/var/lib/redis/data
-#  meetingsbot:
-#    container_name: meetingsbot
-#    image: aanailevich/meetings-bot:latest
-#    ports:
-#      - "8080:8080"
-#    env_file:
-#      - docker.env
-#    environment:
-#      TELEGRAM_USERNAME: ${TELEGRAM_USERNAME}
-#      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN}
-#      SPRING_PROFILES_ACTIVE: prod,polling
-#    links:
-#      - postgres
-#      - redis_cache
-#    depends_on:
-#      - postgres
-#      - redis_cache
+  meetingsbot:
+    container_name: meetingsbot
+    image: aanailevich/meetings-bot:latest
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - docker.env
+    environment:
+      TELEGRAM_USERNAME: ${TELEGRAM_USERNAME}
+      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN}
+      SPRING_PROFILES_ACTIVE: prod,polling
+    links:
+      - postgres
+      - redis_cache
+    depends_on:
+      - postgres
+      - redis_cache

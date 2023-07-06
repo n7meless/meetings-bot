@@ -2,12 +2,12 @@ package com.ufanet.meetingsbot.handler.event.impl;
 
 import com.ufanet.meetingsbot.constants.BotCommands;
 import com.ufanet.meetingsbot.constants.state.AccountState;
-import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
-import com.ufanet.meetingsbot.exceptions.ValidationMeetingException;
-import com.ufanet.meetingsbot.handler.event.EventHandler;
-import com.ufanet.meetingsbot.message.ProfileReplyMessage;
 import com.ufanet.meetingsbot.entity.Account;
 import com.ufanet.meetingsbot.entity.Settings;
+import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
+import com.ufanet.meetingsbot.exceptions.ValidationException;
+import com.ufanet.meetingsbot.handler.event.EventHandler;
+import com.ufanet.meetingsbot.message.ProfileReplyMessage;
 import com.ufanet.meetingsbot.service.AccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -53,8 +53,8 @@ public class ProfileEventHandler implements EventHandler {
                 account.setSettings(settings);
                 accountService.save(account);
                 profileReplyMessage.sendSuccessTimezoneSelected(userId);
-            } else throw new ValidationMeetingException(userId,
-                    "Неправильно введена команда или часовой пояс. Введите в формате: /settimezone UTC+03:00");
+            } else throw new ValidationException(userId,
+                    "error.validation.timezone");
         }
     }
 
@@ -64,6 +64,7 @@ public class ProfileEventHandler implements EventHandler {
     }
 
     protected void handleCallback(CallbackQuery callbackQuery) {
+        //TODO language select
         User tgUser = callbackQuery.getFrom();
         String callback = callbackQuery.getData();
     }

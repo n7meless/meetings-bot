@@ -30,6 +30,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -139,7 +140,7 @@ public class CreateEventHandler implements EventHandler {
                     long participantId = Long.parseLong(text);
                     Set<AccountDto> groupMembers =
                             accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupDto().getId(),
-                                            meetingDto.getOwner().getId()).stream().map(AccountMapper.MAPPER::map)
+                                            meetingDto.getOwner().getId()).stream().map(AccountMapper.MAPPER::mapWithSettings)
                                     .collect(Collectors.toSet());
 
                     meetingConstructor.updateParticipants(meetingDto, participantId, groupMembers);
@@ -178,8 +179,16 @@ public class CreateEventHandler implements EventHandler {
         MeetingState state = meetingDto.getState();
         log.info("sending message to user {} when meeting state is '{}'", userId, state);
         switch (state) {
-            case GROUP_SELECT -> replyMessage.sendGroupMessage(userId);
-            case PARTICIPANT_SELECT -> replyMessage.sendParticipantsMessage(userId, meetingDto);
+            case GROUP_SELECT -> {
+                List<Group> groups = groupService.getGroupsByMemberId(userId);
+                replyMessage.sendGroupMessage(userId, groups);
+            }
+            case PARTICIPANT_SELECT -> {
+                Set<AccountDto> members =
+                        accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupDto().getId(), userId)
+                                .stream().map(AccountMapper.MAPPER::mapWithSettings).collect(Collectors.toSet());
+                replyMessage.sendParticipantsMessage(userId, meetingDto, members);
+            }
             case SUBJECT_SELECT -> replyMessage.sendSubjectMessage(userId);
             case SUBJECT_DURATION_SELECT -> replyMessage.sendSubjectDurationMessage(userId, meetingDto);
             case QUESTION_SELECT -> replyMessage.sendQuestionMessage(userId, meetingDto);

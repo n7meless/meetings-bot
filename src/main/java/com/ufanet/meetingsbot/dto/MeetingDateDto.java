@@ -1,6 +1,5 @@
 package com.ufanet.meetingsbot.dto;
 
-import com.ufanet.meetingsbot.entity.MeetingDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,6 +29,7 @@ public class MeetingDateDto implements Comparable<MeetingDateDto> {
     public Set<MeetingTimeDto> getMeetingTimes() {
         return meetingTimes == null ? new HashSet<>() : meetingTimes;
     }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

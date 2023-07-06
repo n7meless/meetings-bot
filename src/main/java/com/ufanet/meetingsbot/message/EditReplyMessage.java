@@ -5,10 +5,8 @@ import com.ufanet.meetingsbot.constants.state.EditState;
 import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.MeetingMessage;
-import com.ufanet.meetingsbot.mapper.AccountMapper;
 import com.ufanet.meetingsbot.message.keyboard.CalendarKeyboardMaker;
 import com.ufanet.meetingsbot.message.keyboard.MeetingKeyboardMaker;
-import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,15 +17,12 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class EditReplyMessage extends ReplyMessage {
     private final MeetingKeyboardMaker meetingKeyboard;
     private final CalendarKeyboardMaker calendarKeyboard;
-    private final AccountService accountService;
-    private final AccountMapper accountMapper;
 
     private String getMainText(MeetingDto meetingDto) {
         AccountDto owner = meetingDto.getOwner();
@@ -40,7 +35,7 @@ public class EditReplyMessage extends ReplyMessage {
                 meetingMessage.duration(), times, meetingMessage.address());
     }
 
-    public void editAddress(long userId, MeetingDto meetingDto) {
+    public void sendEditAddress(long userId, MeetingDto meetingDto) {
         String firstText = getMainText(meetingDto);
         String secondText = messageUtils.buildText("\n\n", Emojis.INFORMATION.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.address"));
@@ -54,7 +49,7 @@ public class EditReplyMessage extends ReplyMessage {
         executeEditOrSendMessage(message);
     }
 
-    public void editTime(long userId, MeetingDto meetingDto) {
+    public void sendEditTime(long userId, MeetingDto meetingDto) {
         AccountDto owner = meetingDto.getOwner();
         String zoneId = owner.getTimeZone();
         String firstText = getMainText(meetingDto);
@@ -69,13 +64,10 @@ public class EditReplyMessage extends ReplyMessage {
         executeEditOrSendMessage(message);
     }
 
-    public void editParticipants(long userId, MeetingDto meetingDto) {
+    public void sendEditParticipants(long userId, MeetingDto meetingDto, Set<AccountDto> members) {
         String firstText = getMainText(meetingDto);
         String secondText = messageUtils.buildText("\n\n", Emojis.INFORMATION.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.participants"));
-
-        Set<AccountDto> members = accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupDto().getId(), userId)
-                .stream().map(accountMapper::map).collect(Collectors.toSet());
 
         Set<AccountDto> participants = meetingDto.getParticipants();
         List<List<InlineKeyboardButton>> keyboard = meetingKeyboard.getParticipantsInlineButtons(members, participants);
@@ -87,7 +79,7 @@ public class EditReplyMessage extends ReplyMessage {
         executeEditOrSendMessage(editMessage);
     }
 
-    public void editSubject(long userId, MeetingDto meetingDto) {
+    public void semdEditSubject(long userId, MeetingDto meetingDto) {
         String firstText = getMainText(meetingDto);
         String secondText = messageUtils.buildText("\n\n", Emojis.INFORMATION.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.subject"));
@@ -101,7 +93,7 @@ public class EditReplyMessage extends ReplyMessage {
         executeEditOrSendMessage(editMessage);
     }
 
-    public void editSubjectDuration(long userId, MeetingDto meetingDto) {
+    public void sendEditSubjectDuration(long userId, MeetingDto meetingDto) {
         String firstText = getMainText(meetingDto);
         String secondText = messageUtils.buildText("\n\n", Emojis.INFORMATION.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.duration"));
@@ -119,7 +111,7 @@ public class EditReplyMessage extends ReplyMessage {
         executeEditOrSendMessage(editMessage);
     }
 
-    public void editQuestion(long userId, MeetingDto meetingDto) {
+    public void sendEditQuestion(long userId, MeetingDto meetingDto) {
         String firstText = getMainText(meetingDto);
         String secondText = messageUtils.buildText("\n\n", Emojis.INFORMATION.getEmojiSpace(),
                 localeMessageService.getMessage("edit.meeting.questions"));

@@ -52,9 +52,10 @@ public class WebhookTelegramBot extends SpringWebhookBot {
             log.error("an occurred error when execute method");
         }
     }
+
     @Bean
     public CommandLineRunner registerBot(@Value("${telegram.bot.authorizePath}") String authorizePath,
-                                               RestTemplate restTemplate) {
+                                         RestTemplate restTemplate) {
         return (c) -> {
             log.info("trying register bot @{} on webhook", botUsername);
             ResponseEntity<String> responseEntity = restTemplate.getForEntity(authorizePath, String.class);

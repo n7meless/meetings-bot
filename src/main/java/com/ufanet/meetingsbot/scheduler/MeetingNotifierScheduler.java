@@ -1,14 +1,14 @@
 package com.ufanet.meetingsbot.scheduler;
 
 import com.ufanet.meetingsbot.constants.state.MeetingState;
+import com.ufanet.meetingsbot.entity.Account;
 import com.ufanet.meetingsbot.entity.Meeting;
 import com.ufanet.meetingsbot.message.UpcomingReplyMessage;
+import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.MeetingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
@@ -21,13 +21,14 @@ import java.util.List;
 public class MeetingNotifierScheduler {
     private final UpcomingReplyMessage upcomingReplyMessage;
     private final MeetingService meetingService;
+    private final AccountService accountService;
 
 
-    @Scheduled(initialDelay = 60000, fixedRate = 60000)
-    public void checkMeetings() {
-        checkUpcomingMeetings();
-        checkExpiredMeetings();
-    }
+//    @Scheduled(initialDelay = 60000, fixedRate = 60000)
+//    public void checkMeetings() {
+//        checkUpcomingMeetings();
+//        checkExpiredMeetings();
+//    }
 
     private void checkUpcomingMeetings() {
         ZonedDateTime now = ZonedDateTime.now();
@@ -41,16 +42,18 @@ public class MeetingNotifierScheduler {
 
             if (betweenNowAndMeetingUpdate >= 30 && betweenNowAndMeetingDate < 30 && betweenNowAndMeetingDate > 10) {
 
+                List<Account> accounts = accountService.getAccountsByMeetingId(meeting.getId());
                 log.info("meeting {} notification sent 30 min before the start", meeting.getId());
-                upcomingReplyMessage.sendComingMeetingNotifyToParticipants(meeting,
+                upcomingReplyMessage.sendComingMeetingNotifyToParticipants(meeting, accounts,
                         "upcoming.meeting.confirmed.coming30");
                 meeting.setUpdatedDt(LocalDateTime.now());
 
                 meetingService.save(meeting);
             } else if (betweenNowAndMeetingUpdate >= 10 && betweenNowAndMeetingDate < 10) {
 
+                List<Account> accounts = accountService.getAccountsByMeetingId(meeting.getId());
                 log.info("meeting {} notification sent 10 min before the start", meeting.getId());
-                upcomingReplyMessage.sendComingMeetingNotifyToParticipants(meeting,
+                upcomingReplyMessage.sendComingMeetingNotifyToParticipants(meeting, accounts,
                         "upcoming.meeting.confirmed.coming10");
                 meeting.setUpdatedDt(LocalDateTime.now());
 

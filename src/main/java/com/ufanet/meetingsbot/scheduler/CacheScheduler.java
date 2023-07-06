@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -38,7 +39,7 @@ public class CacheScheduler {
     @Async
     @Scheduled(fixedRate = 10000)
     public void saveMeetingsAndBotStatesFromCache() {
-        Map<Long, Meeting> meetingDataCache = new HashMap<>(meetingCache.getMeetingStateCache());
+        Map<Long, Meeting> meetingDataCache = new HashMap<>(meetingCache.getMeetingCache());
         LocalDateTime now = LocalDateTime.now();
         for (Map.Entry<Long, Meeting> entry : meetingDataCache.entrySet()) {
             long userId = entry.getKey();
@@ -78,9 +79,19 @@ public class CacheScheduler {
     @Transactional
     public void saveCacheBotStateCacheBeforeDestroy() {
         log.info("saving bot state cache before destroy application");
-        Map<Long, BotState> botCache = botStateCache.getBotStateCache();
-        Collection<BotState> botStates = botCache.values();
+        Map<Long, BotState> botStateCacheMap = botStateCache.getBotStateCache();
+        Collection<BotState> unsavedBotStates = botStateCacheMap.values();
+        botService.saveAll(unsavedBotStates);
 
-        botService.saveAll(botStates);
+        Map<Long, Meeting> meetingCacheMap = meetingCache.getMeetingCache();
+        List<Meeting> unsavedMeetings = meetingCacheMap.values().stream().filter((meeting) -> {
+            return switch (meeting.getState()) {
+                case EDIT, DATE_SELECT, TIME_SELECT, ADDRESS_SELECT,
+                        GROUP_SELECT, PARTICIPANT_SELECT, QUESTION_SELECT,
+                        SUBJECT_DURATION_SELECT, SUBJECT_SELECT -> true;
+                default -> false;
+            };
+        }).toList();
+        meetingService.saveAll(unsavedMeetings);
     }
 }

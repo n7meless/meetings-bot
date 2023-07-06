@@ -29,19 +29,6 @@ public class MeetingService {
         meetingRepository.save(meeting);
     }
 
-    public void saveOnCache(Long userId, Meeting meeting) {
-        meetingCache.save(userId, meeting);
-    }
-
-    public Optional<Meeting> getFromCache(Long userId) {
-        Meeting meeting = meetingCache.get(userId);
-        return Optional.ofNullable(meeting);
-    }
-
-    public void clearCache(Long userId) {
-        meetingCache.evict(userId);
-    }
-
     @Transactional
     public void createMeeting(Meeting meeting) {
         Account owner = meeting.getOwner();
@@ -99,7 +86,7 @@ public class MeetingService {
     }
 
     public List<Meeting> getConfirmedMeetingsWhereDatesBetween(ZonedDateTime now, int endValue) {
-        log.info("getting confirmed meetings where date times now and meeting between 0 and {} min", endValue);
+        log.info("getting confirmed meetings where current date and meeting date between 0 and {} min", endValue);
         return meetingRepository.findConfirmedMeetingsWhereDatesBetween(now, endValue);
     }
 
@@ -110,6 +97,20 @@ public class MeetingService {
     }
 
     public List<Meeting> getConfirmedMeetingsWhereDatesLaterThanSubjectDuration(ZonedDateTime now) {
+        log.info("getting confirmed meetings where current date {} and meeting date later than subject duration", now);
         return meetingRepository.findConfirmedMeetingsWhereDatesLaterThanSubjectDuration(now);
+    }
+
+    public void saveOnCache(Long userId, Meeting meeting) {
+        meetingCache.save(userId, meeting);
+    }
+
+    public Optional<Meeting> getFromCache(Long userId) {
+        Meeting meeting = meetingCache.get(userId);
+        return Optional.ofNullable(meeting);
+    }
+
+    public void clearCache(Long userId) {
+        meetingCache.evict(userId);
     }
 }

@@ -4,7 +4,6 @@ import com.ufanet.meetingsbot.constants.BotCommands;
 import com.ufanet.meetingsbot.constants.state.AccountState;
 import com.ufanet.meetingsbot.constants.state.ProfileState;
 import com.ufanet.meetingsbot.constants.type.ChatType;
-import com.ufanet.meetingsbot.exceptions.NullCallbackException;
 import com.ufanet.meetingsbot.handler.chat.ChatHandler;
 import com.ufanet.meetingsbot.handler.event.EventHandler;
 import com.ufanet.meetingsbot.message.CommandReplyMessage;
@@ -32,7 +31,7 @@ public class PrivateChatHandler implements ChatHandler {
 
     private final Map<AccountState, EventHandler> queryHandlers = new HashMap<>();
     private final AccountService accountService;
-    private final CommandReplyMessage commandHandler;
+    private final CommandReplyMessage commandMessage;
     private final BotService botService;
 
     @Override
@@ -55,7 +54,7 @@ public class PrivateChatHandler implements ChatHandler {
             long userId = message.getChatId();
             String data = query.getData();
 
-            if (data.isBlank()) throw new NullCallbackException(query.getId());
+            if (data.isBlank()) commandMessage.executeNullCallback(query.getId());
 
             log.info("received callback query from user {}", userId);
             if (AccountState.startWithState(data)) {
@@ -72,7 +71,7 @@ public class PrivateChatHandler implements ChatHandler {
         if (messageText.startsWith("/")) {
             handleCommand(update);
         } else {
-            botService.setLastMsgFromUser(userId, true);
+            botService.setLastMessageFromBot(userId, false);
             AccountState pressedButton = fromValue(messageText);
             if (pressedButton != null) {
                 botService.setState(userId, pressedButton.name());
@@ -91,12 +90,12 @@ public class PrivateChatHandler implements ChatHandler {
 
             accountService.getByUserId(userId)
                     .ifPresentOrElse((account) -> accountService.updateTgUser(account, user),
-                            () -> accountService.saveTgUser(user));
-            commandHandler.sendStartMessage(userId);
+                            () -> accountService.createAccount(user));
+            commandMessage.sendStartMessage(userId);
         } else if (messageText.startsWith(BotCommands.HELP.getCommand())) {
-            commandHandler.sendHelpMessage(userId);
+            commandMessage.sendHelpMessage(userId);
         } else if (messageText.startsWith(BotCommands.ABOUT.getCommand())) {
-            commandHandler.sendAboutMessage(userId);
+            commandMessage.sendAboutMessage(userId);
         } else if (messageText.startsWith(BotCommands.SETTIMEZONE.getCommand())) {
             queryHandlers.get(PROFILE).handleUpdate(update);
         }
