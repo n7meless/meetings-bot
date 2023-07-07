@@ -10,6 +10,7 @@ import java.util.List;
 
 @Repository
 public interface AccountTimeRepository extends JpaRepository<AccountTime, Long> {
+
     @Query(value = """
             SELECT ut
             FROM user_times AS ut JOIN meeting_time mt ON mt.id = ut.meetingTime.id AND ut.account.id = ?1

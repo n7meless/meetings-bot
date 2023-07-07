@@ -13,9 +13,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Setting environment variables
+        run: truncate -s 0 .env && echo TELEGRAM_USERNAME="${{ secrets.TELEGRAM_USERNAME }}"$'\n'TELEGRAM_TOKEN="${{ secrets.TELEGRAM_TOKEN }}" >> .env
+
       - name: Run docker-compose
-        run: docker-compose -f "docker-compose.yaml" up -d --build
+        run: docker-compose -f "docker-compose-ide.yaml" up -d --build
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3
@@ -24,8 +29,11 @@ jobs:
           distribution: 'adopt'
           cache: 'gradle'
 
+      - name: Grant Permissions to gradlew
+        run: chmod +x gradlew
+
       - name: Gradle build
-        run: ./gradlew build --debug --stacktrace -q -PTELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }} -PTELEGRAM_USERNAME=${{ secrets.TELEGRAM_USERNAME }}
+        run: ./gradlew clean -q --stacktrace -PTELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }} -PTELEGRAM_USERNAME=${{ secrets.TELEGRAM_USERNAME }} build
 
       - name: Build & push Docker image
         uses: mr-smithers-excellent/docker-build-push@v5

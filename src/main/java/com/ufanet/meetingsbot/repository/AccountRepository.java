@@ -12,6 +12,7 @@ import java.util.Set;
 
 @Repository
 public interface AccountRepository extends JpaRepository<Account, Long> {
+
     @EntityGraph(attributePaths = {"settings"})
     Set<Account> findAccountByGroupsIdAndIdNot(Long chatId, Long userId);
 

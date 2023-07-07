@@ -11,6 +11,7 @@ import java.util.Optional;
 
 @Repository
 public interface GroupRepository extends JpaRepository<Group, Long> {
+
     @Query(value = "FROM chat ch JOIN ch.members mb WHERE mb.id = ?1")
     List<Group> findGroupsByMemberId(Long userId);
 

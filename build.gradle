@@ -22,6 +22,7 @@ ext {
     telegrambotVersion = "6.7.0"
     vdurmontEmojiVersion = "5.1.1"
     jedisVersion = "4.4.1"
+    testcontainersVersion = "1.18.3"
 }
 
 dependencies {
@@ -42,10 +43,27 @@ dependencies {
     implementation 'org.liquibase:liquibase-core'
     runtimeOnly 'org.postgresql:postgresql'
 
-    testImplementation 'org.testcontainers:junit-jupiter'
-    testImplementation 'org.testcontainers:postgresql'
+    testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
+    testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
 }
 
 tasks.named('test') {
+    getenv().each { key, value -> environment key, value }
     useJUnitPlatform()
+}
+
+def static getenv(path = ".env") {
+    def env = [:]
+
+    def file = new File(path)
+    if (file.exists()) {
+        file.eachLine { line ->
+            def pair = line.split("=", 2)
+            if (pair.length == 2) {
+                def (name, value) = pair
+                env[name.trim()] = value.trim()
+            }
+        }
+    }
+    return env
 }

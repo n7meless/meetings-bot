@@ -62,8 +62,8 @@ public class WebhookTelegramBot extends SpringWebhookBot {
             if (responseEntity.getStatusCode() == HttpStatus.OK) {
                 log.info("bot authorized successfully");
             } else {
-                log.error("can not authorize bot in telegram");
-                throw new RuntimeException();
+                throw new RuntimeException(String.format("can not authorize bot @{%s} on " +
+                        "webhook path '%s' in telegram", botUsername, botPath));
             }
         };
     }

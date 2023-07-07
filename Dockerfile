@@ -1,8 +1,8 @@
-FROM gradle:7.6.1-jdk-alpine AS BUILD_STAGE
+FROM gradle:8-jdk-alpine AS BUILD_STAGE
 COPY --chown=gradle:gradle . /home/gradle
-RUN gradle build || return 1
+RUN gradle build --stacktrace --debug || return 1
 
-FROM openjdk:17-jdk-alpine
+FROM eclipse-temurin:17-jdk
 ENV APP_NAME=meetings-bot-1.0.0-SNAPSHOT.jar
 ENV APP_HOME=/app
 ENV bot_username=$TELEGRAM_USERNAME

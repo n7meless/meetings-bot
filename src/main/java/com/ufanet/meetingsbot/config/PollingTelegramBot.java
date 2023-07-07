@@ -54,8 +54,7 @@ public class PollingTelegramBot extends TelegramLongPollingBot {
             telegramBotsApi.registerBot(this);
             log.info("bot authorized successfully");
         } catch (TelegramApiException e) {
-            log.error("can not authorize bot in telegram");
-            throw new RuntimeException();
+            throw new RuntimeException(String.format("can not authorize bot @{%s} in telegram", botUsername));
         }
     }
 }

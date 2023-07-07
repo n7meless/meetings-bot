@@ -13,6 +13,7 @@ import java.util.Optional;
 
 @Repository
 public interface MeetingRepository extends JpaRepository<Meeting, Long> {
+
     @Override
     @EntityGraph(value = "meeting-with-children")
     Optional<Meeting> findById(Long aLong);

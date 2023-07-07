@@ -186,9 +186,9 @@ public class UpcomingReplyMessage extends ReplyMessage {
     }
 
     public void sendSelectedReadyMeeting(long userId, MeetingDto meetingDto) {
-        InlineKeyboardButton btn1 = meetingKeyboard.defaultInlineButton("Назад",
+        InlineKeyboardButton btn1 = meetingKeyboard.getPreviousInlineButton(
                 UpcomingState.UPCOMING_MEETINGS.name());
-        InlineKeyboardButton btn2 = meetingKeyboard.defaultInlineButton("Отменить встречу",
+        InlineKeyboardButton btn2 = meetingKeyboard.getCancelInlineButton(
                 UpcomingState.UPCOMING_CANCEL_BY_OWNER.name() + " " + meetingDto.getId());
 
         SendMessage sendMessage = messageUtils.generateSendMessage(userId,
