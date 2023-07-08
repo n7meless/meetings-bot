@@ -12,12 +12,19 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      TELEGRAM_USERNAME: ${{ secrets.TELEGRAM_USERNAME }}
+      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
 
       - name: Setting environment variables
-        run: truncate -s 0 .env && echo TELEGRAM_USERNAME="${{ secrets.TELEGRAM_USERNAME }}"$'\n'TELEGRAM_TOKEN="${{ secrets.TELEGRAM_TOKEN }}" >> .env
+        run: |
+          truncate -s 0 .env 
+          echo TELEGRAM_USERNAME="${{ secrets.TELEGRAM_USERNAME }}"$'\n'TELEGRAM_TOKEN="${{ secrets.TELEGRAM_TOKEN }}" >> .env 
+          cat .env 
+          ls
 
       - name: Run docker-compose
         run: docker-compose -f "docker-compose-ide.yaml" up -d --build
@@ -26,14 +33,15 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: '17'
-          distribution: 'adopt'
-          cache: 'gradle'
+          distribution: 'temurin'
 
-      - name: Grant Permissions to gradlew
-        run: chmod +x gradlew
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@ccb4328a959376b642e027874838f60f8e596de3
 
-      - name: Gradle build
-        run: ./gradlew clean -q --stacktrace -PTELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }} -PTELEGRAM_USERNAME=${{ secrets.TELEGRAM_USERNAME }} build
+#      - name: Build with Gradle
+#        uses: gradle/gradle-build-action@749f47bda3e44aa060e82d7b3ef7e40d953bd629
+#        with:
+#          arguments: clean --debug --stacktrace build
 
       - name: Build & push Docker image
         uses: mr-smithers-excellent/docker-build-push@v5
@@ -41,6 +49,8 @@ jobs:
           image: aanailevich/meetings-bot
           tags: latest
           registry: docker.io
+          buildArgs:
+            BOT_TOKEN=${{ secrets.TELEGRAM_TOKEN }},BOT_USERNAME=${{ secrets.TELEGRAM_USERNAME }}
           dockerfile: Dockerfile
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}

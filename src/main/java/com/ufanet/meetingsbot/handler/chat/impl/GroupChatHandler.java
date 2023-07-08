@@ -50,6 +50,8 @@ public class GroupChatHandler implements ChatHandler {
         User user = callbackQuery.getFrom();
         Integer messageId = message.getMessageId();
 
+        log.info("handle callback in chat {} from user {}", chatId, user.getId());
+
         if (data.equals("REMEMBER")) {
             Group group = groupService.getByGroupId(message.getChatId())
                     .orElseGet(() ->
@@ -83,10 +85,10 @@ public class GroupChatHandler implements ChatHandler {
         }
     }
 
-    protected void handleCurrentGroupMembers(Message message) {
+    protected void handleStartCommand(Message message) {
         Long chatId = message.getChatId();
         User from = message.getFrom();
-        log.info("handle current chat {} member {}", chatId, from.getId());
+        log.info("handle start command in chat {} from user {}", chatId, from.getId());
         try {
             ChatMember chatMember = groupMessage.getChatMember(chatId, from.getId());
             String memberStatus = chatMember.getStatus();
@@ -108,9 +110,9 @@ public class GroupChatHandler implements ChatHandler {
 
 
     protected void handleNewAndLeftMembers(Message message) {
-        log.info("handle new or left members from chat {}", message.getChatId());
         List<User> newMembers = message.getNewChatMembers();
         if (!newMembers.isEmpty()) {
+            log.info("handle new members from chat {}", message.getChatId());
 
             Group group = groupService.getByGroupId(message.getChatId()).orElseGet(() -> {
                 newMembers.add(message.getFrom());
@@ -128,6 +130,8 @@ public class GroupChatHandler implements ChatHandler {
             }
             groupService.save(group);
         } else {
+            log.info("handle left members from chat {}", message.getChatId());
+
             User leftMember = message.getLeftChatMember();
             if (leftMember != null && !leftMember.getIsBot()) {
                 Optional<Group> group = groupService.getByGroupId(message.getChatId());
@@ -140,9 +144,10 @@ public class GroupChatHandler implements ChatHandler {
     protected void handleCommand(Message message) {
         long chatId = message.getChat().getId();
         String messageText = message.getText();
-        log.info("handle group command from chat {}", chatId);
+        log.info("handle command in group chat {}", chatId);
+
         if (messageText.startsWith("/start")) {
-            handleCurrentGroupMembers(message);
+            handleStartCommand(message);
         } else if (messageText.startsWith("/help")) {
             groupMessage.sendHelpMessage(chatId);
         } else if (messageText.startsWith("/about")) {

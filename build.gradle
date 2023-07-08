@@ -60,10 +60,12 @@ def static getenv(path = ".env") {
         file.eachLine { line ->
             def pair = line.split("=", 2)
             if (pair.length == 2) {
-                def (name, value) = pair
-                env[name.trim()] = value.trim()
+                def (key, value) = pair
+                if (!value.isBlank()) {
+                    env[key.trim()] = value.trim()
+                }
             }
         }
-    }
+    } else throw new RuntimeException(".env file not exists");
     return env
 }

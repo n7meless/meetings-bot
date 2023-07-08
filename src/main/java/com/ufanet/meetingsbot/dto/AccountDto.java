@@ -9,6 +9,7 @@ import java.util.Objects;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(of = {"id"})
 public class AccountDto {
     private Long id;
     private String firstname;
@@ -16,17 +17,4 @@ public class AccountDto {
     private String username;
     private String language;
     private String timeZone;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        AccountDto that = (AccountDto) o;
-        return Objects.equals(id, that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
-    }
 }
