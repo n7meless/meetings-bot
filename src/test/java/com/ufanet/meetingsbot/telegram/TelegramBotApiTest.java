@@ -19,6 +19,7 @@ import java.io.IOException;
 
 @RestClientTest(excludeAutoConfiguration = MockRestServiceServerAutoConfiguration.class)
 public class TelegramBotApiTest {
+
     @Value("${telegram.bot.token}")
     private String botToken;
     @Value("${telegram.bot.username}")
@@ -38,7 +39,6 @@ public class TelegramBotApiTest {
     @Test
     public void shouldGetSuccessConnection() throws IOException {
         String url = "https://api.telegram.org/bot" + botToken + "/getMe";
-
         ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
         JsonNode responseJson = mapper.readTree(response.getBody());

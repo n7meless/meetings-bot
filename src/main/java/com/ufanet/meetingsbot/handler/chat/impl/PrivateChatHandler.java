@@ -86,6 +86,8 @@ public class PrivateChatHandler implements ChatHandler {
         long userId = message.getChat().getId();
         String messageText = message.getText();
         User user = message.getFrom();
+        log.info("handle command in private chat from user {}", userId);
+
         if (messageText.startsWith(BotCommands.START.getCommand())) {
 
             accountService.getByUserId(userId)
