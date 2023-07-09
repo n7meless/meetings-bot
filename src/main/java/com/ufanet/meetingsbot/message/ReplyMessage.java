@@ -32,9 +32,10 @@ public abstract class ReplyMessage {
 
 
     protected void executeSendMessage(SendMessage message) {
+        long chatId = Long.parseLong(message.getChatId());
+        BotState botState = botService.getByUserId(chatId);
+
         executorService.execute(() -> {
-            long chatId = Long.parseLong(message.getChatId());
-            BotState botState = botService.getByUserId(chatId);
 
             Integer messageId = botState.getMessageId();
             if (messageId != null) {
@@ -53,7 +54,7 @@ public abstract class ReplyMessage {
 
             botState.setMsgFromBot(true);
             botState.setMessageType(MessageType.SEND_MESSAGE);
-            botService.saveCache(chatId, botState);
+            botService.saveOnCache(chatId, botState);
         });
     }
 
@@ -79,11 +80,11 @@ public abstract class ReplyMessage {
             message.setMessageId(messageId);
             executeEditMessage(message);
             botState.setMessageType(MessageType.EDIT_MESSAGE);
-            botService.saveCache(chatId, botState);
+            botService.saveOnCache(chatId, botState);
         }
     }
 
-    protected void executeEditMessage(EditMessageText message) {
+    private void executeEditMessage(EditMessageText message) {
         long chatId = Long.parseLong(message.getChatId());
         int messageId = message.getMessageId();
         try {
@@ -109,7 +110,7 @@ public abstract class ReplyMessage {
         }
     }
 
-    protected void disableInlineMessage(Long userId, Integer messageId) {
+    private void disableInlineMessage(Long userId, Integer messageId) {
         if (messageId == null) return;
         try {
             EditMessageReplyMarkup disableMarkup = EditMessageReplyMarkup.builder()

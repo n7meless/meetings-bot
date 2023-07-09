@@ -10,7 +10,7 @@ import com.ufanet.meetingsbot.handler.event.EventHandler;
 import com.ufanet.meetingsbot.message.ProfileReplyMessage;
 import com.ufanet.meetingsbot.service.AccountService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -19,7 +19,7 @@ import org.telegram.telegrambots.meta.api.objects.inlinequery.InlineQuery;
 
 import static com.ufanet.meetingsbot.constants.type.EventType.PROFILE;
 
-@Service
+@Component
 @RequiredArgsConstructor
 public class ProfileEventHandler implements EventHandler {
     private final ProfileReplyMessage profileReplyMessage;
@@ -49,7 +49,7 @@ public class ProfileEventHandler implements EventHandler {
                 Account account = accountService.getByUserId(userId)
                         .orElseThrow(() -> new AccountNotFoundException(userId));
                 Settings settings = account.getSettings();
-                settings.setTimeZone(timeZone);
+                settings.setZoneId(timeZone);
                 account.setSettings(settings);
                 accountService.save(account);
                 profileReplyMessage.sendSuccessTimezoneSelected(userId);

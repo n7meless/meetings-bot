@@ -1,6 +1,7 @@
 package com.ufanet.meetingsbot.config;
 
 import com.ufanet.meetingsbot.constants.BotCommands;
+import com.ufanet.meetingsbot.constants.Emojis;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -32,9 +33,9 @@ public class BotConfig {
     @Bean
     public SetMyCommands setMyCommands() {
         List<BotCommand> commands = new ArrayList<>();
-        commands.add(new BotCommand(BotCommands.START.getCommand(), "START"));
-        commands.add(new BotCommand(BotCommands.HELP.getCommand(), "HELP"));
-        commands.add(new BotCommand(BotCommands.ABOUT.getCommand(), "ABOUT"));
+        commands.add(new BotCommand(BotCommands.START.getCommand(), Emojis.ROCKET.getEmojiSpace() + "Запуск"));
+        commands.add(new BotCommand(BotCommands.HELP.getCommand(), Emojis.HISTORY.getEmojiSpace() + "Инструкция"));
+        commands.add(new BotCommand(BotCommands.ABOUT.getCommand(), Emojis.INFO.getEmojiSpace() + "О боте"));
         return new SetMyCommands(commands, new BotCommandScopeDefault(), null);
     }
 

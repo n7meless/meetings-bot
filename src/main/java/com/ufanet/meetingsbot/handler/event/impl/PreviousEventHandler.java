@@ -16,6 +16,7 @@ import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.BotService;
 import com.ufanet.meetingsbot.service.MeetingService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class PreviousEventHandler implements EventHandler {
@@ -45,6 +47,8 @@ public class PreviousEventHandler implements EventHandler {
     private void handleCallback(CallbackQuery query) {
         long userId = query.getFrom().getId();
         String callback = query.getData();
+
+        log.info("handle callback '{}' from user {}", callback, userId);
 
         String[] split = callback.split(" ");
         PreviousState state = PreviousState.typeOf(split[0]);
@@ -86,6 +90,8 @@ public class PreviousEventHandler implements EventHandler {
     private void handleMessage(Message message) {
         String messageText = message.getText();
         long userId = message.getChatId();
+        log.info("handle message '{}' from user {}", messageText, userId);
+
         if (messageText.equals(EventType.PREVIOUS.getButtonName())) {
             handleReplyButton(userId);
         }

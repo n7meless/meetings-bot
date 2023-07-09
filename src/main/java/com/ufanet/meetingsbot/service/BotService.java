@@ -35,7 +35,7 @@ public class BotService {
     public void setLastMessageFromBot(long userId, boolean fromBot) {
         BotState botState = getByUserId(userId);
         botState.setMsgFromBot(fromBot);
-        saveCache(userId, botState);
+        saveOnCache(userId, botState);
     }
 
     @Transactional
@@ -44,7 +44,7 @@ public class BotService {
         return botRepository.save(botState);
     }
 
-    public void saveCache(long userId, BotState botState) {
+    public void saveOnCache(long userId, BotState botState) {
         botState.setUpdatedDt(LocalDateTime.now());
         botStateCache.save(userId, botState);
     }

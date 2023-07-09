@@ -1,8 +1,8 @@
 package com.ufanet.meetingsbot.message.keyboard;
 
+import com.ufanet.meetingsbot.constants.Emojis;
 import com.ufanet.meetingsbot.constants.Language;
 import com.ufanet.meetingsbot.constants.state.ProfileState;
-import com.ufanet.meetingsbot.utils.Emojis;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;

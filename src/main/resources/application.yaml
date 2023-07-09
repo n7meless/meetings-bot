@@ -30,6 +30,6 @@ cache:
   custom:
     ttl:
       meeting: 10
-      bot: 20
+      bot: 5
 application:
   locale: ru-RU

@@ -1,7 +1,7 @@
 package com.ufanet.meetingsbot.message;
 
+import com.ufanet.meetingsbot.constants.Emojis;
 import com.ufanet.meetingsbot.dto.AccountDto;
-import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.groupadministration.GetChatMember;
@@ -33,8 +33,9 @@ public class GroupReplyMessage extends ReplyMessage {
 
     public void sendPressButtonMessage(Set<AccountDto> members, long chatId) {
 
-        InlineKeyboardButton pressButton = InlineKeyboardButton.builder().text(Emojis.ROCKER.getEmojiSpace() + "Я здесь")
-                .callbackData("REMEMBER").build();
+        InlineKeyboardButton pressButton =
+                InlineKeyboardButton.builder().text(Emojis.ROCKET.getEmojiSpace() + "Я здесь")
+                        .callbackData("REMEMBER").build();
         String membersText;
         if (members.isEmpty()) {
             membersText = localeMessageService.getMessage("group.members.notexists");
@@ -52,7 +53,7 @@ public class GroupReplyMessage extends ReplyMessage {
     public void sendEditPressButtonMessage(Set<AccountDto> members, long chatId, int messageId) {
         String memberLinks = messageUtils.generateAccountLink(members, Emojis.GREEN_SELECTED.getEmojiSpace(), "");
 
-        InlineKeyboardButton pressButton = InlineKeyboardButton.builder().text(Emojis.ROCKER.getEmojiSpace() + "Я здесь")
+        InlineKeyboardButton pressButton = InlineKeyboardButton.builder().text(Emojis.ROCKET.getEmojiSpace() + "Я здесь")
                 .callbackData("REMEMBER").build();
 
         InlineKeyboardMarkup markup = InlineKeyboardMarkup.builder().keyboardRow(List.of(pressButton)).build();

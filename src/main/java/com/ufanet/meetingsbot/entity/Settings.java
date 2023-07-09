@@ -21,8 +21,8 @@ public class Settings implements Serializable {
     @JoinColumn(name = "user_id")
     private Account account;
 
-    @Column(name = "time_zone")
-    private String timeZone;
+    @Column(name = "zone_id")
+    private String zoneId;
 
     private String language;
 }

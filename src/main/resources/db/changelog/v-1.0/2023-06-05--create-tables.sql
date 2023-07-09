@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS user_settings
 (
     id        BIGSERIAL PRIMARY KEY,
     user_id   BIGINT NOT NULL,
-    time_zone VARCHAR(10) DEFAULT 'UTC+03:00',
+    zone_id VARCHAR(10) DEFAULT 'UTC+03:00',
     language  VARCHAR(5)  DEFAULT 'ru-RU',
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );

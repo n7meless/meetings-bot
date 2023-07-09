@@ -52,7 +52,6 @@ public class UpcomingEventHandler implements EventHandler {
         long userId = message.getChatId();
         String messageText = message.getText();
         if (messageText.equals(UPCOMING.getButtonName())) {
-            meetingService.clearCache(userId);
             handleReplyButton(userId);
         }
     }
@@ -215,7 +214,7 @@ public class UpcomingEventHandler implements EventHandler {
                 replyMessage.sendReadyMeeting(meetingDto);
             } else {
 
-                meetingDto.removeDateIf(md -> true);
+                meetingDto.removeDatesIf(md -> true);
                 meetingDto.setState(MeetingState.CANCELED);
                 Meeting meeting = MeetingMapper.MAPPER.mapToFullEntity(meetingDto);
                 meetingService.save(meeting);

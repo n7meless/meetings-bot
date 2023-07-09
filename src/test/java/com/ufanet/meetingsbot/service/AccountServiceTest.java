@@ -84,5 +84,4 @@ public class AccountServiceTest {
         assertEquals(created.get().getFirstname(), expected.getFirstname());
         assertEquals(created.get().getUsername(), expected.getUsername());
     }
-
 }

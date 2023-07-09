@@ -1,4 +1,4 @@
-package com.ufanet.meetingsbot.utils;
+package com.ufanet.meetingsbot.constants;
 
 import com.vdurmont.emoji.EmojiParser;
 import lombok.AllArgsConstructor;
@@ -28,9 +28,9 @@ public enum Emojis {
     WARNING(EmojiParser.parseToUnicode(":warning:")),
     RIGHT(EmojiParser.parseToUnicode(":arrow_right:")),
     LEFT(EmojiParser.parseToUnicode(":arrow_left:")),
-    INFORMATION(EmojiParser.parseToUnicode(":information_source:")),
+    INFO(EmojiParser.parseToUnicode(":information_source:")),
     STAR(EmojiParser.parseToUnicode(":star:")),
-    ROCKER(EmojiParser.parseToUnicode(":rocket:")),
+    ROCKET(EmojiParser.parseToUnicode(":rocket:")),
     HAMMER_WRENCH(":hammer_and_wrench:"),
     RED_CIRCLE("\uD83D\uDD34"),
     ORANGE_CIRCLE("\uD83D\uDFE0"),

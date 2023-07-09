@@ -1,7 +1,7 @@
 package com.ufanet.meetingsbot.message;
 
+import com.ufanet.meetingsbot.constants.Emojis;
 import com.ufanet.meetingsbot.message.keyboard.MainKeyboardMaker;
-import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -21,7 +21,7 @@ public class CommandReplyMessage extends ReplyMessage {
 
     public void sendAboutMessage(long userId) {
         SendMessage aboutMessage = messageUtils.generateSendMessage(userId,
-                "Здесь написано обо мне");
+                localeMessageService.getMessage("private.command.about"));
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         List<InlineKeyboardButton> buttons = new ArrayList<>();
         for (String smile : rainbowEmotions) {
@@ -36,13 +36,15 @@ public class CommandReplyMessage extends ReplyMessage {
 
     public void sendStartMessage(long userId) {
         SendMessage startMessage = messageUtils.generateSendMessage(userId,
-                "Добро пожаловать!", mainKeyboard.getMainMenuKeyboard());
+                localeMessageService.getMessage("private.command.start"),
+                mainKeyboard.getMainMenuKeyboard());
         executeSendMessage(startMessage);
     }
 
     public void sendHelpMessage(long userId) {
         SendMessage helpMessage = messageUtils.generateSendMessage(userId,
-                "Здесь я вам помогу");
+                localeMessageService.getMessage("private.command.help"),
+                mainKeyboard.getMainMenuKeyboard());
         executeSendMessage(helpMessage);
     }
 }

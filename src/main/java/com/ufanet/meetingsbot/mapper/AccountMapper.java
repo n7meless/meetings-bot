@@ -28,11 +28,11 @@ public interface AccountMapper {
     @Mapping(target = "username", source = "user.userName")
     Account mapToEntityFromTgUser(User user);
 
-    @Mapping(target = "timeZone", source = "entity.settings.timeZone")
+    @Mapping(target = "zoneId", source = "entity.settings.zoneId")
     @Mapping(target = "language", source = "entity.settings.language")
     AccountDto mapWithSettings(Account entity);
 
-    @Mapping(target = "settings.timeZone", source = "dto.timeZone")
+    @Mapping(target = "settings.zoneId", source = "dto.zoneId")
     @Mapping(target = "settings.language", source = "dto.language")
     Account mapWithSettings(AccountDto dto);
 

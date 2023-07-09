@@ -53,14 +53,15 @@ public class PrivateChatHandler implements ChatHandler {
             Message message = query.getMessage();
             long userId = message.getChatId();
             String data = query.getData();
-
-            if (data.isBlank()) commandMessage.executeNullCallback(query.getId());
-
-            log.info("received callback query from user {}", userId);
-            if (EventType.startWithState(data)) {
-                botService.setState(userId, data);
+            if (data.isBlank()) {
+                commandMessage.executeNullCallback(query.getId());
+            } else {
+                log.info("received callback query from user {}", userId);
+                if (EventType.startWithState(data)) {
+                    botService.setState(userId, data);
+                }
+                handleBotState(userId, update);
             }
-            handleBotState(userId, update);
         }
     }
 

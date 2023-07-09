@@ -3,14 +3,11 @@ package com.ufanet.meetingsbot.dto;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import lombok.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
 @Setter
@@ -18,7 +15,7 @@ import static java.util.stream.Collectors.toSet;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MeetingDto implements Comparable<MeetingDto> {
+public class MeetingDto {
     private Long id;
     private AccountDto owner;
     private Set<AccountDto> participants;
@@ -30,17 +27,14 @@ public class MeetingDto implements Comparable<MeetingDto> {
     private MeetingState state;
     private Set<MeetingDateDto> dates;
 
-    public void addMeetingDate(MeetingDateDto meetingDate) {
-        this.dates.add(meetingDate);
+    public MeetingDto(AccountDto owner) {
+        this.owner = owner;
+        this.createdDt = LocalDateTime.now();
+        this.updatedDt = LocalDateTime.now();
+        this.dates = new HashSet<>();
+        this.participants = Set.of(owner);
+        this.state = MeetingState.GROUP_SELECT;
     }
-
-    public void addParticipant(AccountDto accountDto) {
-        if (this.participants == null) {
-            this.participants = new HashSet<>();
-        }
-        this.participants.add(accountDto);
-    }
-
 
     public List<AccountTimeDto> getAccountTimes(Predicate<? super AccountTimeDto> predicate) {
         return this.dates.stream().map(MeetingDateDto::getMeetingTimes)
@@ -61,10 +55,6 @@ public class MeetingDto implements Comparable<MeetingDto> {
                 .get().stream().findFirst().get().getDateTime();
     }
 
-    public ZonedDateTime getDateWithZoneId(String zoneId) {
-        return this.getDate().withZoneSameInstant(ZoneId.of(zoneId));
-    }
-
     public List<ZonedDateTime> getDatesWithZoneId(String zoneId) {
         return this.dates.stream()
                 .map(MeetingDateDto::getMeetingTimes)
@@ -73,20 +63,7 @@ public class MeetingDto implements Comparable<MeetingDto> {
                 .sorted().toList();
     }
 
-    public Map<LocalDate, Set<ZonedDateTime>> getSortedDateMap() {
-        Map<LocalDate, Set<ZonedDateTime>> dateSetMap = this.getDates().stream()
-                .collect(toMap(MeetingDateDto::getDate,
-                        v -> v.getMeetingTimes().stream().map(MeetingTimeDto::getDateTime)
-                                .collect(toSet())));
-        return new TreeMap<>(dateSetMap);
-    }
-
-    public void removeDateIf(Predicate<? super MeetingDateDto> predicate) {
+    public void removeDatesIf(Predicate<? super MeetingDateDto> predicate) {
         this.dates.removeIf(predicate);
-    }
-
-    @Override
-    public int compareTo(MeetingDto meetingDto) {
-        return this.state.compareTo(meetingDto.getState());
     }
 }

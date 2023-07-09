@@ -4,13 +4,13 @@ import com.ufanet.meetingsbot.cache.Cache;
 import com.ufanet.meetingsbot.entity.BotState;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
-@Service
+@Component
 @RequiredArgsConstructor
 public class BotStateCache implements Cache<BotState> {
 

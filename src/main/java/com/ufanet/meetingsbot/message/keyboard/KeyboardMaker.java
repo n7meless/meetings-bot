@@ -1,6 +1,6 @@
 package com.ufanet.meetingsbot.message.keyboard;
 
-import com.ufanet.meetingsbot.utils.Emojis;
+import com.ufanet.meetingsbot.constants.Emojis;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
@@ -13,7 +13,7 @@ public abstract class KeyboardMaker {
     }
 
     public InlineKeyboardButton getReadyInlineButton(String callback) {
-        return defaultInlineButton(Emojis.ROCKER.getEmojiSpace() + "Готово", callback);
+        return defaultInlineButton(Emojis.ROCKET.getEmojiSpace() + "Готово", callback);
     }
 
     public InlineKeyboardButton getNextInlineButton(String callback) {

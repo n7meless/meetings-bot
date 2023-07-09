@@ -62,13 +62,15 @@ public class ProfileReplyMessage extends ReplyMessage {
 
     public void sendProfileMessage(Long chatId) {
         SendMessage sendMessage = messageUtils.generateSendMessage(chatId,
-                "Выберите нужную опцию:", mainKeyboard.getProfileOptionsMarkup());
+                localeMessageService.getMessage("profile.options.select"),
+                mainKeyboard.getProfileOptionsMarkup());
         executeSendMessage(sendMessage);
     }
 
     public void sendSuccessTimezoneSelected(Long userId) {
         SendMessage sendMessage =
-                messageUtils.generateSendMessage(userId, "Временная зона успешно выбрана");
+                messageUtils.generateSendMessage(userId,
+                        localeMessageService.getMessage("profile.timezone.selected"));
         executeSendMessage(sendMessage);
     }
 }

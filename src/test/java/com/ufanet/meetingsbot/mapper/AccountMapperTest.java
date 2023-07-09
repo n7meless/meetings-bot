@@ -89,7 +89,7 @@ public class AccountMapperTest {
     void shouldReturnAccountDtoWhenMapsFromEntityWithSettings() {
         //given
         Settings settings = Settings.builder().id(1L).language("ru-RU")
-                .timeZone("UTC+03:00").build();
+                .zoneId("UTC+03:00").build();
 
         Account entity = Account.builder()
                 .id(10L).createdDt(LocalDateTime.now())
@@ -106,7 +106,7 @@ public class AccountMapperTest {
         Assertions.assertEquals(dto.getFirstname(), entity.getFirstname());
         Assertions.assertEquals(dto.getLastname(), entity.getLastname());
         Assertions.assertEquals(dto.getLanguage(), settings.getLanguage());
-        Assertions.assertEquals(dto.getTimeZone(), settings.getTimeZone());
+        Assertions.assertEquals(dto.getZoneId(), settings.getZoneId());
     }
 
 
@@ -114,7 +114,7 @@ public class AccountMapperTest {
     void shouldReturnAccountWhenMapsFromDtoWithSettings() {
         //given
         AccountDto dto = AccountDto.builder()
-                .id(10L).timeZone("UTC+03:00").language("ru-RU")
+                .id(10L).zoneId("UTC+03:00").language("ru-RU")
                 .username("username").firstname("firstname")
                 .lastname("lastname")
                 .build();
@@ -129,6 +129,6 @@ public class AccountMapperTest {
         Assertions.assertEquals(dto.getFirstname(), entity.getFirstname());
         Assertions.assertEquals(dto.getLastname(), entity.getLastname());
         Assertions.assertEquals(dto.getLanguage(), settings.getLanguage());
-        Assertions.assertEquals(dto.getTimeZone(), settings.getTimeZone());
+        Assertions.assertEquals(dto.getZoneId(), settings.getZoneId());
     }
 }

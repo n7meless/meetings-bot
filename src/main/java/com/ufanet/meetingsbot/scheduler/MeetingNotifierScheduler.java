@@ -33,7 +33,8 @@ public class MeetingNotifierScheduler {
 
     private void checkUpcomingMeetings() {
         ZonedDateTime now = ZonedDateTime.now();
-        List<Meeting> meetings = meetingService.getConfirmedMeetingsWhereDateMinutesBetween(now, 30);
+        List<Meeting> meetings =
+                meetingService.getConfirmedMeetingsWhereDateMinutesBetween(now, 30);
         for (Meeting meeting : meetings) {
 
             LocalDateTime meetingLastUpdateTime = meeting.getUpdatedDt();

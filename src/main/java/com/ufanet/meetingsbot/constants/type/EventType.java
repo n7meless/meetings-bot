@@ -1,6 +1,6 @@
 package com.ufanet.meetingsbot.constants.type;
 
-import com.ufanet.meetingsbot.utils.Emojis;
+import com.ufanet.meetingsbot.constants.Emojis;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

@@ -44,6 +44,7 @@ public class GroupService {
         return groupRepository.save(group);
     }
 
+    @Transactional(readOnly = true)
     public List<Group> getGroupsByMemberId(long userId) {
         log.info("getting group by member {} from db", userId);
         return groupRepository.findGroupsByMemberId(userId);

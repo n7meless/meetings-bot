@@ -43,16 +43,17 @@ public class GroupChatHandler implements ChatHandler {
         }
     }
 
-    protected void handleCallback(CallbackQuery callbackQuery) {
-        String data = callbackQuery.getData();
-        Message message = callbackQuery.getMessage();
+    protected void handleCallback(CallbackQuery query) {
+        String data = query.getData();
+        Message message = query.getMessage();
         Long chatId = message.getChatId();
-        User user = callbackQuery.getFrom();
+        User user = query.getFrom();
         Integer messageId = message.getMessageId();
 
         log.info("handle callback in chat {} from user {}", chatId, user.getId());
-
-        if (data.equals("REMEMBER")) {
+        if (data.isBlank()) {
+            groupMessage.executeNullCallback(query.getId());
+        } else if (data.equals("REMEMBER")) {
             Group group = groupService.getByGroupId(message.getChatId())
                     .orElseGet(() ->
                             GroupMapper.MAPPER.map(message.getChat()));
@@ -63,7 +64,7 @@ public class GroupChatHandler implements ChatHandler {
             AccountDto accountDto = AccountMapper.MAPPER.mapToDtoFromTgUser(user);
 
             if (members.contains(accountDto)) {
-                groupMessage.executeNullCallback(callbackQuery.getId());
+                groupMessage.executeNullCallback(query.getId());
             } else {
                 Account account = accountService.getByUserId(user.getId())
                         .orElseGet(() -> accountService.createAccount(user));

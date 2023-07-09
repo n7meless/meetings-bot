@@ -13,7 +13,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Set;
 
-import static com.ufanet.meetingsbot.utils.Emojis.*;
+import static com.ufanet.meetingsbot.constants.Emojis.*;
 import static java.util.stream.Collectors.joining;
 
 @Component

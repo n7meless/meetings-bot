@@ -1,5 +1,6 @@
 package com.ufanet.meetingsbot.message.keyboard;
 
+import com.ufanet.meetingsbot.constants.Emojis;
 import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.constants.state.EditState;
@@ -12,7 +13,6 @@ import com.ufanet.meetingsbot.dto.SubjectDto;
 import com.ufanet.meetingsbot.entity.Group;
 import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
 import com.ufanet.meetingsbot.utils.CustomFormatter;
-import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -51,7 +51,7 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
         return keyboard;
     }
 
-    public List<InlineKeyboardButton> defaultRowHelperInlineButtons(boolean next) {
+    public List<InlineKeyboardButton> defaultToggleInlineButtons(boolean next) {
         List<InlineKeyboardButton> buttons = new ArrayList<>();
         InlineKeyboardButton cancelBtn = getCancelInlineButton(ToggleButton.CANCEL.name());
         InlineKeyboardButton nextBtn = getNextInlineButton(ToggleButton.NEXT.name());
@@ -136,9 +136,9 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
         sb.append("&location=").append(address);
         AccountDto accountDto = meetingDto.getParticipants().stream().filter(ac -> ac.getId() == userId).findFirst()
                 .orElseThrow(() -> new AccountNotFoundException(userId));
-        String timeZone = accountDto.getTimeZone();
+        String zoneId = accountDto.getZoneId();
 
-        ZonedDateTime dateWithZoneId = meetingDto.getDateWithZoneId(timeZone);
+        ZonedDateTime dateWithZoneId = meetingDto.getDate().withZoneSameInstant(ZoneId.of(zoneId));
         String time = dateWithZoneId.format(CustomFormatter.GOOGLE_DATE_TIME_ZONE_FORMATTER);
         String timePlusDuration = dateWithZoneId.plusMinutes(duration)
                 .format(CustomFormatter.GOOGLE_DATE_TIME_ZONE_FORMATTER);
@@ -268,7 +268,7 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
 
         Map<MeetingState, List<MeetingDto>> meetingMap =
-                meetings.stream().sorted(MeetingDto::compareTo)
+                meetings.stream().sorted(Comparator.comparing(MeetingDto::getState))
                         .collect(Collectors.groupingBy(MeetingDto::getState));
 
         for (Map.Entry<MeetingState, List<MeetingDto>> entry : meetingMap.entrySet()) {

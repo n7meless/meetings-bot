@@ -2,8 +2,6 @@ package com.ufanet.meetingsbot.dto;
 
 import lombok.*;
 
-import java.util.Objects;
-
 @Setter
 @Getter
 @Builder
@@ -16,5 +14,5 @@ public class AccountDto {
     private String lastname;
     private String username;
     private String language;
-    private String timeZone;
+    private String zoneId;
 }

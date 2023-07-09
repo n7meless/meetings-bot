@@ -1,7 +1,7 @@
 package com.ufanet.meetingsbot.message;
 
+import com.ufanet.meetingsbot.constants.Emojis;
 import com.ufanet.meetingsbot.exceptions.CustomTelegramApiException;
-import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;

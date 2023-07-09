@@ -1,20 +1,21 @@
 package com.ufanet.meetingsbot.message.keyboard;
 
+import com.ufanet.meetingsbot.constants.Emojis;
 import com.ufanet.meetingsbot.constants.ToggleButton;
 import com.ufanet.meetingsbot.dto.MeetingDateDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
+import com.ufanet.meetingsbot.dto.MeetingTimeDto;
 import com.ufanet.meetingsbot.utils.CustomFormatter;
-import com.ufanet.meetingsbot.utils.Emojis;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.time.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 
 @Component
 public class CalendarKeyboardMaker extends KeyboardMaker {
@@ -50,13 +51,17 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
 
         LocalDateTime currentDateTime = LocalDateTime.now(ZoneId.of(zoneId));
 
-        Map<LocalDate, Set<ZonedDateTime>> datesMap = meetingDto.getSortedDateMap();
+
+        TreeMap<LocalDate, Set<ZonedDateTime>> datesMap = meetingDto.getDates().stream()
+                .collect(toMap(MeetingDateDto::getDate,
+                        v -> v.getMeetingTimes().stream().map(MeetingTimeDto::getDateTime)
+                                .collect(toSet()), (x, y) -> x, TreeMap::new));
 
         for (Map.Entry<LocalDate, Set<ZonedDateTime>> entry : datesMap.entrySet()) {
             LocalDate localDate = entry.getKey();
             InlineKeyboardButton dateHeader =
-                    defaultInlineButton(Emojis.CALENDAR.getEmoji() + " " + localDate.format(CustomFormatter.DATE_WEEK_FORMATTER),
-                            " ");
+                    defaultInlineButton(Emojis.CALENDAR.getEmoji() + " " +
+                            localDate.format(CustomFormatter.DATE_WEEK_FORMATTER), " ");
 
             Set<ZonedDateTime> zonedDateTimes = entry.getValue().stream()
                     .map(t -> t.withZoneSameInstant(ZoneId.of(zoneId))).collect(Collectors.toSet());
@@ -123,7 +128,8 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
             List<InlineKeyboardButton> buttons = new ArrayList<>();
             for (int j = 0; j < 7; j++, dayOfWeek++, difference++) {
 
-                InlineKeyboardButton day = defaultInlineButton(Integer.toString(difference), currentDate.toString());
+                InlineKeyboardButton day =
+                        defaultInlineButton(Integer.toString(difference), currentDate.toString());
 
                 if (dateSet.contains(currentDate)) {
                     day.setText("(" + difference + ")");
@@ -150,7 +156,8 @@ public class CalendarKeyboardMaker extends KeyboardMaker {
         rowsInLine.add(new ArrayList<>(buttons));
     }
 
-    private void setMonthHeaderCalendar(List<List<InlineKeyboardButton>> rowsInLine, LocalDate chosenDate, String zoneId) {
+    private void setMonthHeaderCalendar(List<List<InlineKeyboardButton>> rowsInLine,
+                                        LocalDate chosenDate, String zoneId) {
         LocalDate currentDate = LocalDate.now(ZoneId.of(zoneId));
         int month = currentDate.getMonthValue();
         int year = currentDate.getYear();

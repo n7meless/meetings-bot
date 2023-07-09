@@ -20,6 +20,35 @@ public interface MeetingMapper {
 
     MeetingMapper MAPPER = Mappers.getMapper(MeetingMapper.class);
 
+    @Mapping(target = "dates", ignore = true)
+    @Mapping(target = "owner", ignore = true)
+    @Mapping(target = "participants", ignore = true)
+    MeetingDto map(Meeting entity);
+
+    @InheritInverseConfiguration
+    @Mapping(target = "dates", ignore = true)
+    @Mapping(target = "owner", ignore = true)
+    @Mapping(target = "participants", ignore = true)
+    Meeting map(MeetingDto dto);
+
+    default MeetingDto mapIfPresentOrElseGet(Optional<Meeting> meeting,
+                                             Supplier<? extends MeetingDto> supplier) {
+        if (meeting.isPresent()) {
+            return this.mapToFullDto(meeting.get());
+        } else {
+            return supplier.get();
+        }
+    }
+
+    default <X extends Throwable> MeetingDto mapIfPresentOrElseThrow(Optional<Meeting> meeting,
+                                                                     Supplier<? extends X> exceptionSupplier) throws X {
+        if (meeting.isPresent()) {
+            return this.mapToFullDto(meeting.get());
+        } else {
+            throw exceptionSupplier.get();
+        }
+    }
+
     default MeetingDto mapToFullDto(Meeting meeting) {
 
         AccountDto owner = AccountMapper.MAPPER.mapWithSettings(meeting.getOwner());
@@ -133,17 +162,6 @@ public interface MeetingMapper {
         return meeting;
     }
 
-    @Mapping(target = "dates", ignore = true)
-    @Mapping(target = "owner", ignore = true)
-    @Mapping(target = "participants", ignore = true)
-    MeetingDto map(Meeting entity);
-
-    @InheritInverseConfiguration
-    @Mapping(target = "dates", ignore = true)
-    @Mapping(target = "owner", ignore = true)
-    @Mapping(target = "participants", ignore = true)
-    Meeting map(MeetingDto dto);
-
     default MeetingDto mapWithMeetingDateAndTimes(Meeting entity) {
         MeetingDto meetingDto = map(entity);
         Set<MeetingDate> dates = entity.getDates();
@@ -158,23 +176,5 @@ public interface MeetingMapper {
         }
         meetingDto.setDates(dateDtos);
         return meetingDto;
-    }
-
-    default MeetingDto mapIfPresentOrElseGet(Optional<Meeting> meeting,
-                                             Supplier<? extends MeetingDto> supplier) {
-        if (meeting.isPresent()) {
-            return this.mapToFullDto(meeting.get());
-        } else {
-            return supplier.get();
-        }
-    }
-
-    default <X extends Throwable> MeetingDto mapIfPresentOrElseThrow(Optional<Meeting> meeting,
-                                                                     Supplier<? extends X> exceptionSupplier) throws X {
-        if (meeting.isPresent()) {
-            return this.mapToFullDto(meeting.get());
-        } else {
-            throw exceptionSupplier.get();
-        }
     }
 }

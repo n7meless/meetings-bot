@@ -37,7 +37,7 @@ public class CacheScheduler {
     private long meetingTtl;
 
     @Async
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 5000)
     public void saveMeetingsAndBotStatesFromCache() {
         Map<Long, Meeting> meetingDataCache = new HashMap<>(meetingCache.getMeetingCache());
         LocalDateTime now = LocalDateTime.now();
@@ -84,14 +84,11 @@ public class CacheScheduler {
         botService.saveAll(unsavedBotStates);
 
         Map<Long, Meeting> meetingCacheMap = meetingCache.getMeetingCache();
-        List<Meeting> unsavedMeetings = meetingCacheMap.values().stream().filter((meeting) -> {
-            return switch (meeting.getState()) {
-                case EDIT, DATE_SELECT, TIME_SELECT, ADDRESS_SELECT,
-                        GROUP_SELECT, PARTICIPANT_SELECT, QUESTION_SELECT,
-                        SUBJECT_DURATION_SELECT, SUBJECT_SELECT -> true;
-                default -> false;
-            };
-        }).toList();
+        List<Meeting> unsavedMeetings = meetingCacheMap.values().stream().filter((meeting) ->
+                switch (meeting.getState()) {
+                    case CONFIRMED, AWAITING, CANCELED, PASSED -> false;
+                    default -> true;
+                }).toList();
         meetingService.saveAll(unsavedMeetings);
     }
 }

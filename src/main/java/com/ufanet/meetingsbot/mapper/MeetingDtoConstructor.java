@@ -1,38 +1,21 @@
-package com.ufanet.meetingsbot.service;
+package com.ufanet.meetingsbot.mapper;
 
-import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.dto.*;
-import com.ufanet.meetingsbot.entity.Account;
 import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
-import com.ufanet.meetingsbot.mapper.AccountMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
 import static com.ufanet.meetingsbot.constants.ToggleButton.NEXT;
 import static com.ufanet.meetingsbot.constants.ToggleButton.PREV;
 
-@Service
+@Component
 @RequiredArgsConstructor
-public class MeetingConstructor {
-
-    public MeetingDto create(Account account) {
-        AccountDto accountDto = AccountMapper.MAPPER.mapWithSettings(account);
-        MeetingDto meetingDto = MeetingDto.builder().owner(accountDto)
-                .createdDt(LocalDateTime.now())
-                .updatedDt(LocalDateTime.now())
-                .dates(new HashSet<>())
-                .state(MeetingState.GROUP_SELECT).build();
-
-        meetingDto.addParticipant(accountDto);
-        return meetingDto;
-    }
+public class MeetingDtoConstructor {
 
     public void updateParticipants(MeetingDto meetingDto, long participantId, Set<AccountDto> groupMembers) {
         Set<AccountDto> participants = meetingDto.getParticipants();

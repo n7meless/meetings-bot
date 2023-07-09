@@ -55,7 +55,7 @@ public class AccountService {
         Account account = AccountMapper.MAPPER.mapToEntityFromTgUser(user);
 
         Settings settings = Settings.builder()
-                .account(account).timeZone("UTC+03:00")
+                .account(account).zoneId("UTC+03:00")
                 .language("ru-RU").build();
         BotState botState = BotState.builder()
                 .state(EventType.PROFILE.name())
@@ -90,12 +90,14 @@ public class AccountService {
         return accountRepository.save(account);
     }
 
+    @Transactional(readOnly = true)
     @Cacheable(key = "#groupId", value = "group_members")
     public Set<Account> getAccountsByGroupsIdAndIdNot(long groupId, long userId) {
         log.info("getting members from group {} without member {}", groupId, userId);
         return accountRepository.findAccountByGroupsIdAndIdNot(groupId, userId);
     }
 
+    @Transactional(readOnly = true)
     public List<Account> getAccountsByMeetingId(long meetingId) {
         log.info("getting accounts from meeting {}", meetingId);
         return accountRepository.findAccountsByMeetingId(meetingId);

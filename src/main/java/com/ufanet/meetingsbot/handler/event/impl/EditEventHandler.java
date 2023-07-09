@@ -10,11 +10,11 @@ import com.ufanet.meetingsbot.entity.Meeting;
 import com.ufanet.meetingsbot.exceptions.MeetingNotFoundException;
 import com.ufanet.meetingsbot.handler.event.EventHandler;
 import com.ufanet.meetingsbot.mapper.AccountMapper;
+import com.ufanet.meetingsbot.mapper.MeetingDtoConstructor;
 import com.ufanet.meetingsbot.mapper.MeetingMapper;
 import com.ufanet.meetingsbot.message.EditReplyMessage;
 import com.ufanet.meetingsbot.service.AccountService;
 import com.ufanet.meetingsbot.service.BotService;
-import com.ufanet.meetingsbot.service.MeetingConstructor;
 import com.ufanet.meetingsbot.service.MeetingService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +37,7 @@ public class EditEventHandler implements EventHandler {
     private final AccountService accountService;
     private final BotService botService;
     private final EditReplyMessage editReplyMessage;
-    private final MeetingConstructor meetingConstructor;
+    private final MeetingDtoConstructor meetingDtoConstructor;
 
     @Override
     public void handleUpdate(Update update) {
@@ -67,6 +67,7 @@ public class EditEventHandler implements EventHandler {
 
     private void handleCallback(long userId, CallbackQuery query, MeetingDto meetingDto) {
         String data = query.getData();
+        log.info("handle callback '{}' from user {}", data, userId);
 
         EditState editState;
 
@@ -83,6 +84,7 @@ public class EditEventHandler implements EventHandler {
 
     private void handleMessage(long userId, Message message, MeetingDto meetingDto) {
         String messageText = message.getText();
+        log.info("handle message '{}' from user {}", messageText, userId);
 
         String botState = botService.getState(userId);
         EditState editState = EditState.valueOf(botState);
@@ -93,6 +95,7 @@ public class EditEventHandler implements EventHandler {
 
     protected void handleToggleButton(long userId, EditState state, MeetingDto meetingDto, String message) {
         ToggleButton toggleButton = ToggleButton.typeOf(message);
+        log.info("handle toggle button '{}' from user {}", toggleButton.name(), userId);
         switch (toggleButton) {
             case READY -> botService.setState(userId, EventType.CREATE.name());
             case NEXT -> sendMessage(userId, state.next(), meetingDto);
@@ -108,10 +111,10 @@ public class EditEventHandler implements EventHandler {
                     long participantId = Long.parseLong(text);
                     Set<AccountDto> groupMembers =
                             accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupDto().getId(),
-                                            meetingDto.getOwner().getId()).stream().map(AccountMapper.MAPPER::mapWithSettings)
-                                    .collect(Collectors.toSet());
+                                            meetingDto.getOwner().getId()).stream()
+                                    .map(AccountMapper.MAPPER::mapWithSettings).collect(Collectors.toSet());
 
-                    meetingConstructor.updateParticipants(meetingDto, participantId, groupMembers);
+                    meetingDtoConstructor.updateParticipants(meetingDto, participantId, groupMembers);
                 }
                 case EDIT_SUBJECT -> {
                     SubjectDto subjectDto = meetingDto.getSubjectDto();
@@ -123,9 +126,9 @@ public class EditEventHandler implements EventHandler {
                     subjectDto.setDuration(Integer.parseInt(text));
                     meetingDto.setSubjectDto(subjectDto);
                 }
-                case EDIT_QUESTION -> meetingConstructor.updateQuestion(meetingDto, text);
-                case EDIT_DATE -> meetingConstructor.updateDate(meetingDto, text);
-                case EDIT_TIME -> meetingConstructor.updateTime(meetingDto, text);
+                case EDIT_QUESTION -> meetingDtoConstructor.updateQuestion(meetingDto, text);
+                case EDIT_DATE -> meetingDtoConstructor.updateDate(meetingDto, text);
+                case EDIT_TIME -> meetingDtoConstructor.updateTime(meetingDto, text);
                 case EDIT_ADDRESS -> meetingDto.setAddress(text);
             }
             meetingDto.setUpdatedDt(LocalDateTime.now());

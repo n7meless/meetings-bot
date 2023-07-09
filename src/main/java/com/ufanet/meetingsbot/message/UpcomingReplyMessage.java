@@ -1,5 +1,6 @@
 package com.ufanet.meetingsbot.message;
 
+import com.ufanet.meetingsbot.constants.Emojis;
 import com.ufanet.meetingsbot.constants.Status;
 import com.ufanet.meetingsbot.constants.state.PreviousState;
 import com.ufanet.meetingsbot.constants.state.UpcomingState;
@@ -11,7 +12,6 @@ import com.ufanet.meetingsbot.entity.Account;
 import com.ufanet.meetingsbot.entity.Meeting;
 import com.ufanet.meetingsbot.message.keyboard.MeetingKeyboardMaker;
 import com.ufanet.meetingsbot.utils.CustomFormatter;
-import com.ufanet.meetingsbot.utils.Emojis;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -32,7 +32,7 @@ public class UpcomingReplyMessage extends ReplyMessage {
     private final MeetingKeyboardMaker meetingKeyboard;
 
     public void sendUpcomingMeetingsList(long userId, List<MeetingDto> meetings, AccountDto accountDto) {
-        String zoneId = accountDto.getTimeZone();
+        String zoneId = accountDto.getZoneId();
 
         InlineKeyboardMarkup markup = meetingKeyboard.getUpcomingMeetingsListMarkup(zoneId, meetings);
         EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId,
@@ -115,7 +115,7 @@ public class UpcomingReplyMessage extends ReplyMessage {
 
     public void sendEditMeetingAccountTimes(long userId, MeetingDto meetingDto, AccountDto accountDto,
                                             List<AccountTimeDto> accountTimes) {
-        String zoneId = accountDto.getTimeZone();
+        String zoneId = accountDto.getZoneId();
         List<ZonedDateTime> dates = meetingDto.getDatesWithZoneId(zoneId);
         String timesText = messageUtils.generateDatesText(dates);
 
@@ -138,7 +138,7 @@ public class UpcomingReplyMessage extends ReplyMessage {
         InlineKeyboardMarkup keyboard =
                 meetingKeyboard.getMeetingConfirmKeyboard(meetingDto.getId());
 
-        String zoneId = accountDto.getTimeZone();
+        String zoneId = accountDto.getZoneId();
         List<ZonedDateTime> dates = meetingDto.getDatesWithZoneId(zoneId);
         String datesText = messageUtils.generateDatesText(dates);
 
@@ -168,7 +168,7 @@ public class UpcomingReplyMessage extends ReplyMessage {
         Set<AccountDto> accountDtos = meetingDto.getParticipantsWithoutOwner();
         for (AccountDto accountDto : accountDtos) {
 
-            String zoneId = accountDto.getTimeZone();
+            String zoneId = accountDto.getZoneId();
             String dateWithZone = zonedDateTime.withZoneSameInstant(ZoneId.of(zoneId))
                     .format(CustomFormatter.DATE_TIME_FORMATTER);
 
@@ -197,12 +197,13 @@ public class UpcomingReplyMessage extends ReplyMessage {
         executeSendMessage(sendMessage);
     }
 
-    public void sendComingMeetingNotifyToParticipants(Meeting meeting, List<Account> accounts, String messageProperty) {
+    public void sendComingMeetingNotifyToParticipants(Meeting meeting,
+                                                      List<Account> accounts, String messageProperty) {
         ZonedDateTime zonedDateTime = meeting.getDate();
         InlineKeyboardButton btn = meetingKeyboard.defaultInlineButton("Установить статус",
                 UpcomingState.UPCOMING_SELECTED_MEETING + " " + meeting.getId());
         for (Account account : accounts) {
-            String zoneId = account.getSettings().getTimeZone();
+            String zoneId = account.getSettings().getZoneId();
             ZonedDateTime accountZoneTime = zonedDateTime.withZoneSameInstant(ZoneId.of(zoneId));
             SendMessage sendMessage = messageUtils.generateSendMessageHtml(account.getId(),
                     localeMessageService.getMessage(messageProperty,
@@ -214,11 +215,15 @@ public class UpcomingReplyMessage extends ReplyMessage {
 
     public void sendPassedMeetings(long userId, MeetingDto meetingDto) {
         MeetingMessage message = messageUtils.generateMeetingMessage(meetingDto);
-        String participants = messageUtils.generateAccountLink(meetingDto.getParticipants(), Emojis.GREY_SELECTED.getEmojiSpace(), "");
+        String participants = messageUtils.generateAccountLink(meetingDto.getParticipants(),
+                Emojis.GREY_SELECTED.getEmojiSpace(), "");
+
         String textMessage = localeMessageService.getMessage("upcoming.meeting.confirmed.selected",
                 message.subject(), message.questions(), message.duration(),
                 participants, message.address(), meetingDto.getState().name());
-        InlineKeyboardButton previous = meetingKeyboard.getPreviousInlineButton(PreviousState.PREVIOUS_MEETINGS.name());
+
+        InlineKeyboardButton previous =
+                meetingKeyboard.getPreviousInlineButton(PreviousState.PREVIOUS_MEETINGS.name());
         EditMessageText editMessage = messageUtils.generateEditMessageHtml(userId, textMessage,
                 meetingKeyboard.buildInlineMarkup(List.of(List.of(previous))));
         executeEditOrSendMessage(editMessage);
@@ -228,6 +233,7 @@ public class UpcomingReplyMessage extends ReplyMessage {
         Set<AccountDto> participants = meetingDto.getParticipantsWithoutOwner();
         String message = localeMessageService.getMessage("upcoming.meeting.ping.select");
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+
         for (AccountDto participant : participants) {
             InlineKeyboardButton button = meetingKeyboard.defaultInlineButton(participant.getFirstname(),
                     UpcomingState.UPCOMING_SEND_NOTIFICATION_PARTICIPANT +
@@ -244,8 +250,8 @@ public class UpcomingReplyMessage extends ReplyMessage {
     }
 
     public void sendPingParticipant(long userId, MeetingDto meetingDto, AccountDto accountDto) {
-        String zoneId = accountDto.getTimeZone();
-        ZonedDateTime zonedDateTime = meetingDto.getDateWithZoneId(zoneId);
+        String zoneId = accountDto.getZoneId();
+        ZonedDateTime zonedDateTime = meetingDto.getDate().withZoneSameInstant(ZoneId.of(zoneId));
 
         String message = localeMessageService.getMessage("upcoming.meeting.ping.notification",
                 zonedDateTime.format(CustomFormatter.DATE_TIME_FORMATTER));
@@ -269,7 +275,7 @@ public class UpcomingReplyMessage extends ReplyMessage {
         String ownerLink = messageUtils.generateAccountLink(meetingDto.getOwner(), "", "");
 
         for (AccountDto participant : participants) {
-            String zoneId = participant.getTimeZone();
+            String zoneId = participant.getZoneId();
             String date = readyTime.withZoneSameInstant(ZoneId.of(zoneId))
                     .format(CustomFormatter.DATE_TIME_WEEK_FORMATTER);
 
@@ -284,11 +290,11 @@ public class UpcomingReplyMessage extends ReplyMessage {
     }
 
     public void sendPreviousMeetingsList(long userId, AccountDto accountDto, List<MeetingDto> meetingDtoList) {
-        String zoneId = accountDto.getTimeZone();
+        String zoneId = accountDto.getZoneId();
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
 
         for (MeetingDto meetingDto : meetingDtoList) {
-            ZonedDateTime dateWithZoneId = meetingDto.getDateWithZoneId(zoneId);
+            ZonedDateTime dateWithZoneId = meetingDto.getDate().withZoneSameInstant(ZoneId.of(zoneId));
             String formatted = CustomFormatter.DATE_TIME_FORMATTER.format(dateWithZoneId);
             InlineKeyboardButton btn =
                     meetingKeyboard.defaultInlineButton(Emojis.CALENDAR.getEmojiSpace() + formatted,

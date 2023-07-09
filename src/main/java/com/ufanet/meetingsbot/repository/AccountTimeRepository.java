@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-@Repository
 public interface AccountTimeRepository extends JpaRepository<AccountTime, Long> {
 
     @Query(value = """
