@@ -32,14 +32,12 @@ public class TelegramBotApiTest {
     @Before
     @Autowired
     public void init(RestTemplateBuilder builder) {
-        builder.rootUri("https://api.telegram.org/bot" + botToken);
-        this.restTemplate = new TestRestTemplate(builder);
+        this.restTemplate = new TestRestTemplate(builder.rootUri("https://api.telegram.org/bot" + botToken));
     }
 
     @Test
     public void shouldGetSuccessConnection() throws IOException {
-        String url = "https://api.telegram.org/bot" + botToken + "/getMe";
-        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+        ResponseEntity<String> response = restTemplate.getForEntity("/getMe", String.class);
 
         JsonNode responseJson = mapper.readTree(response.getBody());
         User user = mapper.convertValue(responseJson.get("result"), User.class);

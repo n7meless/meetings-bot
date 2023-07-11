@@ -48,6 +48,7 @@ public class AccountMapperTest {
         Assertions.assertEquals(dto.getFirstname(), entity.getFirstname());
         Assertions.assertEquals(dto.getLastname(), entity.getLastname());
     }
+
     @Test
     void shouldReturnAccountEntityWhenMapsFromTelegramUser() {
         //given
@@ -66,6 +67,7 @@ public class AccountMapperTest {
         Assertions.assertEquals(user.getFirstName(), entity.getFirstname());
         Assertions.assertEquals(user.getLastName(), entity.getLastname());
     }
+
     @Test
     void shouldReturnAccountDtoWhenMapsFromTelegramUser() {
         //given

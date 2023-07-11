@@ -1,7 +1,8 @@
-package com.ufanet.meetingsbot.service;
+package com.ufanet.meetingsbot.service.mock;
 
 import com.ufanet.meetingsbot.entity.Group;
 import com.ufanet.meetingsbot.repository.GroupRepository;
+import com.ufanet.meetingsbot.service.GroupService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
-public class GroupServiceTest {
+public class GroupServiceMockTest {
     @InjectMocks
     private GroupService groupService;
     @Mock

@@ -49,7 +49,14 @@ dependencies {
 
 tasks.named('test') {
     getenv().each { key, value -> environment key, value }
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags "integration-test"
+    }
+}
+tasks.register('integrationTest', Test) {
+    useJUnitPlatform {
+        includeTags "integration-test"
+    }
 }
 
 def static getenv(path = ".env") {

@@ -31,6 +31,7 @@ public class BotState implements Serializable {
     @JoinColumn(name = "user_id")
     private Account account;
 
+
     @Column(name = "msg_from_bot")
     private boolean msgFromBot;
 

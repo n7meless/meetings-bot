@@ -1,10 +1,10 @@
-package com.ufanet.meetingsbot.service;
+package com.ufanet.meetingsbot.service.mock;
 
 import com.ufanet.meetingsbot.cache.impl.BotStateCache;
 import com.ufanet.meetingsbot.constants.state.MeetingState;
-import com.ufanet.meetingsbot.constants.type.MessageType;
 import com.ufanet.meetingsbot.entity.BotState;
 import com.ufanet.meetingsbot.repository.BotRepository;
+import com.ufanet.meetingsbot.service.BotService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,15 +12,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+
 @ExtendWith(MockitoExtension.class)
-public class BotServiceTest{
+public class BotServiceMockTest {
     @Mock
     private BotRepository botRepository;
     @Mock
@@ -34,6 +32,7 @@ public class BotServiceTest{
                 .msgFromBot(true).messageId(12345)
                 .build();
     }
+
     @Test
     public void shouldReturnBotStateWhenGetByAccountId() {
         //given
@@ -48,6 +47,7 @@ public class BotServiceTest{
         Assertions.assertEquals(dummyBotState.getState(), botState.getState());
         Assertions.assertEquals(dummyBotState.isMsgFromBot(), botState.isMsgFromBot());
     }
+
     @Test
     public void shouldReturnSavedBotState() {
         //given
@@ -63,6 +63,7 @@ public class BotServiceTest{
         Assertions.assertEquals(dummyBotState.getState(), botState.getState());
         Assertions.assertEquals(dummyBotState.isMsgFromBot(), botState.isMsgFromBot());
     }
+
     @Test
     public void shouldSaveAllBotStates() {
         //given

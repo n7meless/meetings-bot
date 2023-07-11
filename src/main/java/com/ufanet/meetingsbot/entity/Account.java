@@ -21,7 +21,7 @@ public class Account implements Serializable {
     @Id
     private Long id;
 
-    @Column(name = "first_name")
+    @Column(name = "first_name", nullable = false)
     private String firstname;
 
     @Column(name = "last_name")
@@ -33,10 +33,10 @@ public class Account implements Serializable {
     @Column(name = "created_dt")
     private LocalDateTime createdDt;
 
-    @OneToOne(fetch = FetchType.LAZY, mappedBy = "account", cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, optional = false, mappedBy = "account", cascade = CascadeType.ALL)
     private Settings settings;
 
-    @OneToOne(fetch = FetchType.LAZY, mappedBy = "account", cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, optional = false, mappedBy = "account", cascade = CascadeType.ALL)
     private BotState botState;
 
     @ManyToMany(mappedBy = "participants")

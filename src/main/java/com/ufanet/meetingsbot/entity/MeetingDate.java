@@ -19,6 +19,7 @@ public class MeetingDate implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private LocalDate date;
 
     @ManyToOne(fetch = FetchType.LAZY)

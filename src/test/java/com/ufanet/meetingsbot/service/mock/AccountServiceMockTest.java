@@ -1,7 +1,8 @@
-package com.ufanet.meetingsbot.service;
+package com.ufanet.meetingsbot.service.mock;
 
 import com.ufanet.meetingsbot.entity.Account;
 import com.ufanet.meetingsbot.repository.AccountRepository;
+import com.ufanet.meetingsbot.service.AccountService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
-public class AccountServiceTest {
+public class AccountServiceMockTest {
 
     @Mock
     private AccountRepository accountRepository;

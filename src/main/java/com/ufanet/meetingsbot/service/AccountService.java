@@ -38,17 +38,6 @@ public class AccountService {
         return accountRepository.findById(userId);
     }
 
-    public List<AccountTime> getAccountTimesByMeetingId(long meetingId) {
-        log.info("getting account times with meeting {} from db", meetingId);
-        return accountTimeRepository.findByMeetingId(meetingId);
-    }
-
-    @Transactional
-    public AccountTime saveAccountTime(AccountTime accountTime) {
-        log.info("saving account time {} into db", accountTime.getId());
-        return accountTimeRepository.save(accountTime);
-    }
-
     @Transactional
     public Account createAccount(User user) {
         log.info("saving telegram user {} into database", user.getId());
@@ -69,18 +58,12 @@ public class AccountService {
     }
 
     @Transactional
-    public Account updateTgUser(Account account, User user) {
+    public Account updateFromTgUser(Account account, User user) {
         log.info("updating account {} from telegram user", user.getId());
         account.setLastname(user.getLastName());
         account.setFirstname(user.getFirstName());
         account.setUsername(user.getUserName());
         return save(account);
-    }
-
-    @Transactional
-    public List<AccountTime> saveAccountTimes(List<AccountTime> accountTimes) {
-        log.info("saving account times {} into db", accountTimes);
-        return accountTimeRepository.saveAll(accountTimes);
     }
 
     @Transactional
@@ -101,6 +84,23 @@ public class AccountService {
     public List<Account> getAccountsByMeetingId(long meetingId) {
         log.info("getting accounts from meeting {}", meetingId);
         return accountRepository.findAccountsByMeetingId(meetingId);
+    }
+
+    @Transactional
+    public List<AccountTime> saveAccountTimes(List<AccountTime> accountTimes) {
+        log.info("saving account times {} into db", accountTimes);
+        return accountTimeRepository.saveAll(accountTimes);
+    }
+
+    public List<AccountTime> getAccountTimesByMeetingId(long meetingId) {
+        log.info("getting account times with meeting {} from db", meetingId);
+        return accountTimeRepository.findByMeetingId(meetingId);
+    }
+
+    @Transactional
+    public AccountTime saveAccountTime(AccountTime accountTime) {
+        log.info("saving account time {} into db", accountTime.getId());
+        return accountTimeRepository.save(accountTime);
     }
 
     public List<AccountTime> getAccountTimesByAccountAndMeetingId(long userId, long meetingId) {

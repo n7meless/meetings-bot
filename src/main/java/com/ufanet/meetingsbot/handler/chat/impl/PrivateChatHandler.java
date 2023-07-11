@@ -92,7 +92,7 @@ public class PrivateChatHandler implements ChatHandler {
         if (messageText.startsWith(BotCommands.START.getCommand())) {
 
             accountService.getByUserId(userId)
-                    .ifPresentOrElse((account) -> accountService.updateTgUser(account, user),
+                    .ifPresentOrElse((account) -> accountService.updateFromTgUser(account, user),
                             () -> accountService.createAccount(user));
             commandMessage.sendStartMessage(userId);
         } else if (messageText.startsWith(BotCommands.HELP.getCommand())) {

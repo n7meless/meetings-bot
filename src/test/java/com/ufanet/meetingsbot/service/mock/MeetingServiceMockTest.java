@@ -1,8 +1,9 @@
-package com.ufanet.meetingsbot.service;
+package com.ufanet.meetingsbot.service.mock;
 
 import com.ufanet.meetingsbot.constants.state.MeetingState;
 import com.ufanet.meetingsbot.entity.Meeting;
 import com.ufanet.meetingsbot.repository.MeetingRepository;
+import com.ufanet.meetingsbot.service.MeetingService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,7 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
-public class MeetingServiceTest {
+public class MeetingServiceMockTest {
     @InjectMocks
     private MeetingService meetingService;
     @Mock
@@ -58,7 +59,7 @@ public class MeetingServiceTest {
 
         //when + then
         Mockito.when(meetingRepository.findByOwnerIdAndStateIsNotIn(1L,
-                List.of(MeetingState.CONFIRMED, MeetingState.PASSED, MeetingState.AWAITING, MeetingState.CANCELED)))
+                        List.of(MeetingState.CONFIRMED, MeetingState.PASSED, MeetingState.AWAITING, MeetingState.CANCELED)))
                 .thenReturn(Optional.ofNullable(dummyMeeting));
         Optional<Meeting> meeting = meetingService.getLastChangedMeetingByOwnerId(1L);
 
@@ -147,6 +148,7 @@ public class MeetingServiceTest {
         Assertions.assertEquals(meetings.size(), dummyMeetings.size());
         Assertions.assertSame(meetings, dummyMeetings);
     }
+
     @Test
     public void shouldReturnMeetingsWhenGetConfirmedMeetingsWhereDatesLaterThanSubjectDuration() {
         //given

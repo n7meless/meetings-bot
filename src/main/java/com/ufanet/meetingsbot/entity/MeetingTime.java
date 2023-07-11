@@ -19,7 +19,7 @@ public class MeetingTime implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "date_time")
+    @Column(name = "date_time", nullable = false)
     private ZonedDateTime dateTime;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -14,6 +14,7 @@ import java.io.Serializable;
 public class Settings implements Serializable {
 
     @Id
+    @Column(name = "id")
     private Long id;
 
     @MapsId
@@ -21,8 +22,9 @@ public class Settings implements Serializable {
     @JoinColumn(name = "user_id")
     private Account account;
 
-    @Column(name = "zone_id")
+    @Column(name = "zone_id", nullable = false)
     private String zoneId;
 
+    @Column(nullable = false)
     private String language;
 }

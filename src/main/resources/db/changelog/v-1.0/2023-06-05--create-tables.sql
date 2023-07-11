@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users
 (
     id         BIGSERIAL PRIMARY KEY,
     username   VARCHAR(64),
-    first_name VARCHAR(64),
+    first_name VARCHAR(64) NOT NULL,
     last_name  VARCHAR(64),
     created_dt TIMESTAMP DEFAULT now()
 );
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS users
 CREATE TABLE IF NOT EXISTS chat
 (
     id          BIGSERIAL PRIMARY KEY,
-    title       VARCHAR(64) NOT NULL,
+    title       VARCHAR(64),
     description VARCHAR(255),
     created_dt  TIMESTAMP DEFAULT now()
 );
@@ -80,10 +80,9 @@ CREATE TABLE IF NOT EXISTS user_chats
 --changeset aidar:create_user_settings_table
 CREATE TABLE IF NOT EXISTS user_settings
 (
-    id        BIGSERIAL PRIMARY KEY,
-    user_id   BIGINT NOT NULL,
-    zone_id VARCHAR(10) DEFAULT 'UTC+03:00',
-    language  VARCHAR(5)  DEFAULT 'ru-RU',
+    user_id  BIGINT PRIMARY KEY,
+    zone_id  VARCHAR(10) NOT NULL DEFAULT 'UTC+03:00',
+    language VARCHAR(5)  NOT NULL DEFAULT 'ru-RU',
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 --rollback drop table user_settings;
@@ -112,9 +111,9 @@ CREATE TABLE IF NOT EXISTS meeting_time
 CREATE TABLE IF NOT EXISTS user_times
 (
     id              BIGSERIAL PRIMARY KEY,
-    user_id         BIGINT NOT NULL,
-    meeting_time_id BIGINT NOT NULL,
-    status          VARCHAR(100),
+    user_id         BIGINT       NOT NULL,
+    meeting_time_id BIGINT       NOT NULL,
+    status          VARCHAR(100) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (meeting_time_id) REFERENCES meeting_time (id) ON DELETE CASCADE
 );
@@ -123,13 +122,12 @@ CREATE TABLE IF NOT EXISTS user_times
 --changeset aidar:create_bot_state_table
 CREATE TABLE IF NOT EXISTS bot_state
 (
-    id           BIGSERIAL PRIMARY KEY,
-    user_id      BIGINT NOT NULL,
+    user_id      BIGINT PRIMARY KEY,
     msg_type     VARCHAR(30),
     msg_from_bot BOOLEAN,
     updated_dt   TIMESTAMP,
     msg_id       INT,
-    state        VARCHAR(100),
+    state        VARCHAR(100) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 --rollback drop table bot_state;
