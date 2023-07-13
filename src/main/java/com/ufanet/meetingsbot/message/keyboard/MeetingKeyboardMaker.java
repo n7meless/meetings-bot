@@ -173,11 +173,12 @@ public class MeetingKeyboardMaker extends KeyboardMaker {
         return buildInlineMarkup(keyboard);
     }
 
-    public InlineKeyboardMarkup getChangeMeetingTimeKeyboard(long meetingId, List<AccountTimeDto> accountTimes, String zoneId) {
+    public InlineKeyboardMarkup getChangeMeetingTimeKeyboard(long meetingId, List<AccountTimeDto> accountTimes,
+                                                             String zoneId) {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
 
         TreeMap<LocalDate, List<AccountTimeDto>> collected =
-                accountTimes.stream().sorted()
+                accountTimes.stream().sorted(Comparator.comparing(AccountTimeDto::getMeetingTime))
                         .collect(Collectors.groupingBy(t -> t.getMeetingTime().getTimeWithZoneOffset(zoneId).toLocalDate(),
                                 TreeMap::new, Collectors.toList()));
 

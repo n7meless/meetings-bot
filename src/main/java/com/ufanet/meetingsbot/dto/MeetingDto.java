@@ -5,7 +5,10 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toSet;
@@ -26,15 +29,6 @@ public class MeetingDto {
     private LocalDateTime updatedDt;
     private MeetingState state;
     private Set<MeetingDateDto> dates;
-
-    public MeetingDto(AccountDto owner) {
-        this.owner = owner;
-        this.createdDt = LocalDateTime.now();
-        this.updatedDt = LocalDateTime.now();
-        this.dates = new HashSet<>();
-        this.participants = Set.of(owner);
-        this.state = MeetingState.GROUP_SELECT;
-    }
 
     public List<AccountTimeDto> getAccountTimes(Predicate<? super AccountTimeDto> predicate) {
         return this.dates.stream().map(MeetingDateDto::getMeetingTimes)

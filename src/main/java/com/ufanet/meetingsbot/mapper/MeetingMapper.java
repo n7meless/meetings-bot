@@ -31,15 +31,6 @@ public interface MeetingMapper {
     @Mapping(target = "participants", ignore = true)
     Meeting map(MeetingDto dto);
 
-    default MeetingDto mapIfPresentOrElseGet(Optional<Meeting> meeting,
-                                             Supplier<? extends MeetingDto> supplier) {
-        if (meeting.isPresent()) {
-            return this.mapToFullDto(meeting.get());
-        } else {
-            return supplier.get();
-        }
-    }
-
     default <X extends Throwable> MeetingDto mapIfPresentOrElseThrow(Optional<Meeting> meeting,
                                                                      Supplier<? extends X> exceptionSupplier) throws X {
         if (meeting.isPresent()) {
@@ -50,6 +41,7 @@ public interface MeetingMapper {
     }
 
     default MeetingDto mapToFullDto(Meeting meeting) {
+        MeetingDto meetingDto = map(meeting);
 
         AccountDto owner = AccountMapper.MAPPER.mapWithSettings(meeting.getOwner());
         Set<AccountDto> participants =
@@ -62,6 +54,7 @@ public interface MeetingMapper {
         for (MeetingDate date : dates) {
 
             MeetingDateDto meetingDateDto = MeetingDateDto.builder()
+                    .meeting(meetingDto)
                     .date(date.getDate())
                     .id(date.getId())
                     .build();
@@ -84,35 +77,22 @@ public interface MeetingMapper {
 
         SubjectDto subjectDto = SubjectMapper.MAPPER.map(meeting.getSubject());
         GroupDto groupDto = GroupMapper.MAPPER.map(meeting.getGroup());
-        return MeetingDto.builder()
-                .id(meeting.getId())
-                .groupDto(groupDto)
-                .state(meeting.getState())
-                .dates(meetingDateDtos)
-                .owner(owner)
-                .createdDt(meeting.getCreatedDt())
-                .updatedDt(meeting.getUpdatedDt())
-                .address(meeting.getAddress())
-                .participants(participants)
-                .subjectDto(subjectDto)
-                .build();
+
+        meetingDto.setGroupDto(groupDto);
+        meetingDto.setDates(meetingDateDtos);
+        meetingDto.setOwner(owner);
+        meetingDto.setParticipants(participants);
+        meetingDto.setSubjectDto(subjectDto);
+        return meetingDto;
     }
 
     @InheritInverseConfiguration
     default Meeting mapToFullEntity(MeetingDto meetingDto) {
+        Meeting meeting = map(meetingDto);
         Group group = GroupMapper.MAPPER.map(meetingDto.getGroupDto());
 
         AccountDto ownerDto = meetingDto.getOwner();
         Account owner = AccountMapper.MAPPER.mapWithSettings(ownerDto);
-
-        Meeting meeting = Meeting.builder().group(group)
-                .id(meetingDto.getId())
-                .createdDt(meetingDto.getCreatedDt())
-                .updatedDt(meetingDto.getUpdatedDt())
-                .owner(owner)
-                .address(meetingDto.getAddress())
-                .state(meetingDto.getState())
-                .build();
 
         SubjectDto subjectDto = meetingDto.getSubjectDto();
         Subject subject = SubjectMapper.MAPPER.map(subjectDto);
@@ -157,8 +137,11 @@ public interface MeetingMapper {
             meetingDate.setMeetingTimes(meetingTimes);
             dates.add(meetingDate);
         }
-
+        meeting.setGroup(group);
+        meeting.setOwner(owner);
+        meeting.setParticipants(participants);
         meeting.setDates(dates);
+        meeting.setSubject(subject);
         return meeting;
     }
 

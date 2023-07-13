@@ -39,10 +39,10 @@ public class MeetingNotifierScheduler {
 
             LocalDateTime meetingLastUpdateTime = meeting.getUpdatedDt();
 
-            long betweenNowAndMeetingUpdate = ChronoUnit.MINUTES.between(meetingLastUpdateTime, now);
+            long betweenMeetingUpdateAndNow = ChronoUnit.MINUTES.between(meetingLastUpdateTime, now);
             long betweenNowAndMeetingDate = ChronoUnit.MINUTES.between(now, meeting.getDate());
 
-            if (betweenNowAndMeetingUpdate >= 30 && betweenNowAndMeetingDate < 30 && betweenNowAndMeetingDate > 10) {
+            if (betweenMeetingUpdateAndNow >= 30 && betweenNowAndMeetingDate < 30 && betweenNowAndMeetingDate > 10) {
 
                 List<Account> accounts = accountService.getAccountsByMeetingId(meeting.getId());
                 log.info("meeting {} notification sent 30 min before the start", meeting.getId());
@@ -51,7 +51,7 @@ public class MeetingNotifierScheduler {
                 meeting.setUpdatedDt(LocalDateTime.now());
 
                 meetingService.save(meeting);
-            } else if (betweenNowAndMeetingUpdate >= 10 && betweenNowAndMeetingDate < 10) {
+            } else if (betweenMeetingUpdateAndNow >= 10 && betweenNowAndMeetingDate < 10) {
 
                 List<Account> accounts = accountService.getAccountsByMeetingId(meeting.getId());
                 log.info("meeting {} notification sent 10 min before the start", meeting.getId());
@@ -60,7 +60,6 @@ public class MeetingNotifierScheduler {
                 meeting.setUpdatedDt(LocalDateTime.now());
 
                 meetingService.save(meeting);
-
             }
         }
     }

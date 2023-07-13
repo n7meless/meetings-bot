@@ -8,6 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Setter
@@ -68,6 +69,15 @@ public class Meeting implements Serializable {
 
     @OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<MeetingDate> dates;
+
+    public Meeting(Account owner) {
+        this.owner = owner;
+        this.createdDt = LocalDateTime.now();
+        this.updatedDt = LocalDateTime.now();
+        this.dates = new HashSet<>();
+        this.participants = Set.of(owner);
+        this.state = MeetingState.GROUP_SELECT;
+    }
 
     public ZonedDateTime getDate() {
         return this.dates.stream().findFirst()

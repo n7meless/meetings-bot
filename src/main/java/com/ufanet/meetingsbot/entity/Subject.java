@@ -14,7 +14,6 @@ import java.util.Set;
 @AllArgsConstructor
 @Entity(name = "subject")
 public class Subject implements Serializable {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

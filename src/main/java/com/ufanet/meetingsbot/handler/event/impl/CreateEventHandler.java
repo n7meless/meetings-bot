@@ -7,6 +7,7 @@ import com.ufanet.meetingsbot.dto.AccountDto;
 import com.ufanet.meetingsbot.dto.GroupDto;
 import com.ufanet.meetingsbot.dto.MeetingDto;
 import com.ufanet.meetingsbot.dto.SubjectDto;
+import com.ufanet.meetingsbot.entity.Account;
 import com.ufanet.meetingsbot.entity.Group;
 import com.ufanet.meetingsbot.entity.Meeting;
 import com.ufanet.meetingsbot.exceptions.AccountNotFoundException;
@@ -30,7 +31,6 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,18 +49,16 @@ public class CreateEventHandler implements EventHandler {
         if (update.hasMessage() || update.hasCallbackQuery()) {
             long userId = getUserIdFromUpdate(update);
 
-            Optional<Meeting> meeting = meetingService.getFromCache(userId);
-            if (meeting.isEmpty()) {
-                meeting = meetingService.getLastChangedMeetingByOwnerId(userId);
+            Meeting meeting = meetingService.getFromCache(userId);
+            if (meeting == null) {
+                meeting = meetingService.getLastChangedMeetingByOwnerId(userId)
+                        .orElseGet(() -> {
+                            Account owner = accountService.getByUserId(userId)
+                                    .orElseThrow(() -> new AccountNotFoundException(userId));
+                            return new Meeting(owner);
+                        });
             }
-            MeetingDto meetingDto = MeetingMapper.MAPPER.mapIfPresentOrElseGet(meeting,
-                    () -> {
-                        AccountDto owner = accountService.getByUserId(userId)
-                                .map(AccountMapper.MAPPER::mapWithSettings)
-                                .orElseThrow(() -> new AccountNotFoundException(userId));
-                        return new MeetingDto(owner);
-                    });
-
+            MeetingDto meetingDto = MeetingMapper.MAPPER.mapToFullDto(meeting);
             if (update.hasMessage()) {
                 handleMessage(userId, update.getMessage(), meetingDto);
             } else {
@@ -107,8 +105,7 @@ public class CreateEventHandler implements EventHandler {
             case NEXT -> {
                 log.info("meeting in state '{}' advances to the next state by user {}", meetingDto.getState(), userId);
                 MeetingState currState = meetingDto.getState();
-                MeetingState newState = MeetingState.setNextState(currState);
-                meetingDto.setState(newState);
+                meetingDto.setState(currState.next());
                 Meeting meeting = MeetingMapper.MAPPER.mapToFullEntity(meetingDto);
                 meetingService.saveOnCache(userId, meeting);
                 sendMessage(userId, meetingDto, data);
@@ -145,14 +142,14 @@ public class CreateEventHandler implements EventHandler {
                     long participantId = Long.parseLong(text);
                     Set<AccountDto> groupMembers =
                             accountService.getAccountsByGroupsIdAndIdNot(meetingDto.getGroupDto().getId(),
-                                            meetingDto.getOwner().getId()).stream().map(AccountMapper.MAPPER::mapWithSettings)
+                                            meetingDto.getOwner().getId()).stream()
+                                    .map(AccountMapper.MAPPER::mapWithSettings)
                                     .collect(Collectors.toSet());
 
                     meetingDtoConstructor.updateParticipants(meetingDto, participantId, groupMembers);
                 }
                 case SUBJECT_SELECT -> {
-                    SubjectDto subjectDto = new SubjectDto();
-                    subjectDto.setTitle(text);
+                    SubjectDto subjectDto = SubjectDto.builder().title(text).build();
                     meetingDto.setSubjectDto(subjectDto);
                     meetingDto.setState(MeetingState.SUBJECT_DURATION_SELECT);
                 }
@@ -162,7 +159,7 @@ public class CreateEventHandler implements EventHandler {
                     meetingDto.setSubjectDto(subjectDto);
                     meetingDto.setState(MeetingState.QUESTION_SELECT);
                 }
-                case QUESTION_SELECT -> meetingDtoConstructor.updateQuestion(meetingDto, text);
+                case QUESTION_SELECT ->meetingDtoConstructor.updateQuestion(meetingDto, text);
                 case DATE_SELECT -> meetingDtoConstructor.updateDate(meetingDto, text);
                 case TIME_SELECT -> meetingDtoConstructor.updateTime(meetingDto, text);
                 case ADDRESS_SELECT -> {

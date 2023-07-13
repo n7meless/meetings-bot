@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class GroupChatHandler implements ChatHandler {
-
     private final GroupReplyMessage groupMessage;
     private final GroupService groupService;
     private final AccountService accountService;

@@ -25,7 +25,6 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -43,14 +42,13 @@ public class EditEventHandler implements EventHandler {
     public void handleUpdate(Update update) {
         if (update.hasMessage() || update.hasCallbackQuery()) {
             long userId = getUserIdFromUpdate(update);
-            Optional<Meeting> meeting = meetingService.getFromCache(userId);
 
-            if (meeting.isEmpty()) {
-                meeting = meetingService.getLastChangedMeetingByOwnerId(userId);
+            Meeting meeting = meetingService.getFromCache(userId);
+            if (meeting == null) {
+                meeting = meetingService.getLastChangedMeetingByOwnerId(userId)
+                        .orElseThrow(() -> new MeetingNotFoundException(userId));
             }
-            MeetingDto meetingDto = MeetingMapper.MAPPER.mapIfPresentOrElseThrow(meeting,
-                    () -> new MeetingNotFoundException(userId));
-
+            MeetingDto meetingDto = MeetingMapper.MAPPER.mapToFullDto(meeting);
             if (update.hasMessage()) {
                 handleMessage(userId, update.getMessage(), meetingDto);
             } else {

@@ -14,11 +14,11 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 @RequiredArgsConstructor
 public class WebhookController {
 
-    private final WebhookTelegramBot webhookTelegramBot;
+    private final WebhookTelegramBot telegramBot;
 
     @PostMapping("/")
     public ResponseEntity<?> onUpdateReceived(@RequestBody Update update) {
-        webhookTelegramBot.onWebhookUpdateReceived(update);
+        telegramBot.onWebhookUpdateReceived(update);
         return ResponseEntity.ok().build();
     }
 }

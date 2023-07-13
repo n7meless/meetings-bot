@@ -1,6 +1,6 @@
 FROM gradle:7.6.1-jdk-alpine AS BUILD_STAGE
 COPY --chown=gradle:gradle . /home/gradle
-RUN gradle build --stacktrace --debug || return 1
+RUN gradle build || return 1
 
 FROM openjdk:17-jdk-alpine
 ENV APP_NAME=meetings-bot-1.0.0-SNAPSHOT.jar

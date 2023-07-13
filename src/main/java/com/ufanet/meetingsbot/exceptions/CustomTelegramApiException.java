@@ -7,22 +7,12 @@ import org.springframework.web.server.ResponseStatusException;
 @Getter
 public abstract class CustomTelegramApiException extends ResponseStatusException {
 
-    private Long chatId;
-    private String messageProperty;
+    private final Long chatId;
+    private final String messageProperty;
 
     public CustomTelegramApiException(Long chatId, String messageProperty) {
         super(HttpStatus.OK);
         this.chatId = chatId;
         this.messageProperty = messageProperty;
-    }
-
-    public CustomTelegramApiException(String messageProperty) {
-        super(HttpStatus.OK);
-        this.messageProperty = messageProperty;
-    }
-
-    public CustomTelegramApiException(Long chatId) {
-        super(HttpStatus.OK);
-        this.chatId = chatId;
     }
 }

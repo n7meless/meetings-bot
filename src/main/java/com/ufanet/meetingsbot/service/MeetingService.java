@@ -34,9 +34,8 @@ public class MeetingService {
         Account owner = meeting.getOwner();
         log.info("creating meeting by user {}", owner.getId());
 
-        Set<Account> accounts = meeting.getParticipants()
-                .stream().filter((am) -> !Objects.equals(am.getId(), meeting.getOwner().getId()))
-                .collect(Collectors.toSet());
+        Set<Account> participants = meeting.getParticipants();
+        participants.removeIf((am) -> Objects.equals(am.getId(), meeting.getOwner().getId()));
 
         Set<MeetingDate> dates = meeting.getDates();
         meeting.setState(MeetingState.AWAITING);
@@ -46,7 +45,7 @@ public class MeetingService {
             Set<MeetingTime> times = date.getMeetingTimes();
             for (MeetingTime time : times) {
                 Set<AccountTime> accountTimes = new HashSet<>();
-                for (Account account : accounts) {
+                for (Account account : participants) {
                     AccountTime accountTime = AccountTime.builder().account(account)
                             .meetingTime(time).status(Status.AWAITING).build();
                     accountTimes.add(accountTime);
@@ -105,9 +104,8 @@ public class MeetingService {
         meetingCache.save(userId, meeting);
     }
 
-    public Optional<Meeting> getFromCache(Long userId) {
-        Meeting meeting = meetingCache.get(userId);
-        return Optional.ofNullable(meeting);
+    public Meeting getFromCache(Long userId) {
+        return meetingCache.get(userId);
     }
 
     public void clearCache(Long userId) {

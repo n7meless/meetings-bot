@@ -28,8 +28,7 @@ import static com.ufanet.meetingsbot.constants.type.EventType.*;
 @Component
 @RequiredArgsConstructor
 public class PrivateChatHandler implements ChatHandler {
-
-    private final Map<EventType, EventHandler> queryHandlers = new HashMap<>();
+    private final Map<EventType, EventHandler> eventHandlers = new HashMap<>();
     private final AccountService accountService;
     private final CommandReplyMessage commandMessage;
     private final BotService botService;
@@ -100,29 +99,29 @@ public class PrivateChatHandler implements ChatHandler {
         } else if (messageText.startsWith(BotCommands.ABOUT.getCommand())) {
             commandMessage.sendAboutMessage(userId);
         } else if (messageText.startsWith(BotCommands.SETTIMEZONE.getCommand())) {
-            queryHandlers.get(PROFILE).handleUpdate(update);
+            eventHandlers.get(PROFILE).handleUpdate(update);
         }
     }
 
     protected void handleBotState(long userId, Update update) {
         String state = botService.getState(userId);
         if (state.startsWith(CREATE.name())) {
-            queryHandlers.get(CREATE).handleUpdate(update);
+            eventHandlers.get(CREATE).handleUpdate(update);
         } else if (state.startsWith(UPCOMING.name())) {
-            queryHandlers.get(UPCOMING).handleUpdate(update);
+            eventHandlers.get(UPCOMING).handleUpdate(update);
         } else if (state.startsWith(PREVIOUS.name())) {
-            queryHandlers.get(PREVIOUS).handleUpdate(update);
+            eventHandlers.get(PREVIOUS).handleUpdate(update);
         } else if (state.startsWith(PROFILE.name())) {
-            queryHandlers.get(PROFILE).handleUpdate(update);
+            eventHandlers.get(PROFILE).handleUpdate(update);
         } else if (state.startsWith(EDIT.name())) {
-            queryHandlers.get(EDIT).handleUpdate(update);
+            eventHandlers.get(EDIT).handleUpdate(update);
         }
     }
 
     @Autowired
-    private void setQueryHandlers(List<EventHandler> eventHandlers) {
+    private void setEventHandlers(List<EventHandler> eventHandlers) {
         eventHandlers.forEach(handler ->
-                this.queryHandlers.put(handler.getEventType(), handler));
+                this.eventHandlers.put(handler.getEventType(), handler));
     }
 
     @Override

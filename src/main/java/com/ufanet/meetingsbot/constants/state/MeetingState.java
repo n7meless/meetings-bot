@@ -15,9 +15,9 @@ public enum MeetingState {
     PASSED,
     CANCELED;
 
-    public static MeetingState setNextState(MeetingState meetingState) {
+    public MeetingState next() {
         MeetingState[] values = MeetingState.values();
-        int current = meetingState.ordinal();
+        int current = this.ordinal();
         return values[current + 1];
     }
 }

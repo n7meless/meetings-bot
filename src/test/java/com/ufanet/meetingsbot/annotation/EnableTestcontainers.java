@@ -1,6 +1,7 @@
 package com.ufanet.meetingsbot.annotation;
 
 import com.ufanet.meetingsbot.container.TestcontainersInitializer;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
@@ -12,6 +13,6 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @ContextConfiguration(initializers = TestcontainersInitializer.class)
-@TestPropertySource("classpath:application-testcontainers.properties")
+@ActiveProfiles("testcontainers")
 public @interface EnableTestcontainers {
 }

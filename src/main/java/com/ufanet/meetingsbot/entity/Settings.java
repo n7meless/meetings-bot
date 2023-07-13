@@ -12,7 +12,6 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Entity(name = "user_settings")
 public class Settings implements Serializable {
-
     @Id
     @Column(name = "id")
     private Long id;
