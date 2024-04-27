@@ -81,7 +81,7 @@ public class PreviousEventHandler implements EventHandler {
         if (meetingDtoList.isEmpty()) {
             upcomingReplyMessage.sendPreviousMeetingsNotExists(userId);
         } else {
-            AccountDto accountDto = accountService.getByUserId(userId).map(AccountMapper.MAPPER::mapWithSettings)
+            AccountDto accountDto = accountService.find(userId).map(AccountMapper.MAPPER::mapWithSettings)
                     .orElseThrow(() -> new AccountNotFoundException(userId));
             upcomingReplyMessage.sendPreviousMeetingsList(userId, accountDto, meetingDtoList);
         }

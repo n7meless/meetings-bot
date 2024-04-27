@@ -64,7 +64,7 @@ public class UpcomingEventHandler implements EventHandler {
         if (meetings.isEmpty()) {
             replyMessage.sendMeetingsNotExist(userId);
         } else {
-            AccountDto accountDto = accountService.getByUserId(userId).map(AccountMapper.MAPPER::mapWithSettings)
+            AccountDto accountDto = accountService.find(userId).map(AccountMapper.MAPPER::mapWithSettings)
                     .orElseThrow(() -> new AccountNotFoundException(userId));
             replyMessage.sendUpcomingMeetingsList(userId, meetings, accountDto);
         }
@@ -111,7 +111,7 @@ public class UpcomingEventHandler implements EventHandler {
                     if (meetingDto.getOwner().getId() == userId) {
                         replyMessage.sendSelectedReadyMeeting(userId, meetingDto);
                     } else {
-                        AccountDto accountDto = accountService.getByUserId(userId).map(AccountMapper.MAPPER::mapWithSettings)
+                        AccountDto accountDto = accountService.find(userId).map(AccountMapper.MAPPER::mapWithSettings)
                                 .orElseThrow(() -> new AccountNotFoundException(userId));
                         replyMessage.sendSelectedAwaitingMeeting(meetingDto, accountDto);
                     }
@@ -120,7 +120,7 @@ public class UpcomingEventHandler implements EventHandler {
             case UPCOMING_SELECT_PARTICIPANT -> replyMessage.sendParticipantSelectionForPing(userId, meetingDto);
             case UPCOMING_SEND_NOTIFICATION_PARTICIPANT -> {
                 long participantId = Long.parseLong(callback[2]);
-                AccountDto accountDto = accountService.getByUserId(participantId)
+                AccountDto accountDto = accountService.find(participantId)
                         .map(AccountMapper.MAPPER::mapWithSettings)
                         .orElseThrow(() -> new AccountNotFoundException(userId));
                 replyMessage.sendPingParticipant(userId, meetingDto, accountDto);
@@ -146,7 +146,7 @@ public class UpcomingEventHandler implements EventHandler {
                     AccountTime accountTime = AccountTimeMapper.MAPPER.map(accountTimeDto);
                     accountService.saveAccountTime(accountTime);
                 }
-                AccountDto accountDto = accountService.getByUserId(userId).map(AccountMapper.MAPPER::mapWithSettings)
+                AccountDto accountDto = accountService.find(userId).map(AccountMapper.MAPPER::mapWithSettings)
                         .orElseThrow(() -> new AccountNotFoundException(userId));
                 replyMessage.sendEditMeetingAccountTimes(userId, meetingDto, accountDto, accountTimeDtos);
             }

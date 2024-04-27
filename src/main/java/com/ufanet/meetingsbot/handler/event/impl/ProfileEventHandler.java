@@ -46,15 +46,14 @@ public class ProfileEventHandler implements EventHandler {
 
             if (timeZone.startsWith("UTC")) {
                 System.out.println(timeZone);
-                Account account = accountService.getByUserId(userId)
+                Account account = accountService.find(userId)
                         .orElseThrow(() -> new AccountNotFoundException(userId));
                 Settings settings = account.getSettings();
                 settings.setZoneId(timeZone);
                 account.setSettings(settings);
                 accountService.save(account);
                 profileReplyMessage.sendSuccessTimezoneSelected(userId);
-            } else throw new ValidationException(userId,
-                    "error.validation.timezone");
+            } else throw new ValidationException(userId, "error.validation.timezone");
         }
     }
 

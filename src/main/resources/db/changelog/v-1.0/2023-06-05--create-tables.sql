@@ -1,6 +1,6 @@
 --liquibase formatted sql
 
---changeset aidar:create_users_table
+--changeset n7meless:create_users_table
 CREATE TABLE IF NOT EXISTS users
 (
     id         BIGSERIAL PRIMARY KEY,
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS users
 );
 --rollback drop table users;
 
---changeset aidar:create_chats_table
+--changeset n7meless:create_chats_table
 CREATE TABLE IF NOT EXISTS chat
 (
     id          BIGSERIAL PRIMARY KEY,
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS chat
 );
 --rollback drop table chat;
 
---changeset aidar:create_meetings_table
+--changeset n7meless:create_meetings_table
 CREATE TABLE IF NOT EXISTS meeting
 (
     id         BIGSERIAL PRIMARY KEY,
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS meeting
 );
 --rollback drop table meeting;
 
---changeset aidar:create_user_meetings_table
+--changeset n7meless:create_user_meetings_table
 CREATE TABLE IF NOT EXISTS user_meetings
 (
     user_id    BIGINT NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS user_meetings
 );
 --rollback drop table user_meetings;
 
---changeset aidar:create_subject_table
+--changeset n7meless:create_subject_table
 CREATE TABLE IF NOT EXISTS subject
 (
     id         BIGSERIAL PRIMARY KEY,
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS subject
 );
 --rollback drop table subject;
 
---changeset aidar:create_questions_table
+--changeset n7meless:create_questions_table
 CREATE TABLE IF NOT EXISTS question
 (
     id         BIGSERIAL PRIMARY KEY,
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS question
 );
 --rollback drop table question;
 
---changeset aidar:create_user_chats_table
+--changeset n7meless:create_user_chats_table
 CREATE TABLE IF NOT EXISTS user_chats
 (
     user_id BIGINT NOT NULL,
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS user_chats
 );
 --rollback drop table user_chats;
 
---changeset aidar:create_user_settings_table
+--changeset n7meless:create_user_settings_table
 CREATE TABLE IF NOT EXISTS user_settings
 (
     user_id  BIGINT PRIMARY KEY,
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS user_settings
 );
 --rollback drop table user_settings;
 
---changeset aidar:create_meeting_date_table
+--changeset n7meless:create_meeting_date_table
 CREATE TABLE IF NOT EXISTS meeting_date
 (
     id         BIGSERIAL PRIMARY KEY,
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS meeting_date
 );
 --rollback drop table meeting_date;
 
---changeset aidar:create_meeting_time_table
+--changeset n7meless:create_meeting_time_table
 CREATE TABLE IF NOT EXISTS meeting_time
 (
     id        BIGSERIAL PRIMARY KEY,
@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS meeting_time
 );
 --rollback drop table meeting_time;
 
---changeset aidar:create_user_times_table
+--changeset n7meless:create_user_times_table
 CREATE TABLE IF NOT EXISTS user_times
 (
     id              BIGSERIAL PRIMARY KEY,
@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS user_times
 );
 --rollback drop table user_times;
 
---changeset aidar:create_bot_state_table
+--changeset n7meless:create_bot_state_table
 CREATE TABLE IF NOT EXISTS bot_state
 (
     user_id      BIGINT PRIMARY KEY,

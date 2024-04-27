@@ -65,8 +65,8 @@ public class GroupChatHandler implements ChatHandler {
             if (members.contains(accountDto)) {
                 groupMessage.executeNullCallback(query.getId());
             } else {
-                Account account = accountService.getByUserId(user.getId())
-                        .orElseGet(() -> accountService.createAccount(user));
+                Account account = accountService.find(user.getId())
+                        .orElseGet(() -> accountService.create(user));
 
                 group.addMember(account);
                 groupService.save(group);
@@ -123,8 +123,8 @@ public class GroupChatHandler implements ChatHandler {
                 if (!member.getIsBot()) {
 
                     Long userId = member.getId();
-                    Account account = accountService.getByUserId(userId)
-                            .orElseGet(() -> accountService.createAccount(member));
+                    Account account = accountService.find(userId)
+                            .orElseGet(() -> accountService.create(member));
                     group.addMember(account);
                 }
             }

@@ -38,7 +38,7 @@ public class AccountServiceDbTest {
 
     @Test
     void shouldReturnAccount_whenGetFromDatabase() {
-        Optional<Account> account = accountService.getByUserId(1L);
+        Optional<Account> account = accountService.find(1L);
 
         assertTrue(account.isPresent());
         assertNotNull(account.get().getId());
@@ -55,7 +55,7 @@ public class AccountServiceDbTest {
         user.setLastName("Ivanov");
         user.setUserName("ivanov123");
 
-        Optional<Account> accountOptional = accountService.getByUserId(user.getId());
+        Optional<Account> accountOptional = accountService.find(user.getId());
         assertTrue(accountOptional.isPresent());
 
         Account oldAcc = accountOptional.get();
@@ -74,14 +74,14 @@ public class AccountServiceDbTest {
     }
 
     @Test
-    void shouldReturnAccount_whenCreateAccountFromTgUser() {
+    void shouldReturnAccount_whenCreateFromTgUser() {
         User user = new User();
         user.setId(123L);
         user.setFirstName("Alexey");
         user.setLastName("Fedorov");
         user.setUserName("alex_fedorov");
 
-        Account account = accountService.createAccount(user);
+        Account account = accountService.create(user);
 
         assertNotNull(account);
         assertNotNull(account.getId());

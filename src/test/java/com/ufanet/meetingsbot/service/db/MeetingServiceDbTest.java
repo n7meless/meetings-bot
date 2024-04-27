@@ -33,7 +33,7 @@ public class MeetingServiceDbTest {
     @Test
     @Sql(statements = "DELETE FROM meeting WHERE meeting.id = 1")
     void shouldReturnMeeting_whenSaveInDatabase() {
-        Optional<Account> account = accountService.getByUserId(1L);
+        Optional<Account> account = accountService.find(1L);
         assertTrue(account.isPresent());
 
         Meeting meeting = Meeting.builder()

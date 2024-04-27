@@ -1,7 +1,8 @@
 package com.ufanet.meetingsbot.config;
 
+import com.ufanet.meetingsbot.config.properties.RedisProperties;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,22 +17,14 @@ import java.time.Duration;
 
 @Slf4j
 @Configuration
+@RequiredArgsConstructor
 public class RedisConfig {
-    @Value("${spring.data.redis.host}")
-    private String REDIS_HOST;
-    @Value("${spring.data.redis.port}")
-    private Integer REDIS_PORT;
-    @Value("${cache.redis.ttl.user}")
-    private long userTtl;
-    @Value("${cache.redis.ttl.groupMembers}")
-    private long groupMembersTtl;
-    @Value("${cache.redis.ttl.group}")
-    private long groupTtl;
+    private final RedisProperties properties;
 
     @Bean
-    JedisConnectionFactory jedisConnectionFactory() {
+    public JedisConnectionFactory jedisConnectionFactory() {
         RedisStandaloneConfiguration configuration =
-                new RedisStandaloneConfiguration(REDIS_HOST, REDIS_PORT);
+                new RedisStandaloneConfiguration(properties.getRedisHost(), properties.getRedisPort());
         return new JedisConnectionFactory(configuration);
     }
 
@@ -52,12 +45,12 @@ public class RedisConfig {
         return (builder) -> builder
                 .withCacheConfiguration("account",
                         RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofSeconds(userTtl)))
+                                .entryTtl(Duration.ofSeconds(properties.getUserTtl())))
                 .withCacheConfiguration("group",
                         RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofSeconds(groupTtl)))
+                                .entryTtl(Duration.ofSeconds(properties.getGroupTtl())))
                 .withCacheConfiguration("group_members",
                         RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofSeconds(groupMembersTtl)));
+                                .entryTtl(Duration.ofSeconds(properties.getGroupMembersTtl())));
     }
 }

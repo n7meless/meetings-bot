@@ -4,6 +4,11 @@ spring:
     password: root
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://localhost:5432/postgres
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
   data:
     redis:
       host: localhost

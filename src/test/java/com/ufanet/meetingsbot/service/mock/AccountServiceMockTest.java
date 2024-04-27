@@ -60,7 +60,7 @@ public class AccountServiceMockTest {
         Mockito.when(accountRepository.save(Mockito.any(Account.class)))
                 .thenReturn(account);
 
-        Account created = accountService.createAccount(user);
+        Account created = accountService.create(user);
 
         //then
         assertEquals(created.getId(), user.getId());
@@ -77,7 +77,7 @@ public class AccountServiceMockTest {
 
         //when
         Mockito.when(accountRepository.findById(Mockito.anyLong())).thenReturn(Optional.of(expected));
-        Optional<Account> created = accountService.getByUserId(1L);
+        Optional<Account> created = accountService.find(1L);
 
         //then
         assertDoesNotThrow(created::get);

@@ -33,13 +33,13 @@ public class AccountService {
     private final AccountTimeRepository accountTimeRepository;
 
     @Cacheable(key = "#userId", value = "account", unless = "#result == null")
-    public Optional<Account> getByUserId(long userId) {
+    public Optional<Account> find(long userId) {
         log.info("getting user {} from db", userId);
         return accountRepository.findById(userId);
     }
 
     @Transactional
-    public Account createAccount(User user) {
+    public Account create(User user) {
         log.info("saving telegram user {} into database", user.getId());
         Account account = AccountMapper.MAPPER.mapToEntityFromTgUser(user);
 

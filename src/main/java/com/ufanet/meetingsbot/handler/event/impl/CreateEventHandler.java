@@ -53,7 +53,7 @@ public class CreateEventHandler implements EventHandler {
             if (meeting == null) {
                 meeting = meetingService.getLastChangedMeetingByOwnerId(userId)
                         .orElseGet(() -> {
-                            Account owner = accountService.getByUserId(userId)
+                            Account owner = accountService.find(userId)
                                     .orElseThrow(() -> new AccountNotFoundException(userId));
                             return new Meeting(owner);
                         });

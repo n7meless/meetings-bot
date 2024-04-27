@@ -30,5 +30,4 @@ public class MeetingCache implements Cache<Meeting> {
     public void evict(Long userId) {
         meetingCache.remove(userId);
     }
-
 }

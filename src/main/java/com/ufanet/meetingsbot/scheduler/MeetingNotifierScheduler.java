@@ -66,7 +66,6 @@ public class MeetingNotifierScheduler {
 
     private void checkExpiredMeetings() {
         ZonedDateTime now = ZonedDateTime.now();
-//        List<Meeting> expiredMeetings = meetingRepository.findConfirmedMeetingsWhereDatesLaterThan(now, 90);
         List<Meeting> expiredMeetings = meetingService.getConfirmedMeetingsWhereDatesLaterThanSubjectDuration(now);
         for (Meeting meeting : expiredMeetings) {
             log.info("meeting {} was expired", meeting.getId());
